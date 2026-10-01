@@ -1,0 +1,51 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "FM27 Manager Dashboard",
+  "version": "11.3.1",
+  "identifier": "de.fm27.dashboard",
+  "build": {
+    "frontendDist": "../dist",
+    "beforeBuildCommand": "npm run desktop:prepare"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "FM27 Manager Dashboard",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "msi",
+      "deb",
+      "appimage"
+    ],
+    "category": "Utility",
+    "shortDescription": "Begleit-Tool zu Football Manager",
+    "longDescription": "Kader, Taktik, Transfers, Journey und Nationalteam – komplett lokal, ohne Konto.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}

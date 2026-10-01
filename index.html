@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="Begleit-Tool zu Football Manager – alle Daten bleiben lokal auf deinem Gerät.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FM27 Dashboard">
+<title>FM27 Manager Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script>try{var t=localStorage.getItem("fm27_theme_hint");if(!t){var L=JSON.parse(localStorage.getItem("fm27_layout")||"{}");t=L.theme;}if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="crest" id="crestBox" role="button" tabindex="0" title="Spielstände (S)" aria-label="Spielstände öffnen" aria-haspopup="dialog">
+      <span id="crestInitials">FC</span>
+    </div>
+    <nav class="nav" aria-label="Module">
+      <button class="nav-btn active" data-view="home" title="Portal (1)">
+        <svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>
+        <span>Portal</span>
+      </button>
+      <button class="nav-btn" data-view="squad" title="Kader (2)">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14 20c.2-2.6 1.6-4.6 3.6-5.4 1.8.6 3.4 2.3 3.4 5.4"/></svg>
+        <span>Kader</span>
+      </button>
+      <button class="nav-btn" data-view="tactics" title="Taktik (3)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 12h18"/><circle cx="12" cy="12" r="2.5"/></svg>
+        <span>Taktik</span>
+      </button>
+      <button class="nav-btn" data-mode="club" data-view="recruitment" title="Rekrutierung (4)">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>Transfers</span>
+      </button>
+      <button class="nav-btn" data-mode="club" data-view="finance" title="Finanzen (5)">
+        <svg viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="7" width="3" height="11" rx="1"/><rect x="16" y="4" width="3" height="14" rx="1"/></svg>
+        <span>Finanzen</span>
+      </button>
+      <button class="nav-btn" data-mode="club" data-view="development" title="Entwicklung: Talente &amp; Leihen (6)">
+        <svg viewBox="0 0 24 24"><path d="M4 20h16M7 16l4-5 3 3 5-7"/><path d="M15 7h4v4"/></svg>
+        <span>Entwicklung</span>
+      </button>
+      <button class="nav-btn" data-view="fixtures" title="Spieltag (7)">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="1.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+        <span>Spieltag</span>
+      </button>
+      <button class="nav-btn" data-view="notes" title="Notizen (8)">
+        <svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/></svg>
+        <span>Notizen</span>
+      </button>
+      <button class="nav-btn" data-view="journey" title="Journey (9)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8Z"/></svg>
+        <span>Journey</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="menu-wrap" id="menuWrap">
+        <button id="btnMenu" class="icon-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sideMenu" title="Einstellungen &amp; mehr">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <div class="side-menu" id="sideMenu" role="menu" aria-label="Einstellungen und Werkzeuge" hidden>
+          <div class="sm-head">Einstellungen</div>
+          <button role="menuitem" class="sm-item" id="btnSettings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3 3 6l2 4.2 2.2-1V21h9.6V9.2l2.2 1L21 6l-5.5-3c-.6 1.6-1.9 2.6-3.5 2.6S9.1 4.6 8.5 3Z"/></svg><span>Verein &amp; Spielstand</span></button>
+          <button role="menuitem" class="sm-item" id="btnSlots"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Z"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span>Spielstände</span></button>
+          <button role="menuitem" class="sm-item" id="btnNational" data-mode="national"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>Nationalteam-Einstellungen</span></button>
+          <button role="menuitem" class="sm-item" id="btnMoveOut"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/></svg><span>Alles exportieren (Umzug)</span></button>
+          <button role="menuitem" class="sm-item" id="btnLayout"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg><span>Layout</span><kbd data-hk-hint="layout">L</kbd></button>
+          <button role="menuitem" class="sm-item" id="btnTheme"><span class="sm-theme-icon" id="themeIcon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span><span id="themeLabel">Helles Design</span></button>
+          <button role="menuitem" class="sm-item" id="btnHotkeys"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg><span>Tastenkürzel anpassen</span></button>
+          <div class="sm-sep" role="separator"></div>
+          <div class="sm-head">Werkzeuge</div>
+          <button role="menuitem" class="sm-item" id="btnInstall" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0-4-4m4 4 4-4"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg><span id="installLabel">Als App installieren</span></button>
+          <button role="menuitem" class="sm-item" id="btnAdmin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6Z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10.2 11V9.6a1.8 1.8 0 0 1 3.6 0V11"/></svg><span>Admin-Bereich</span><span class="sm-lock" title="PIN-geschützt">🔒</span></button>
+          <button role="menuitem" class="sm-item" id="btnCmd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6H7a3 3 0 1 0 3 3V7a3 3 0 1 1 3 3h-2m0 0v4m0 0h2a3 3 0 1 1-3 3v-2a3 3 0 1 0-3 3h2"/></svg><span>Befehlspalette</span><kbd data-hk-hint="palette">Strg K</kbd></button>
+          <button role="menuitem" class="sm-item" id="btnHelp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M7.5 14h9"/></svg><span>Tastenkürzel-Übersicht</span><kbd data-hk-hint="help">?</kbd></button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <!-- HEADER -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div>
+          <h1 id="clubName">FC Unity</h1>
+          <div class="topbar-sub">
+            <span id="slotName">Spielstand</span>
+            <button type="button" class="backup-pill" id="backupPill" hidden></button>
+            <span class="save-status" id="saveStatus" aria-live="polite">
+              <span class="save-dot" aria-hidden="true"></span>
+              <span id="saveStatusText">Gespeichert</span>
+            </span>
+          </div>
+        </div>
+        <button type="button" class="pill date-btn" id="btnNextDay" title="Einen Tag weiter (T) · Shift-Klick: eine Woche">
+          <span id="ingameDatePill">—</span><span class="date-plus" aria-hidden="true">+1</span>
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button type="button" class="btn btn-sm link-switch" id="btnLinkSwitch" hidden></button>
+        <div class="stat-chip" data-mode="national" title="Länderspiel-Bilanz: Siege – Unentschieden – Niederlagen">
+          <span class="stat-label">Bilanz</span><span class="stat-value" id="natRecordChip">0-0-0</span>
+        </div>
+        <button type="button" class="stat-chip nat-nom-chip" data-mode="national" id="natNomChip" title="Nominierte Spieler – Klick öffnet den Pool">
+          <span class="stat-label">Nominiert</span><span class="stat-value" id="natNomValue">0 / 26</span>
+        </button>
+        <div class="stat-chip" data-mode="club" title="Transferbudget nach eingeplanten Transfers">
+          <span class="stat-label">Transfer frei</span>
+          <span class="stat-value" id="transferBudgetChip">€0</span>
+        </div>
+        <div class="stat-chip" data-mode="club" title="Gehaltsspielraum (Gehaltsbudget − aktuelle Gehälter) nach eingeplanten Transfers">
+          <span class="stat-label">Gehalt frei<span class="wu">/Jahr</span></span>
+          <span class="stat-value" id="salaryBudgetChip">€0</span>
+        </div>
+        <div class="stat-chip" title="Aktive Formation">
+          <span class="stat-label">Taktik</span>
+          <span class="stat-value" id="formationChip">4-3-3</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" id="btnExport">Export</button>
+          <button class="btn btn-ghost btn-sm" id="btnImport">Import</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+          <button class="btn btn-danger-outline btn-sm" id="btnReset">Reset</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content" id="content">
+      <div class="deadline-bar" id="deadlineBar" hidden></div>
+      <div class="sample-banner" id="sampleBanner" hidden></div>
+
+      <!-- PORTAL -->
+      <section class="view active" id="view-home" aria-label="Portal">
+        <div class="grid-portal" data-layout="home">
+          <div class="card card-full jh-card" data-panel="journeyHome" data-title="Journey" id="journeyHomeCard" hidden>
+            <div class="card-head"><h2>🧭 Journey</h2><button class="btn btn-sm" data-goto="journey">Zur Journey →</button></div>
+            <div id="journeyHome"></div>
+          </div>
+          <div class="card card-full hw-card" data-panel="transferWindow" data-mode="club" data-title="Transferfenster" id="homeWindowCard" hidden>
+            <div class="card-head"><h2 id="hwTitle">Transferfenster</h2><button class="btn btn-sm" id="hwOpen">Transfer-Center →</button></div>
+            <div id="homeWindow"></div>
+          </div>
+          <div class="card card-span-2 nat-card" data-panel="natNom" data-title="Nominierung" data-mode="national">
+            <div class="card-head"><h2>Nominierung</h2><button class="btn btn-sm" data-goto="squad">Zum Pool →</button></div>
+            <div id="natNomBox"></div>
+          </div>
+          <div class="card nat-card" data-panel="natRecords" data-title="Rekordspieler" data-mode="national">
+            <div class="card-head"><h2>Rekordspieler</h2></div>
+            <div id="natRecordsBox"></div>
+          </div>
+          <div class="card nat-card" data-panel="natClubs" data-title="Stammvereine" data-mode="national">
+            <div class="card-head"><h2>Stammvereine der Nominierten</h2></div>
+            <div id="natClubsBox"></div>
+          </div>
+          <div class="card card-span-2 card-hero" data-panel="nextMatch" data-title="Nächstes Spiel">
+            <div class="card-head"><h2>Nächstes Spiel</h2><button class="btn btn-sm btn-ghost" data-goto="fixtures">Vorbereiten</button></div>
+            <div id="nextMatchBox"></div>
+          </div>
+          <div class="card" data-panel="form" data-title="Form &amp; Bilanz">
+            <div class="card-head"><h2>Form &amp; Bilanz</h2><button class="btn btn-sm btn-ghost" data-goto="fixtures">Alle</button></div>
+            <div id="formCurve"></div>
+          </div>
+          <div class="card" data-panel="squadPlan" data-title="Kaderplan">
+            <div class="card-head"><h2>Kaderplan</h2></div>
+            <div id="squadPlanSummary"></div>
+          </div>
+          <div class="card card-span-2" data-panel="goals" data-title="Vorstandsziele">
+            <div class="card-head"><h2>Vorstandsziele</h2><button class="btn btn-sm btn-accent" id="btnAddGoal">+ Ziel</button></div>
+            <div id="boardGoals"></div>
+          </div>
+          <div class="card card-span-2" data-panel="contracts" data-mode="club" data-title="Vertragsfristen">
+            <div class="card-head"><h2>Vertragsfristen</h2><button class="btn btn-sm btn-ghost" data-goto="squad" data-filter="contract">Alle zeigen</button></div>
+            <div id="contractAlerts"></div>
+          </div>
+          <div class="card card-span-2" data-panel="xi" data-title="Startelf">
+            <div class="card-head"><h2>Startelf</h2><button class="btn btn-sm btn-ghost" data-goto="tactics">Bearbeiten</button></div>
+            <div class="mini-pitch-wrap" id="miniPitch"></div>
+          </div>
+          <div class="card" data-panel="todos" data-title="Offene Aufgaben">
+            <div class="card-head"><h2>Offene Aufgaben</h2></div>
+            <ul class="todo-preview" id="todoPreview"></ul>
+          </div>
+          <div class="card" data-panel="loans" data-mode="club" data-title="Leihen im Blick">
+            <div class="card-head"><h2>Leihen im Blick</h2><button class="btn btn-sm btn-ghost" data-goto="development" data-devtab="loans">Alle</button></div>
+            <div id="loanPreview"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SQUAD -->
+      <section class="view" id="view-squad" aria-label="Kader">
+        <div class="seg" role="tablist" id="squadTabs">
+          <button role="tab" data-tab="current" class="active">Aktueller Kader</button>
+          <button role="tab" data-mode="club" data-tab="future">Nächste Saison</button>
+          <button role="tab" data-mode="club" data-tab="contracts">Verträge &amp; Gehälter</button>
+        </div>
+        <div class="subview active" id="squad-current">
+        <div class="toolbar">
+          <input type="search" autocomplete="off" id="squadSearch" placeholder="Spieler suchen…  ( / )" aria-label="Spieler suchen">
+          <select autocomplete="off" id="squadPosFilter" aria-label="Position filtern"><option value="">Alle Positionen</option></select>
+          <select autocomplete="off" id="squadRoleFilter" aria-label="Kaderrolle filtern"><option value="">Alle Kaderrollen</option></select>
+          <select autocomplete="off" id="squadStatusFilter" aria-label="Status filtern">
+            <option value="">Alle Status</option>
+            <option value="available">Verfügbar</option>
+            <option value="injured">Verletzt</option>
+            <option value="suspended">Gesperrt</option>
+            <option value="unhappy">Unzufrieden</option>
+            <option value="ineligible">Nicht spielberechtigt</option>
+            <option value="contract">Vertrag ≤ 12 Monate</option>
+          </select>
+          <button class="btn btn-filter-reset" id="btnResetFilters" hidden title="Alle Filter und die Suche zurücksetzen">✕ Filter zurücksetzen</button>
+          <label class="check-label small" data-mode="club" title="Verliehene Spieler ausgegraut in der Tabelle anzeigen"><input type="checkbox" id="squadShowLoaned" checked> Verliehene zeigen</label>
+          <button class="btn" data-mode="club" id="btnSquadLoans" title="Verliehene Spieler (Entwicklung → Leihen)">Verliehen →</button>
+          <button class="btn" id="btnColumns" title="Spalten ein-/ausblenden, Breiten zurücksetzen">Spalten</button>
+          <button class="btn" id="btnImportFM" title="Kader aus einer FM-Exportdatei (Text/Webseite) oder CSV übernehmen">⇪ Import aus FM</button>
+          <button class="btn" id="btnExportCSV" title="Kader als CSV (für Excel) herunterladen">CSV ⇩</button>
+          <button class="btn btn-accent" id="btnAddPlayer">+ Spieler</button>
+        </div>
+        <div class="squad-depth" id="squadDepth"></div>
+        <div class="bulk-bar" id="bulkBar" hidden></div>
+        <p class="hint" style="margin:-4px 2px 10px">Alle Felder direkt in der Tabelle bearbeitbar – Änderungen werden sofort gespeichert. ✎ öffnet alle Daten eines Spielers inkl. längerer Notiz.</p>
+        <div class="table-wrap">
+          <table class="data-table" id="squadTable">
+            <thead>
+              <tr>
+                <th class="sel-col" data-col="sel"><input type="checkbox" id="selAll" aria-label="Alle sichtbaren Spieler auswählen"></th>
+                <th data-col="name" data-sort="name" tabindex="0">Name</th>
+                <th data-col="nominated" data-sort="nominated" tabindex="0" hidden title="Für den nächsten Lehrgang nominiert">Nominiert</th>
+                <th data-col="pos" data-sort="pos" tabindex="0">Pos.</th>
+                <th data-col="nation" data-sort="nation" tabindex="0">Land</th>
+                <th data-col="age" data-sort="age" tabindex="0">Alter</th>
+                <th data-col="homeClub" data-sort="homeClub" tabindex="0" hidden>Stammverein</th><th data-col="caps" data-sort="caps" tabindex="0" hidden>Länderspiele</th><th data-col="intGoals" data-sort="intGoals" tabindex="0" hidden>Länderspieltore</th>
+                <th data-col="squadRole" data-sort="squadRole" tabindex="0">Kaderrolle</th>
+                <th data-col="rating" data-sort="rating" tabindex="0">Einschätzung</th>
+                <th data-col="salary" data-sort="salary" tabindex="0">Gehalt<span class="wu">/Jahr</span></th>
+                <th data-col="valueMax" data-sort="valueMax" tabindex="0" id="thValue" hidden>Transferwert</th>
+                <th data-col="contractUntil" data-sort="contractUntil" tabindex="0">Vertrag</th>
+                <th data-col="status">Status</th>
+                <th data-col="note">Notiz</th>
+                <th data-col="actions"></th>
+              </tr>
+            </thead>
+            <tbody id="squadTbody"></tbody>
+          </table>
+        </div>
+        </div>
+        <div class="subview" id="squad-future">
+          <div id="futureSquad"></div>
+        </div>
+        <div class="subview" id="squad-contracts">
+          <div id="contractsView"></div>
+        </div>
+      </section>
+
+      <!-- TACTICS -->
+      <section class="view" id="view-tactics" aria-label="Taktik">
+        <div class="seg" role="tablist" id="tacticsTabs">
+          <button role="tab" data-tab="formation" class="active">Formation &amp; Rollen</button>
+          <button role="tab" data-tab="setpieces">Standards</button>
+        </div>
+
+        <div class="subview active" id="tactics-formation">
+          <div class="seg seg-sm plan-bar" role="tablist" aria-label="Taktik-Pläne" id="planBar"></div>
+          <div class="tactics-toolbar">
+            <div class="toolbar-group">
+              <label class="inline-label" for="formationSelect">Formation</label>
+              <select autocomplete="off" id="formationSelect"></select>
+              <div class="phase-toggle" role="group" aria-label="Spielphase">
+                <button class="phase-btn active" data-phase="in">Mit Ball</button>
+                <button class="phase-btn" data-phase="out">Gegen den Ball</button>
+              </div>
+            </div>
+            <div class="toolbar-group">
+              <button class="btn btn-sm" id="btnResetOop" hidden title="Alle manuell verschobenen Positionen gegen den Ball zurücksetzen">Form zurücksetzen</button>
+              <label class="check-label"><input type="checkbox" id="toggleLinks"> Verbindungen</label>
+              <button class="btn btn-sm" id="btnClearXI">Leeren</button>
+              <button class="btn btn-sm btn-accent" id="btnBestXI" title="Beste Elf nach Position, Einschätzung und Verfügbarkeit (B)">Beste Elf</button>
+            </div>
+          </div>
+          <div class="pitch-layout">
+            <div class="pitch-col">
+              <div id="pitchHost"></div>
+              <p class="hint">Bank → Feld: aufstellen · Spieler auf Spieler: tauschen · auf freie Stelle: verschieben (Mit Ball → Freie Formation, Gegen den Ball → eigene Form) · Klick: Rollen · Pfeiltasten: feinjustieren</p>
+            </div>
+            <div class="pitch-side" data-layout="tacticsSide">
+              <div class="side-block" data-panel="slot">
+                <div class="side-head"><h3 id="slotEditorTitle">Position</h3></div>
+                <div id="slotEditor"></div>
+              </div>
+              <div class="side-block" data-panel="bench">
+                <div class="side-head">
+                  <h3>Nicht aufgestellt</h3>
+                  <select autocomplete="off" id="benchFilter" aria-label="Bank nach Position filtern"><option value="">Alle</option></select>
+                </div>
+                <div class="bench-list" id="benchList" data-bench-drop></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="tactics-setpieces">
+          <div class="seg seg-sm" id="spTabs"></div>
+          <div class="sp-layout">
+            <div class="sp-board-wrap" id="spBoard"></div>
+            <div class="pitch-side" data-layout="setpieceSide">
+              <div class="side-block" data-panel="spAssign">
+                <div class="side-head"><h3 id="spEditorTitle">Zuordnung</h3></div>
+                <div id="spEditor"></div>
+              </div>
+              <div class="side-block" data-panel="penalties">
+                <div class="side-head"><h3>Elfmeter-Reihenfolge</h3></div>
+                <ol class="pen-list" id="penaltyList"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECRUITMENT -->
+      <section class="view" id="view-recruitment" aria-label="Transfers">
+        <div class="window-banner" id="windowBanner"></div>
+        <div class="budget-box">
+          <div class="budget-row"><span>Transferbudget</span><strong id="rTransferBudget">€0</strong></div>
+          <div class="budget-row plus"><span id="rSalesLabel">+ Verkaufserlöse</span><strong id="rSales">€0</strong></div>
+          <div class="budget-row"><span>− Ablösen eingeplant</span><strong id="rPlannedFees">€0</strong></div>
+          <div class="budget-row"><span>− Handgelder eingeplant</span><strong id="rPlannedBonus">€0</strong></div>
+          <div class="budget-row"><span>− Gehälter Neuzugänge<span class="wu">/Jahr</span></span><strong id="rPlannedWages">€0</strong></div>
+          <div class="budget-row plus"><span>+ Gehaltsersparnis Verkäufe<span class="wu">/Jahr</span></span><strong id="rWageRelief">€0</strong></div>
+          <div class="budget-row total"><span>Transferbudget frei</span><strong id="rRemaining">€0</strong></div>
+          <div class="budget-row total"><span>Gehalt frei<span class="wu">/Jahr</span></span><strong id="rWageRemaining">€0</strong></div>
+        </div>
+        <div class="seg" role="tablist" id="transferTabs">
+          <button role="tab" data-tab="center" class="active">Transfer-Center</button>
+          <button role="tab" data-tab="plan">Fenster-Plan</button>
+          <button role="tab" data-tab="buy">Einkäufe</button>
+          <button role="tab" data-tab="sell">Verkäufe</button>
+          <button role="tab" data-tab="history">Historie</button>
+        </div>
+        <div class="subview active" id="tr-center"></div>
+        <div class="subview" id="tr-plan"></div>
+        <div class="subview" id="tr-buy">
+        <div class="toolbar">
+          <input type="search" autocomplete="off" id="scoutSearch" placeholder="Ziel suchen…  ( / )" aria-label="Transferziel suchen">
+          <select autocomplete="off" id="scoutStatusFilter" aria-label="Status filtern">
+            <option value="">Alle Status</option>
+            <option value="watched">Beobachtet</option>
+            <option value="negotiating">Verhandlung</option>
+            <option value="fixed">Fixiert</option>
+          </select>
+          <label class="check-label"><input type="checkbox" id="includeWatched"> Beobachtete einrechnen</label>
+          <button class="btn btn-accent" id="btnAddTarget">+ Transferziel</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="scoutTable">
+            <thead>
+              <tr>
+                <th data-sort="priority" tabindex="0">Priorität</th><th data-sort="name" tabindex="0">Name</th><th data-sort="pos" tabindex="0">Pos.</th><th data-sort="age" tabindex="0">Alter</th><th data-sort="grade" tabindex="0">Grade</th><th data-sort="status" tabindex="0">Status</th>
+                <th data-sort="fee" tabindex="0">Ablöse</th><th data-sort="bonus" tabindex="0">Handgeld</th><th data-sort="wage" tabindex="0">Gehalt<span class="wu">/Jahr</span></th><th data-col="note">Notiz</th><th data-col="actions"></th>
+              </tr>
+            </thead>
+            <tbody id="scoutTbody"></tbody>
+          </table>
+        </div>
+        </div>
+        <div class="subview" id="tr-sell">
+          <div class="toolbar">
+            <label class="check-label" title="Standard: nur Verkäufe mit Angebot oder Einigung zählen fürs Budget"><input type="checkbox" id="includeListed"> Gelistete einrechnen</label>
+            <label class="check-label">Budget-Anteil vom Vorstand
+              <input type="number" id="salesShare" min="0" max="100" step="5" class="share-input" aria-label="Budget-Anteil aus Verkäufen in Prozent"> %</label>
+            <span class="spacer"></span>
+            <button class="btn btn-accent" id="btnAddSale">+ Verkauf planen</button>
+          </div>
+          <div id="salesHint"></div>
+          <div class="table-wrap">
+            <table class="data-table" id="salesTable">
+              <thead><tr><th>Spieler</th><th>Pos.</th><th>Alter</th><th>Gehalt<span class="wu">/Jahr</span></th><th>Vertrag</th><th>Erwarteter Erlös</th><th>Status</th><th>Interessent / Notiz</th><th></th></tr></thead>
+              <tbody id="salesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="subview" id="tr-history">
+          <div id="transferHistory"></div>
+        </div>
+      </section>
+
+      <!-- DEVELOPMENT -->
+      <!-- FINANCE -->
+      <section class="view" id="view-finance" aria-label="Finanzen">
+        <div class="future-stats fin-stats" id="finStats"></div>
+        <div class="grid-finance" data-layout="finance">
+          <div class="card" data-panel="budgets">
+            <div class="card-head"><h2>Budgets</h2></div>
+            <div class="form-stack" id="finBudgets"></div>
+          </div>
+          <div class="card" data-panel="wageUsage">
+            <div class="card-head"><h2>Gehaltsbudget-Auslastung</h2></div>
+            <div id="finWages"></div>
+          </div>
+          <div class="card card-full" data-panel="balance">
+            <div class="card-head"><h2>Kontostand-Verlauf</h2><button class="btn btn-sm btn-accent" id="btnAddBalance">+ Kontostand</button></div>
+            <div class="balance-layout">
+              <div id="balanceChart"></div>
+              <div id="balanceList"></div>
+            </div>
+          </div>
+          <div class="card card-full" data-panel="transferSeasons">
+            <div class="card-head"><h2>Transfers je Saison</h2><button class="btn btn-sm btn-ghost" data-goto="recruitment" data-trtab="history">Historie</button></div>
+            <div id="finTransfers"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADMIN -->
+      <section class="view" id="view-admin" aria-label="Admin-Bereich">
+        <div id="adminRoot"></div>
+      </section>
+
+      <section class="view" id="view-development" aria-label="Entwicklung">
+        <div class="dev-head">
+          <div class="seg" role="tablist" id="devTabs">
+            <button role="tab" data-tab="prospects" class="active">Talente</button>
+            <button role="tab" data-tab="loans">Leihen</button>
+          </div>
+          <button class="btn btn-accent" id="btnAddDev">+ Talent</button>
+        </div>
+        <div class="subview active" id="dev-prospects">
+          <div class="table-wrap">
+            <table class="data-table" id="prospectTable">
+              <thead><tr>
+                <th>Name</th><th>Pos.</th><th>Alter</th><th>Aktuell</th><th>Potenzial</th><th>Weg</th>
+                <th>Trainingsfokus</th><th>Bereit bis</th><th>Notiz</th><th></th>
+              </tr></thead>
+              <tbody id="prospectTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="subview" id="dev-loans">
+          <div class="table-wrap">
+            <table class="data-table" id="loanTable">
+              <thead><tr>
+                <th>Name</th><th>Pos.</th><th>Alter</th><th>Leihclub</th><th>Liga</th><th>Bis</th>
+                <th>Einsätze</th><th>Spielzeit</th><th>Klausel</th><th>Rückruf prüfen</th><th>Notiz</th><th></th>
+              </tr></thead>
+              <tbody id="loanTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- FIXTURES / MATCHDAY -->
+      <section class="view" id="view-fixtures" aria-label="Spieltag">
+        <div class="grid-fixtures" data-layout="fixtures">
+          <div class="card" data-panel="opponent">
+            <div class="card-head"><h2>Nächster Gegner</h2></div>
+            <div class="form-stack">
+              <div class="field"><label for="oppName">Gegner</label><input id="oppName" type="text" autocomplete="off"></div>
+              <div class="opp-hint" id="oppHint" hidden></div>
+              <div class="field"><label for="oppPlan">Unser Taktik-Plan</label><select autocomplete="off" id="oppPlan"></select></div>
+              <div class="field-row">
+                <div class="field"><label for="oppComp">Wettbewerb</label><input id="oppComp" type="text"></div>
+                <div class="field"><label for="oppVenue">Ort</label>
+                  <select autocomplete="off" id="oppVenue"><option value="H">Heim</option><option value="A">Auswärts</option><option value="N">Neutral</option></select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label for="oppDate">Datum</label><input id="oppDate" type="date"></div>
+                <div class="field"><label for="oppFormation">Erw. Formation</label><input id="oppFormation" type="text" placeholder="z.B. 4-2-3-1"></div>
+              </div>
+              <div class="field"><label for="keyThreat">Gefährlichster Spieler</label><input id="keyThreat" type="text"></div>
+            </div>
+          </div>
+          <div class="card" data-panel="matchplan">
+            <div class="card-head">
+              <h2>Matchplan &amp; Schwachstellen</h2>
+              <button class="btn btn-sm btn-accent" id="btnPrint">Briefing drucken</button>
+            </div>
+            <div class="form-stack">
+              <div class="field"><label for="matchplanNotes">Matchplan</label><textarea id="matchplanNotes" rows="6" placeholder="Anweisungen, Anpassungen, Wechselplan…"></textarea></div>
+              <div class="field"><label for="weaknessNotes">Schwachstellen des Gegners</label><textarea id="weaknessNotes" rows="5"></textarea></div>
+            </div>
+          </div>
+          <div class="card card-full" data-panel="subs">
+            <div class="card-head">
+              <h2>Wechselplan</h2>
+              <button class="btn btn-sm" id="btnAddSub">+ Wechsel</button>
+            </div>
+            <div id="subsEditor"></div>
+          </div>
+          <div class="card card-full" data-panel="results">
+            <div class="card-head">
+              <h2>Ergebnisse &amp; Taktik-Bilanz</h2>
+              <select autocomplete="off" id="resultsSeason" class="head-select" aria-label="Zeitraum"></select>
+              <button class="btn btn-sm btn-accent" id="btnAddResult" title="Ergebnis eintragen (übernimmt Gegner und Plan aus der Vorbereitung)">+ Ergebnis</button>
+            </div>
+            <div class="results-layout">
+              <div class="results-list" id="resultsList"></div>
+              <div class="bilanz" id="bilanzBox"></div>
+            </div>
+          </div>
+          <div class="card card-full" data-panel="opponents">
+            <div class="card-head">
+              <h2>Gegner-Datenbank</h2>
+              <input type="search" autocomplete="off" id="oppSearch" class="head-search" placeholder="Gegner suchen…" aria-label="Gegner suchen">
+            </div>
+            <div id="oppDb"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- NOTES -->
+      <!-- JOURNEY -->
+      <section class="view" id="view-journey" aria-label="Journey">
+        <div id="journeyStart" hidden></div>
+        <div class="grid-journey" data-layout="journey" id="journeyGrid">
+          <div class="card card-full" data-panel="jProfile" data-title="Manager-Profil">
+            <div class="card-head"><h2>Manager-Profil</h2><button class="btn btn-sm" data-j="profile">Bearbeiten</button></div>
+            <div id="jProfile"></div>
+          </div>
+          <div class="card card-full" data-panel="jJobs" data-title="Jobsuche">
+            <div class="card-head"><h2>Jobsuche</h2><button class="btn btn-sm btn-accent" data-j="addApp">+ Verein</button></div>
+            <div id="jJobs"></div>
+          </div>
+          <div class="card" data-panel="jStations" data-title="Karriere-Stationen">
+            <div class="card-head"><h2>Karriere-Stationen</h2><button class="btn btn-sm" data-j="newStation">+ Neuer Verein</button></div>
+            <div id="jStations"></div>
+          </div>
+          <div class="card" data-panel="jLicense" data-title="Trainerlizenz">
+            <div class="card-head"><h2>Trainerlizenz</h2><button class="btn btn-sm" data-j="addCourse">+ Kurs</button></div>
+            <div id="jLicense"></div>
+          </div>
+          <div class="card" data-panel="jBank" data-title="Bankkonto">
+            <div class="card-head"><h2>Bankkonto</h2><button class="btn btn-sm" data-j="booking">Buchung</button></div>
+            <div id="jBank"></div>
+          </div>
+          <div class="card" data-panel="jSave" data-title="Sparziele">
+            <div class="card-head"><h2>Sparziele</h2><button class="btn btn-sm" data-j="addGoal">+ Sparziel</button></div>
+            <div id="jSave"></div>
+          </div>
+          <div class="card" data-panel="jMilestones" data-title="Reiseziele &amp; Meilensteine">
+            <div class="card-head"><h2>Reiseziele &amp; Meilensteine</h2><button class="btn btn-sm" data-j="addMilestone">+ Ziel</button></div>
+            <div id="jMilestones"></div>
+          </div>
+          <div class="card" data-panel="jTrophies" data-title="Trophäenschrank">
+            <div class="card-head"><h2>Trophäenschrank</h2><button class="btn btn-sm" data-j="addTrophy">+ Titel</button></div>
+            <div id="jTrophies"></div>
+          </div>
+          <div class="card card-full" data-panel="jDiary" data-title="Tagebuch">
+            <div class="card-head"><h2>Tagebuch</h2><button class="btn btn-sm btn-accent" data-j="addDiary">+ Eintrag</button></div>
+            <div id="jDiary"></div>
+          </div>
+          <div class="card card-full" data-panel="jRules" data-title="Eigene Regeln">
+            <div class="card-head"><h2>Eigene Regeln</h2><button class="btn btn-sm" data-j="addRule">+ Regel</button></div>
+            <div id="jRules"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-notes" aria-label="Notizen">
+        <div class="notes-layout" data-layout="notes">
+          <div class="card" data-panel="todos">
+            <div class="card-head">
+              <h2>Aufgaben</h2>
+              <button class="btn btn-accent btn-sm" id="btnAddTodo">+ Aufgabe</button>
+            </div>
+            <ul class="todo-list" id="todoList"></ul>
+          </div>
+          <div class="card" data-panel="strategy">
+            <div class="card-head"><h2>Langzeitstrategie</h2></div>
+            <textarea id="freeNotes" aria-label="Langzeitstrategie" placeholder="Spielidee, Kaderentwicklung, Pläne für die nächsten Transferfenster…"></textarea>
+          </div>
+          <div class="card card-full" data-panel="archive">
+            <div class="card-head">
+              <h2>Saison-Archiv</h2>
+              <button class="btn btn-sm btn-accent" id="btnCloseSeason">Saison abschließen</button>
+            </div>
+            <div id="seasonArchive"></div>
+          </div>
+          <div class="card card-full" data-panel="seasonCompare">
+            <div class="card-head"><h2>Saisonvergleich</h2></div>
+            <div id="seasonCompare"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" role="presentation">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" tabindex="-1"></div>
+</div>
+
+<!-- COMMAND PALETTE -->
+<div class="cmd-overlay" id="cmdOverlay" role="presentation">
+  <div class="cmd" role="dialog" aria-modal="true" aria-label="Befehlspalette">
+    <input id="cmdInput" type="text" placeholder="Modul, Aktion oder Spieler…" autocomplete="off" aria-controls="cmdList">
+    <ul id="cmdList" role="listbox"></ul>
+    <div class="cmd-foot"><kbd>↑</kbd><kbd>↓</kbd> wählen <kbd>Enter</kbd> ausführen <kbd>Esc</kbd> schließen <span class="cmd-help-link">Alle Kürzel: <kbd>?</kbd></span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span id="toastMsg"></span>
+  <button type="button" class="toast-undo" id="toastUndoBtn" hidden>Rückgängig</button>
+</div>
+
+<div id="printArea" aria-hidden="true"></div>
+
+<script id="appParts" type="application/json">["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-init.js"]</script>
+<script id="appLoader">
+/* 11.3.1: loads the 23 program parts – from js/ or, if they were uploaded without the folder, from the main folder.
+   Downloads in parallel, runs in the right order (async=false). If parts are missing: a clear message instead of an empty page. */
+(function(){
+  var parts = JSON.parse(document.getElementById("appParts").textContent), shown = false;
+  function add(src, onload, onerror){ var s = document.createElement("script"); s.src = src; s.async = false;
+    if(onload) s.onload = onload; if(onerror) s.onerror = onerror; document.body.appendChild(s); return s; }
+  function fail(missing){
+    if(shown) { var l = document.getElementById("loadFailList"); if(l) l.textContent = missing.join(", "); return; }
+    shown = true;
+    var d = document.createElement("div"); d.id = "loadFail"; d.setAttribute("role", "alert");
+    d.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(8,10,16,.88);font-family:system-ui,sans-serif;padding:20px";
+    d.innerHTML = '<div style="max-width:560px;background:#151a24;color:#e8ebf2;border:1px solid #3a4356;border-radius:14px;padding:22px 24px;line-height:1.5">'
+      + '<h2 style="margin:0 0 8px;font-size:19px">Programmdateien konnten nicht geladen werden</h2>'
+      + '<p style="margin:0 0 10px"><strong>Deine Daten sind sicher</strong> – sie liegen in deinem Browser, nicht in diesen Dateien. Bitte nicht auf „Reset“ klicken.</p>'
+      + '<p style="margin:0 0 6px;color:#b9c0cf">Fehlt: <span id="loadFailList" style="color:#ffb4b4"></span></p>'
+      + '<p style="margin:0 0 14px;color:#b9c0cf">Lösung: Auf GitHub prüfen, ob der Ordner <code>js</code> mit allen Programmdateien vorhanden ist (beim Hochladen den <em>Ordner selbst</em> ins Feld ziehen). Danach diese Seite neu laden.</p>'
+      + '<button onclick="location.reload()" style="font:inherit;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#4f8cff;color:#fff;cursor:pointer">Neu laden</button></div>';
+    document.body.appendChild(d);
+    document.getElementById("loadFailList").textContent = missing.join(", ");
+  }
+  function loadRest(prefix){
+    var missing = [];
+    parts.slice(1).forEach(function(p){ add(prefix + p, null, function(){ missing.push(prefix + p); fail(missing); }); });
+  }
+  add("js/" + parts[0], function(){ loadRest("js/"); }, function(){
+    this.parentNode && this.parentNode.removeChild(this);
+    add(parts[0], function(){ window.FM27_FLAT = true; loadRest(""); }, function(){ fail(["js/" + parts[0]]); });
+  });
+})();
+</script>
+</body>
+</html>
