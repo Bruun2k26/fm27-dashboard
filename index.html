@@ -24,6 +24,7 @@
     <div class="crest" id="crestBox" role="button" tabindex="0" title="Spielstände (S)" aria-label="Spielstände öffnen" aria-haspopup="dialog">
       <span id="crestInitials">FC</span>
     </div>
+    <button type="button" class="hub-btn" id="btnHub" title="Gaming-Hub (H)" aria-label="Gaming-Hub öffnen"><span aria-hidden="true">◆</span><span>Hub</span></button>
     <nav class="nav" aria-label="Module">
       <button class="nav-btn active" data-view="home" title="Portal (1)">
         <svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>
@@ -618,7 +619,7 @@
 
 <div id="printArea" aria-hidden="true"></div>
 
-<script id="appParts" type="application/json">["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-init.js"]</script>
+<script id="appParts" type="application/json">["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-library.js", "25-init.js"]</script>
 <script id="appLoader">
 /* 11.3.1: loads the 23 program parts – from js/ or, if they were uploaded without the folder, from the main folder.
    Downloads in parallel, runs in the right order (async=false). If parts are missing: a clear message instead of an empty page. */
