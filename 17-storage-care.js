@@ -6,7 +6,7 @@
    ========================================================================== */
 const STORAGE_CLEAN_KEY = "fm27_storage_clean";
 const KNOWN_KEYS = () => new Set([SLOT_INDEX_KEY, LISTS_DEFAULT_KEY, ADMIN_KEY, BACKUP_CFG_KEY, SEEN_VERSION_KEY, ADMIN_NOTES_KEY,
-  LAYOUT_KEY, COL_KEY, "fm27_welcome_done", STORAGE_CLEAN_KEY, ERROR_KEY, HOTKEY_KEY, "fm27_theme_hint", "fm27_hub"]);
+  LAYOUT_KEY, COL_KEY, "fm27_welcome_done", STORAGE_CLEAN_KEY, ERROR_KEY, HOTKEY_KEY, "fm27_theme_hint", "fm27_hub", "fm27_diary"]);
 // a function: LAYOUT_KEY / COL_KEY are defined further down in the file
 const KEY_LABEL = () => ({[SLOT_INDEX_KEY]:"Spielstand-Liste", [LISTS_DEFAULT_KEY]:"Standard-Listen", [ADMIN_KEY]:"Admin-PIN & Einstellungen", [BACKUP_CFG_KEY]:"Ordner-Sicherung",
   [SEEN_VERSION_KEY]:"gesehene Version", [ADMIN_NOTES_KEY]:"Admin-Notizen", [LAYOUT_KEY]:"Layout & Design", [COL_KEY]:"Spaltenbreiten", fm27_welcome_done:"Willkommen gezeigt",
@@ -28,6 +28,7 @@ function storageEntries(){
     else if(key === HOTKEY_KEY) label = "Eigene Tastenkürzel";
     else if(key === "fm27_theme_hint") label = "Design-Hinweis (gegen Aufblitzen beim Start)";
     else if(key === "fm27_hub") label = "Gaming-Hub";
+    else if(key === "fm27_diary") label = "Spiel-Tagebuch";
     else if(!KNOWN_KEYS().has(key)) kind = "unknown";
     out.push({key, size, kind, label});
   }

@@ -49,6 +49,7 @@ function ensureHubRoot(){
   root.setAttribute("role", "region"); root.setAttribute("aria-label", "Gaming-Hub");
   document.body.appendChild(root);
   root.addEventListener("click", hubClick);
+  root.addEventListener("change", e=>{ if(hubView === "diary") diaryChange(e); });
   root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex]")){ e.preventDefault(); e.target.click(); } });
   return root;
 }
@@ -62,15 +63,17 @@ function showHub(view){
   if(typeof closeMenu === "function") closeMenu();
   renderHub();
   clearInterval(hubClockTimer); hubClockTimer = setInterval(hubTick, 20000);
+  clearInterval(diaryTimer); diaryTimer = hubView === "diary" ? setInterval(diaryTick, 1000) : null;
   const f = qs("#hubRoot [data-hub-first]"); if(f) f.focus({preventScroll:true});
   window.scrollTo && window.scrollTo(0, 0);
 }
 function hideHub(){
   leaveAdmin(null); parkAdmin();
   const r = qs("#hubRoot"); if(r) r.hidden = true;
-  hubView = null; document.body.classList.remove("hub-open"); clearInterval(hubClockTimer);
+  hubView = null; document.body.classList.remove("hub-open"); clearInterval(hubClockTimer); clearInterval(diaryTimer);
 }
 function hubTick(){
+  const dm = qs("#hubDiaryMeta"); if(dm) dm.innerHTML = diaryTileMeta();
   const t = qs("#hubClockTime"), d = qs("#hubClockDate"); if(!t) return;
   const now = new Date();
   t.textContent = now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
@@ -81,6 +84,7 @@ function openPanel(id){
   if(id === "admin") return showHub("admin");
   if(id === "saves") return openSaveMenu();
   if(id === "changelog") return openHubChangelog();
+  if(id === "diary") return showHub("diary");
   toast(id === "career" ? "Der Karriere-Begleiter ist als Nächstes dran." : "Das Spiel-Tagebuch ist geplant.");
 }
 const hubWhen = ts => ts ? relTime(ts) : "noch nie";
@@ -140,6 +144,7 @@ function renderHub(){
   const root = qs("#hubRoot"); if(!root || root.hidden) return;
   if(hubView === "admin") return renderAdminPage(root);
   parkAdmin();
+  if(hubView === "diary") return renderDiary(root);
   const sums = slotSummaries(), cur = sums.find(x=>x.active) || sums[0];
   const metaOf = id => slotIndex.slots.find(m=>m.id === id) || {};
   const recent = sums.slice().sort((a,b)=>(b.active - a.active) || ((metaOf(b.id).lastPlayedAt || b.updatedAt || 0) - (metaOf(a.id).lastPlayedAt || a.updatedAt || 0))).slice(0,4);
@@ -181,9 +186,9 @@ function renderHub(){
           <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="hub-soon">bald</span></h3>
           <p class="muted">Kader, Ziele und Saisonverlauf für andere Karriere- und Managementspiele.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>In Arbeit</span>
         </article>
-        <article class="hub2-card hub2-mod hub2-click soon" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch (geplant)">
-          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="hub-soon">geplant</span></h3>
-          <p class="muted">Sessions, Notizen und Challenges – verknüpft mit deiner Journey.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>Geplant</span>
+        <article class="hub2-card hub2-mod hub2-click" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch öffnen">
+          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="beta-pill">Beta</span></h3>
+          <p class="muted">Sessions, Challenges und deine Journey-Geschichten.</p><span class="hub2-mod-meta" id="hubDiaryMeta">${diaryTileMeta()}</span>
         </article>
         <section class="hub2-card hub2-admin hub2-click" data-hub-open="admin" aria-label="Admin und Sicherung – Klick öffnet den Admin-Bereich">
           <div class="hub2-card-head"><h3><span aria-hidden="true">🛡</span> Admin &amp; Sicherung</h3></div>
@@ -225,6 +230,7 @@ function hubSettingsModal(){
 }
 function hubClick(e){
   const t = e.target;
+  if(hubView === "diary" && t.closest("[data-d],[data-d-session],[data-d-ch],[data-d-plus],[data-d-done],[data-d-journey]")){ diaryClick(e); return; }
   // 11.6.1: whole panels are clickable – the innermost target wins, so buttons inside a panel only do their own job
   const target = t.closest("[data-hub-save], [data-hub], [data-hub-cl], [data-hub-open]"); if(!target) return;
   if(target.dataset.hubSave){ if(target.dataset.hubSave !== slotIndex.active) switchSlot(target.dataset.hubSave); openPanel("fm"); return; }
@@ -246,12 +252,12 @@ function hubClick(e){
 }
 /** keys inside the hub (returns true when handled) */
 function hubKey(e){
-  if(e.key === "Escape" && hubView === "admin" && !isTyping(e.target)){ e.preventDefault(); showHub("home"); return true; }
+  if(e.key === "Escape" && (hubView === "admin" || hubView === "diary") && !isTyping(e.target)){ e.preventDefault(); showHub("home"); return true; }
   return false;
 }
 /** called once at the end of init() */
 function hubInit(firstStart){
-  loadHub();
+  loadHub(); loadDiary();
   ensureHubRoot();
   const btn = qs("#btnHub"); if(btn) btn.addEventListener("click", ()=>showHub("home"));
   if(hub.startPanel === "hub") showHub("home"); else markPlayed();

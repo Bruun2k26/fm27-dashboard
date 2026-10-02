@@ -113,10 +113,16 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.7.1";
+const APP_VERSION = "11.8";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.8", beta:true, title:"Spiel-Tagebuch (Beta)", items:[
+    ["neu","Hub → Spiel-Tagebuch: „▶ Session starten“ – der Timer läuft mit (auch wenn du das Dashboard schließt); beim Beenden hältst du fest, in welchem Spielstand oder Spiel du warst, was passiert ist und wie die Stimmung war. Sessions lassen sich auch nachtragen."],
+    ["neu","Challenges: eigene Herausforderungen als einfaches Ziel, mit Zähler (z. B. 12 / 30 Siege) oder mit Teilschritten zum Abhaken – „geschafft“ erscheint mit 🏆 in der Zeitleiste."],
+    ["neu","Zeitleiste nach Tagen, „Diese Woche“ mit Spielzeit, Sessions, Verteilung auf Spielstände und 🔥 Serie."],
+    ["neu","Verknüpft mit der Journey: deren Tagebuch-Einträge aller Spielstände erscheinen im Tagebuch; eine Session kann per Häkchen ins Journey-Tagebuch übernommen werden (mit Spieldatum)."],
+    ["neu","Andere Spiele: Sessions und Challenges gehen auch für Spiele außerhalb des Dashboards (z. B. EA FC)."]]},
   {v:"11.7.1", title:"Verein ⇄ Nationalteam: Umschalter repariert", items:[
     ["fix","Im Nationalteam fehlten Umschalter und Kürzel zum Verein, wenn die Verknüpfung nur auf einer Seite gespeichert war (z. B. nach „Rückgängig“ direkt nach der Einrichtung). Die Verknüpfung repariert sich jetzt selbst – auch bei bestehenden Spielständen."],
     ["fix","„Rückgängig“ nach dem Speichern der Nationalteam-Einstellungen setzt die Verknüpfung auf beiden Seiten zurück."],

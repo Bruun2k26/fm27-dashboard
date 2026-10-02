@@ -144,6 +144,8 @@ const HOTKEY_ACTIONS = () => [
   ["export","Spielstand exportieren","","Ansicht"],
   ["hub","Gaming-Hub öffnen","h","Allgemein"],
   ["aiPrompt","KI-Prompt kopieren (Beta)","","Spieltag"],
+  ["diary","Spiel-Tagebuch öffnen (Beta)","","Allgemein"],
+  ["session","Session starten / beenden (Beta)","","Allgemein"],
   ...VIEWS.map((v,i)=>["view:" + v, `Modul: ${VIEW_LABEL[v]}`, String(i+1), "Module"])
 ];
 const HK_RESERVED = new Set(["escape","enter","tab","arrowup","arrowdown","arrowleft","arrowright","backspace","delete"," ","shift","control","alt","meta","altgraph","capslock","contextmenu"]);
@@ -186,6 +188,8 @@ function runHotkey(id, e){
     case "export": return qs("#btnExport").click();
     case "hub": return showHub("home");
     case "aiPrompt": navigate("tactics"); return openAiPromptModal();
+    case "diary": return showHub("diary");
+    case "session": if(!diary) loadDiary(); return diary.running ? (showHub("diary"), sessionModal(diary.running, true)) : startSession();
   }
 }
 /** Key hints in the gear menu follow your own keys. */

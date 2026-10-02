@@ -2620,7 +2620,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok((new Date(d1H) - new Date(d0H)) / 86400000 === 8, "Shift+T = +7 Tage");
   kdH("3"); ok(d.querySelector("#view-tactics.active"), "3 = Taktik");
   d.querySelector("#btnHotkeys").click();
-  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel" && d.querySelectorAll("#modal [data-hk]").length===26, "Zahnrad → Tastenkürzel: 26 Aktionen (inkl. Hub und KI-Prompt)");
+  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel" && d.querySelectorAll("#modal [data-hk]").length===28, "Zahnrad → Tastenkürzel: 28 Aktionen (inkl. Hub, KI-Prompt, Tagebuch)");
   ok(d.querySelector('#modal [data-hk="nextDay"]').textContent.trim()==="T" && d.querySelector('#modal [data-hk="theme"]').textContent.includes("—"), "Aktuelle Belegung sichtbar, neue Aktionen ohne Kürzel");
   d.querySelector('#modal [data-hk="nextDay"]').click();
   ok(d.querySelector('#modal [data-hk="nextDay"]').classList.contains("capturing"), "Klick → 'Taste drücken …'");
@@ -3056,7 +3056,8 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   q8(".hub2-admin .hub2-admin-rows li:nth-child(3)").click();
   ok(!hR8().hidden && w.eval("adminVisible()"), "Klick irgendwo sonst auf das Admin-Panel öffnet die Admin-Zentrale");
   w.eval("showHub('home')"); q8('.hub2-mod[data-hub-open="diary"] p').click();
-  ok(!hR8().hidden && d.querySelector("#toastMsg").textContent.includes("Tagebuch"), "Auch die Modul-Kacheln reagieren auf Klicks überall");
+  ok(!hR8().hidden && q8(".diary-page"), "Auch die Modul-Kacheln reagieren auf Klicks überall (Tagebuch öffnet sich, seit 11.8)");
+  w.eval("showHub('home')");
   // news
   const items8 = [...d.querySelectorAll("#hubRoot .hub2-news-item")];
   ok(items8.length===3 && items8[0].textContent.includes("v" + w.eval("APP_VERSION")) && items8[0].textContent.includes("aktuell") && items8[0].querySelector(".cl-tag"), "Neuigkeiten: die letzten 3 Versionen, neueste als 'aktuell', mit Markierungen");
@@ -3124,6 +3125,88 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   // partner deleted → link cleared, no dead button
   w.eval(`slotIndex.slots = slotIndex.slots.filter(s=>s.id!=="${natL}"); store.removeItem(SLOT_PREFIX + "${natL}"); writeIndex(); renderHeader()`);
   ok(d.querySelector("#btnLinkSwitch").hidden && S().link==="", "Gelöschter Partner: Umschalter verschwindet, Verknüpfung bereinigt");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[67] Version 11.8: Spiel-Tagebuch (Beta)");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const DY_9 = () => JSON.parse(w.localStorage.getItem("fm27_diary") || "null");
+  const q9_9 = sel => d.querySelector("#hubRoot " + sel);
+  ok(q9_9('[data-hub-open="diary"]') && !q9_9('[data-hub-open="diary"]').classList.contains("soon") && q9_9("#hubDiaryMeta").textContent.includes("Diese Woche 0 Min."), "Hub: Tagebuch-Kachel aktiv (Beta) mit Wochenstatus");
+  q9_9('[data-hub-open="diary"] p').click();
+  ok(q9_9(".diary-page") && q9_9(".diary-empty") && q9_9('[data-d="start"]'), "Klick öffnet das Tagebuch – leerer Zustand mit 'Session starten'");
+  q9_9('[data-d="start"]').click();
+  ok(DY_9().running && Math.abs(DY_9().running.start - Date.now()) < 5000 && DY_9().running.slotId===w.eval("slotIndex.active") && q9_9("#diaryClock"), "Session gestartet: Startzeit gespeichert, Uhr läuft");
+  const dumpD_9 = {}; for(let i=0;i<w.localStorage.length;i++){ const k = w.localStorage.key(i); dumpD_9[k] = w.localStorage.getItem(k); }
+  ({w,d,errs,S} = await boot(Object.assign(ls=>Object.entries(dumpD_9).forEach(([k,v])=>ls.setItem(k,v)), {hub:true})));
+  ok(DY_9().running && q9_9("#hubDiaryMeta").textContent.includes("Session läuft"), "Nach dem Neuladen läuft die Session weiter (Hub-Kachel zeigt sie)");
+  w.eval("diary.running.start = Date.now() - 75 * 60000; saveDiary(); showHub('diary')");
+  q9_9('[data-d="stop"]').click();
+  ok(d.querySelector("#modal h3").textContent==="Session beenden" && d.querySelector('#modal [data-f="minutes"]').value==="75", "Beenden: Dauer vorgeschlagen (75 Min.)");
+  d.querySelector('#modal [data-f="title"]').value = "Pokal-Aus gegen Bayern"; d.querySelector('#modal [data-f="mood"]').value = "bad";
+  d.querySelector("[data-modal-save]").click();
+  ok(DY_9().running===null && DY_9().sessions.length===1 && DY_9().sessions[0].minutes===75 && DY_9().sessions[0].title==="Pokal-Aus gegen Bayern", "Session gespeichert, Timer beendet");
+  ok(q9_9(".diary-day-head").textContent.includes("Heute") && q9_9(".diary-entry").textContent.includes("1 Std. 15 Min.") && q9_9(".diary-entry").textContent.includes("😟") && q9_9(".diary-week").textContent.includes("1 Std. 15 Min."), "Zeitleiste 'Heute' mit Dauer und Stimmung, Wochenzeit");
+  d.querySelector("#toastUndoBtn").click();
+  ok(DY_9().running && DY_9().sessions.length===0, "Rückgängig: Session läuft wieder");
+  w.eval("diary.running = null; saveDiary(); renderHub()");
+  // another game + session from yesterday → streak
+  q9_9('[data-d="addSession"]').click();
+  const tg_9 = d.querySelector('#modal [data-f="target"]'); tg_9.value = "new"; tg_9.dispatchEvent(new w.Event("change",{bubbles:true}));
+  ok(!d.querySelector("#dNewGameWrap").hidden, "'Anderes Spiel' fragt nach dem Namen");
+  d.querySelector('#modal [data-f="newGame"]').value = "EA SPORTS FC 26"; d.querySelector('#modal [data-f="minutes"]').value = "40";
+  const yd_9 = new Date(Date.now() - 86400000); yd_9.setMinutes(yd_9.getMinutes() - yd_9.getTimezoneOffset());
+  d.querySelector('#modal [data-f="start"]').value = yd_9.toISOString().slice(0,16);
+  d.querySelector("[data-modal-save]").click();
+  w.eval("diary.sessions.push({id:'t1', start:Date.now()-3600e3, end:Date.now(), minutes:30, slotId:slotIndex.active, title:'Kurz', mood:'good'}); saveDiary(); renderHub()");
+  ok(DY_9().games.includes("EA SPORTS FC 26") && q9_9(".diary-timeline").textContent.includes("Gestern") && q9_9(".diary-timeline").textContent.includes("EA SPORTS FC 26"), "Anderes Spiel gemerkt, Eintrag unter 'Gestern'");
+  ok(q9_9(".diary-side").textContent.includes("2 Tage in Folge"), "Serie: 🔥 2 Tage in Folge");
+  // journey link: active save + another save
+  w.eval(`journey = sanitizeJourney({active:true, profile:{name:"Coach"}}); saveState();`);
+  q9_9('[data-d="addSession"]').click();
+  ok(!d.querySelector("#dJourneyWrap").hidden, "Spielstand mit Journey: Häkchen 'ins Journey-Tagebuch'");
+  d.querySelector('#modal [data-f="title"]').value = "Meisterschaft perfekt!"; d.querySelector('#modal [data-f="toJourney"]').checked = true; d.querySelector("[data-modal-save]").click();
+  const jd_9 = w.eval("journey.diary");
+  ok(jd_9.length===1 && jd_9[0].title==="Meisterschaft perfekt!" && jd_9[0].date===S().club.ingameDate && DY_9().sessions.find(x=>x.title==="Meisterschaft perfekt!").journeyId===jd_9[0].id, "Übernommen ins Journey-Tagebuch – mit Spieldatum, verknüpft");
+  ok(q9_9(".diary-side").textContent.includes("Meisterschaft perfekt!") && q9_9(".diary-timeline").textContent.includes("auch in der Journey"), "Erscheint unter 'Aus deinen Journeys', Session markiert");
+  w.eval(`(()=>{ const f = freshState("sample"); f.journey = sanitizeJourney({active:true, profile:{name:"Zweiter"}}); createSlot("Zweite Karriere", sanitizeState(f)); renderHub(); })()`);
+  const second_9 = w.eval("slotIndex.slots.find(x=>x.name==='Zweite Karriere').id");
+  q9_9('[data-d="addSession"]').click();
+  const tg2_9 = d.querySelector('#modal [data-f="target"]'); tg2_9.value = "slot:" + second_9; tg2_9.dispatchEvent(new w.Event("change",{bubbles:true}));
+  d.querySelector('#modal [data-f="title"]').value = "Erster Tag im neuen Job"; d.querySelector('#modal [data-f="toJourney"]').checked = true; d.querySelector("[data-modal-save]").click();
+  ok(JSON.parse(w.localStorage.getItem("fm27_slot_" + second_9)).journey.diary.some(e=>e.title==="Erster Tag im neuen Job") && w.eval("slotIndex.active")!==second_9, "Auch in die Journey eines anderen Spielstands – ohne dorthin zu wechseln");
+  // challenges
+  q9_9('[data-d="addChallenge"]').click();
+  d.querySelector('#modal [data-f="title"]').value = "30 Siege"; const kd9_9 = d.querySelector('#modal [data-f="kind"]'); kd9_9.value = "count"; kd9_9.dispatchEvent(new w.Event("change",{bubbles:true}));
+  ok(!d.querySelector("#dCountWrap").hidden && d.querySelector("#dStepsWrap").hidden, "Art 'Mit Zähler': Ziel und Stand");
+  d.querySelector('#modal [data-f="goal"]').value = "3"; d.querySelector("[data-modal-save]").click();
+  const cid_9 = DY_9().challenges[0].id;
+  q9_9(`[data-d-plus="${cid_9}"]`).click(); q9_9(`[data-d-plus="${cid_9}"]`).click();
+  ok(DY_9().challenges[0].current===2 && DY_9().challenges[0].status==="active" && q9_9(".ch-count").textContent==="2 / 3", "+1 zählt hoch (2 / 3)");
+  q9_9(`[data-d-plus="${cid_9}"]`).click();
+  ok(DY_9().challenges[0].status==="done" && q9_9(".diary-entry.win").textContent.includes("30 Siege") && d.querySelector("#toastMsg").textContent.includes("geschafft"), "3 / 3 → geschafft, 🏆 in der Zeitleiste");
+  q9_9('[data-d="addChallenge"]').click();
+  d.querySelector('#modal [data-f="title"]').value = "Von Liga 3 in die CL"; const kd10_9 = d.querySelector('#modal [data-f="kind"]'); kd10_9.value = "steps"; kd10_9.dispatchEvent(new w.Event("change",{bubbles:true}));
+  d.querySelector('#modal [data-f="steps"]').value = "Aufstieg Liga 2\nAufstieg Bundesliga\nCL-Sieg"; d.querySelector("[data-modal-save]").click();
+  const sc_9 = DY_9().challenges.find(c=>c.kind==="steps");
+  ok(sc_9.steps.length===3, "Teilschritte angelegt");
+  q9_9(`[data-d-ch="${sc_9.id}"]`).click();
+  ok(d.querySelector('#modal [data-f="steps"]').value==="Aufstieg Liga 2\nAufstieg Bundesliga\nCL-Sieg", "Erneut öffnen: Teilschritte stehen wieder je in einer Zeile (Fehler beim Bauen gefunden)");
+  w.eval("closeModal()");
+  sc_9.steps.forEach(st=>{ const box = d.querySelector(`#hubRoot [data-d-step="${sc_9.id}:${st.id}"]`); box.checked = true; box.dispatchEvent(new w.Event("change",{bubbles:true})); });
+  ok(DY_9().challenges.find(c=>c.id===sc_9.id).status==="done", "Alle Teilschritte abgehakt → geschafft");
+  q9_9('[data-d="addChallenge"]').click(); d.querySelector('#modal [data-f="title"]').value = "Ohne Transfers"; d.querySelector("[data-modal-save]").click();
+  const simple_9 = DY_9().challenges.find(c=>c.title==="Ohne Transfers");
+  q9_9(`[data-d-ch="${simple_9.id}"]`).click(); d.querySelector("#modal [data-d-drop]").click();
+  ok(DY_9().challenges.find(c=>c.id===simple_9.id).status==="dropped", "Challenge abbrechen");
+  // keys, hotkey, Umzug
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  ok(q9_9(".hub2-hero") && q9_9("#hubDiaryMeta").textContent.includes("Diese Woche"), "Esc: zurück zum Hub");
+  w.eval("runHotkey('session')"); ok(DY_9().running, "Kürzel 'Session starten/beenden' startet …");
+  w.eval("runHotkey('session')"); ok(d.querySelector("#modal h3").textContent==="Session beenden", "… und beendet (Dialog)"); w.eval("closeModal()");
+  w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
+  let umz9_9 = null; const Bl9_9 = w.Blob; w.Blob = function(parts, o){ umz9_9 = parts.join(""); return new Bl9_9(parts, o); }; w.eval("exportAll()"); w.Blob = Bl9_9;
+  ok(JSON.parse(JSON.parse(umz9_9).storage["fm27_diary"]).sessions.length >= 3, "'Alles exportieren (Umzug)' enthält das Tagebuch");
+  ok(w.eval("storageEntries()").find(e=>e.key==="fm27_diary").label==="Spiel-Tagebuch", "Speicher-Hausmeister kennt das Tagebuch");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

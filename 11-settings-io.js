@@ -236,6 +236,8 @@ function buildCommands(){
   if(linkedPartnerId()) add("Aktion","Zum verknüpften Spielstand wechseln","", switchLinked);
   add("Aktion","Spielstand wechseln","", ()=>openSaveMenu());
   add("Modul","Gaming-Hub","", ()=>showHub("home"));
+  add("Modul","Spiel-Tagebuch (Beta)","", ()=>showHub("diary"));
+  add("Aktion", diary && diary.running ? "Session beenden" : "Session starten", "", ()=>runHotkey("session"));
   add("Aktion","KI-Prompt kopieren (Taktik, Beta)","", ()=>{ navigate("tactics"); openAiPromptModal(); });
   add("Aktion","Tastenkürzel anpassen","", ()=>openHotkeyModal());
   add("Modul","Transfer-Center","", ()=>{ state.ui.transferTab = "center"; navigate("recruitment"); renderRecruitment(); });
@@ -358,7 +360,7 @@ function initShortcuts(){
     if(hubView && !qs("#modalOverlay").classList.contains("active") && !qs("#cmdOverlay").classList.contains("active")){   // 11.4: the hub has its own keys
       if(typeof hubKey === "function" && hubKey(e)) return;
       const c = comboFromEvent(e), m = hotkeyMap(), a = c ? Object.keys(m).find(id=>m[id] === c) : null;
-      if(a === "palette" || a === "saves" || a === "help" || a === "theme"){ e.preventDefault(); runHotkey(a, e); }
+      if(["palette","saves","help","theme","session","diary"].includes(a)){ e.preventDefault(); runHotkey(a, e); }
       return;
     }
     const combo = comboFromEvent(e), map = hotkeyMap();
