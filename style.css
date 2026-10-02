@@ -1626,7 +1626,7 @@ body.mode-national::before{content:"";position:fixed;top:0;left:0;right:0;height
 body.mode-national .topbar{border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, var(--border));background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, var(--bg-900)), var(--bg-900));}
 body.mode-national .sidebar{background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--bg-850)), var(--bg-850) 40%);}
 .crest.nat-crest{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.85), 0 0 6px rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.35);box-shadow:0 2px 10px rgba(0,0,0,.35);}
-.link-switch{border-color:var(--accent);color:var(--accent-text);font-weight:700;}
+
 .nat-nom-chip{cursor:pointer;font:inherit;text-align:left;}
 .nat-nom-chip .stat-value.neg{color:var(--neg-text);}
 .nat-nom-chip .stat-value.pos{color:var(--pos-text);}
@@ -1927,3 +1927,18 @@ body.hub-open{overflow:hidden;}
 .adm-home-tile strong.ok{color:var(--pos-text);} .adm-home-tile strong.warn{color:var(--warn-text, var(--text-primary));}
 .adm-save-name{display:inline-flex;align-items:center;gap:8px;}
 .hub-admin-page .adm2-title{display:none;}
+
+/* ---------- 11.7.1: club ⇄ national team switch ---------- */
+.link-switch{display:inline-flex;align-items:center;gap:9px;height:auto;padding:4px 10px 4px 5px;border-radius:12px;font:inherit;cursor:pointer;
+  color:var(--text-primary);background:color-mix(in srgb, var(--ls-accent, var(--accent)) 12%, var(--bg-800));border:1px solid color-mix(in srgb, var(--ls-accent, var(--accent)) 55%, var(--border));
+  transition:border-color .15s, background .15s, transform .15s;}
+.link-switch:hover{background:color-mix(in srgb, var(--ls-accent, var(--accent)) 20%, var(--bg-800));transform:translateY(-1px);}
+.link-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.link-switch .ls-text{display:flex;flex-direction:column;line-height:1.15;text-align:left;}
+.link-switch .ls-text small{font-size:10.5px;color:var(--text-secondary);font-weight:600;}
+.link-switch .ls-text strong{font-size:12.5px;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;}
+.link-switch .ls-icon{font-size:15px;font-weight:800;color:var(--text-secondary);}
+.link-switch .ls-key{font-size:10px;}
+.sm-crest.xs{width:26px;height:26px;font-size:9px;border-width:1.5px;}
+@media (prefers-reduced-motion: reduce){ .link-switch{transition:none;} .link-switch:hover{transform:none;} }
+@media (max-width:1560px){ .link-switch .ls-text, .link-switch .ls-key{display:none;} .link-switch{padding:4px 8px 4px 4px;gap:6px;} }

@@ -3104,6 +3104,28 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(d.querySelector("#hubRoot").hidden && d.querySelector("#view-squad.active") && d.querySelector("#view-admin > #adminRoot"), "Wechsel zu einem Dashboard-Modul verlässt den Hub");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
+  console.log("\n[66] Version 11.7.1: Verknüpfung Verein ⇄ Nationalteam");
+  ({w,d,errs,S} = await boot());
+  const clubL = w.eval("slotIndex.active");
+  w.eval("smCreate('national')"); await new Promise(r=>setTimeout(r,80));
+  d.querySelector('#modal [data-f="link"]').value = clubL; d.querySelector("[data-modal-save]").click();
+  const natL = w.eval("slotIndex.active"), linkOf = id => (JSON.parse(w.localStorage.getItem("fm27_slot_" + id)) || {}).link || "";
+  ok(linkOf(clubL)===natL && linkOf(natL)===clubL && !d.querySelector("#btnLinkSwitch").hidden, "Verknüpft: beide Seiten, Umschalter im Nationalteam sichtbar");
+  ok(d.querySelector("#btnLinkSwitch .ls-text").textContent.includes("Zum Verein") && d.querySelector("#btnLinkSwitch .sm-crest"), "Neuer Umschalter: Wappen + 'Zum Verein · Name'");
+  d.querySelector("#toastUndoBtn").click();
+  ok(linkOf(clubL)==="" && linkOf(natL)==="" && d.querySelector("#btnLinkSwitch").hidden, "Rückgängig nach der Einrichtung: Verknüpfung auf BEIDEN Seiten entfernt (vorher blieb sie einseitig)");
+  // one-sided link from older data: heals itself
+  w.eval(`(()=>{ const c = JSON.parse(store.getItem(SLOT_PREFIX + "${clubL}")); c.link = "${natL}"; store.setItem(SLOT_PREFIX + "${clubL}", JSON.stringify(c)); state.link = ""; saveState(); renderHeader(); })()`);
+  ok(!d.querySelector("#btnLinkSwitch").hidden && linkOf(natL)===clubL, "Einseitige Verknüpfung (Verein → Nationalteam) repariert sich selbst");
+  w.eval("runHotkey('linkSwitch')");
+  ok(w.eval("slotIndex.active")===clubL && d.querySelector("#btnLinkSwitch").textContent.includes("Zum Nationalteam"), "Kürzel wechselt zum Verein; dort Umschalter zurück zum Nationalteam");
+  w.eval(`localStorage.setItem("fm27_hotkeys", JSON.stringify({linkSwitch:"v"})); renderHeader()`);
+  ok(d.querySelector("#btnLinkSwitch .ls-key").textContent==="V", "Eigenes Kürzel steht auf dem Umschalter");
+  // partner deleted → link cleared, no dead button
+  w.eval(`slotIndex.slots = slotIndex.slots.filter(s=>s.id!=="${natL}"); store.removeItem(SLOT_PREFIX + "${natL}"); writeIndex(); renderHeader()`);
+  ok(d.querySelector("#btnLinkSwitch").hidden && S().link==="", "Gelöschter Partner: Umschalter verschwindet, Verknüpfung bereinigt");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");

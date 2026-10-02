@@ -113,10 +113,14 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.7";
+const APP_VERSION = "11.7.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.7.1", title:"Verein ⇄ Nationalteam: Umschalter repariert", items:[
+    ["fix","Im Nationalteam fehlten Umschalter und Kürzel zum Verein, wenn die Verknüpfung nur auf einer Seite gespeichert war (z. B. nach „Rückgängig“ direkt nach der Einrichtung). Die Verknüpfung repariert sich jetzt selbst – auch bei bestehenden Spielständen."],
+    ["fix","„Rückgängig“ nach dem Speichern der Nationalteam-Einstellungen setzt die Verknüpfung auf beiden Seiten zurück."],
+    ["besser","Neuer Umschalter oben: Wappen und Name des Ziels („Zum Verein · Feyenoord Rotterdam“; auf schmaleren Bildschirmen nur Wappen + ⇄) in dessen Farben, mit deinem Tastenkürzel, falls vergeben."]]},
   {v:"11.7", beta:true, title:"Admin-Zentrale im Hub (Beta)", items:[
     ["neu","Der Admin-Bereich ist jetzt die Admin-Zentrale im Hub: oben „Allgemein · alle Spielstände“ (Zentrale, Sicherung, Speicher, Tastenkürzel, Fehlerprotokoll, Sicherheit, Changelog), darunter alles zum aktiven Spielstand (Übersicht, Notizen, Protokoll, Wiederherstellungspunkte, Datenprüfung, Wartung & Batch, Rohdaten, Listen, Eigene Felder)."],
     ["neu","Zentrale: Status auf einen Blick, alle Spielstände mit Größe, „zuletzt gespielt“ und letztem Export, dazu Schnellzugriff (Alles exportieren, Datei laden)."],

@@ -181,7 +181,7 @@ function runHotkey(id, e){
     case "print": return printBriefing();
     case "layout": return openLayoutModal();
     case "theme": return toggleTheme();
-    case "linkSwitch": return state.link ? switchLinked() : toast("Kein verknüpfter Spielstand (Nationalteam-Einstellungen).");
+    case "linkSwitch": return linkedPartnerId() ? switchLinked() : toast("Kein verknüpfter Spielstand (Nationalteam-Einstellungen).");
     case "admin": return navigate("admin");
     case "export": return qs("#btnExport").click();
     case "hub": return showHub("home");

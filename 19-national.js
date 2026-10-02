@@ -47,9 +47,19 @@ function applyModeLook(){
   const nat = isNat();
   document.body.classList.toggle("mode-national", nat);
   const crest = qs("#crestBox");
-  const link = state.link && slotIndex.slots.find(x=>x.id === state.link);
+  const pid = linkedPartnerId();
   const ls = qs("#btnLinkSwitch");
-  if(ls){ ls.hidden = !link; if(link){ const other = readJSON(SLOT_PREFIX + link.id) || {}; ls.textContent = `⇄ ${other.mode === "national" ? "Nationalteam" : "Verein"}: ${link.name}`; ls.title = "Zum verknüpften Spielstand wechseln – das Spieldatum wird mitgenommen"; } }
+  if(ls){
+    ls.hidden = !pid;
+    if(pid){
+      const x = slotSummaries().find(s=>s.id === pid), key = hotkeyMap().linkSwitch;
+      const target = x.mode === "national" ? "Nationalteam" : "Verein";
+      ls.style.setProperty("--ls-accent", x.accent);
+      ls.innerHTML = `${smCrest(x, "xs")}<span class="ls-text"><small>Zum ${target}</small><strong>${esc(x.club || x.name)}</strong></span><span class="ls-icon" aria-hidden="true">⇄</span>${key ? `<kbd class="ls-key">${esc(key.toUpperCase())}</kbd>` : ""}`;
+      ls.title = `Zum ${target} „${x.name}“ wechseln – das Spieldatum wird mitgenommen${key ? ` (${key.toUpperCase()})` : ""}`;
+      ls.setAttribute("aria-label", `Zum ${target} ${x.club || x.name} wechseln`);
+    }
+  }
   if(!nat){ crest.style.background = ""; crest.style.backgroundImage = ""; crest.classList.remove("nat-crest"); document.documentElement.style.removeProperty("--nat-stripe"); return; }
   const n = state.national, [c1, c2, c3] = n.colors;
   document.documentElement.style.setProperty("--nat-stripe", `linear-gradient(90deg, ${c1} 0 33.3%, ${c2} 33.3% 66.6%, ${c3} 66.6%)`);
@@ -131,9 +141,20 @@ async function natCopySquad(){
   catch(e){ openModal({title:"Kader als Text", body:`<textarea rows="10" readonly style="width:100%">${esc(text)}</textarea>`, saveLabel:"Schließen"}); }
   return text;
 }
+/** 11.7.1: the link is stored on BOTH saves and could drift apart (e.g. "undo" right after linking, an older
+    restore point). If another save points to this one, this one counts as linked – and the missing side is repaired. */
+function linkedPartnerId(){
+  if(!state || !slotIndex) return "";
+  const me = slotIndex.active, exists = id => slotIndex.slots.some(x=>x.id === id && id !== me);
+  if(state.link && exists(state.link)) return state.link;
+  const back = slotIndex.slots.find(m=>m.id !== me && (readJSON(SLOT_PREFIX + m.id) || {}).link === me);
+  if(back){ state.link = back.id; saveState(); return back.id; }
+  if(state.link){ state.link = ""; saveState(); }            // partner was deleted
+  return "";
+}
 /** Switch to the linked save – the in-game date travels along (in FM it is ONE save). */
 function switchLinked(){
-  const target = state.link; if(!target || !slotIndex.slots.some(x=>x.id === target)) return;
+  const target = linkedPartnerId(); if(!target) return;
   const date = state.club.ingameDate;
   switchSlot(target);
   if(date > state.club.ingameDate) applyDateChange(date);
@@ -195,7 +216,12 @@ function openNationalModal(first){
       if(state.national.code) state.club.crest = state.national.code;
       setLink(get("link"));
       saveState(); renderAll();
-      toast(first ? "Nationalteam eingerichtet – jetzt den Pool per „Import aus FM“ füllen" : "Gespeichert", {onUndo:()=>{ state = JSON.parse(before); saveState(); renderAll(); }});
+      toast(first ? "Nationalteam eingerichtet – jetzt den Pool per „Import aus FM“ füllen" : "Gespeichert", {onUndo:()=>{
+        const newPartner = state.link; state = JSON.parse(before);
+        // 11.7.1: undo the partner side too – otherwise the link stays one-sided
+        if(newPartner && newPartner !== state.link){ const o = readJSON(SLOT_PREFIX + newPartner); if(o && o.link === slotIndex.active){ o.link = ""; store.setItem(SLOT_PREFIX + newPartner, JSON.stringify(o)); } }
+        if(state.link) setLink(state.link);
+        saveState(); renderAll(); }});
     }});
 }
 

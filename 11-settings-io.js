@@ -233,7 +233,7 @@ function buildCommands(){
   add("Aktion","Buchung (Journey-Bankkonto)","", ()=>{ navigate("journey"); if(journey.active) jBookingModal(); });
   if(isNat()){ add("Aktion","Nationalteam-Einstellungen","", ()=>openNationalModal(false));
     add("Aktion","Nominierung als Lehrgang speichern","", natSaveCamp); add("Aktion","Kader kopieren (Nominierte als Text)","", natCopySquad); }
-  if(state.link) add("Aktion","Zum verknüpften Spielstand wechseln","", switchLinked);
+  if(linkedPartnerId()) add("Aktion","Zum verknüpften Spielstand wechseln","", switchLinked);
   add("Aktion","Spielstand wechseln","", ()=>openSaveMenu());
   add("Modul","Gaming-Hub","", ()=>showHub("home"));
   add("Aktion","KI-Prompt kopieren (Taktik, Beta)","", ()=>{ navigate("tactics"); openAiPromptModal(); });
