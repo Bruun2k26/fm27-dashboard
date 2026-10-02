@@ -113,10 +113,12 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.4";
+const APP_VERSION = "11.4.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.4.1", title:"Lädt immer die passende Version", items:[
+    ["fix","Lagen nach mehreren Uploads alte Programmdateien im Ordner „js“ und neue im Hauptverzeichnis, lud das Dashboard die alten – der Hub fehlte. Jetzt trägt jede Version einen Stempel, und das Dashboard nimmt genau die Dateien, die zur aktuellen Version passen."]]},
   {v:"11.4", beta:true, title:"Gaming-Hub & Spielebibliothek (Beta)", items:[
     ["neu","Gaming-Hub als Startseite: Kacheln für FM27 Dashboard, Spielebibliothek, Karriere-Begleiter (bald) und Spiel-Tagebuch (geplant). Erreichbar über ◆ Hub in der Seitenleiste oder Taste H; „Beim Start öffnen“ einstellbar."],
     ["neu","Spielebibliothek (Beta): alle Spiele als Regal, Liste oder Board (Karten ziehen), mit Cover, Status, Bewertung, Spielzeit, Tags, Notizen und ▶-Start über Steam."],

@@ -619,16 +619,17 @@
 
 <div id="printArea" aria-hidden="true"></div>
 
-<script id="appParts" type="application/json">["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-library.js", "25-init.js"]</script>
+<script id="appParts" type="application/json">{"build": "11.4.1", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-library.js", "25-init.js"]}</script>
 <script id="appLoader">
-/* 11.3.1: loads the 23 program parts – from js/ or, if they were uploaded without the folder, from the main folder.
-   Downloads in parallel, runs in the right order (async=false). If parts are missing: a clear message instead of an empty page. */
+/* Loads the program parts. 11.4.1: the parts may lie in js/ AND/OR (uploaded without folders) in the main folder –
+   possibly from different versions. The loader takes the copy whose build stamp matches this index.html.
+   Downloads in parallel, runs in order (async=false). Missing parts → clear message instead of an empty page. */
 (function(){
-  var parts = JSON.parse(document.getElementById("appParts").textContent), shown = false;
+  var cfg = JSON.parse(document.getElementById("appParts").textContent), parts = cfg.parts, build = cfg.build, shown = false;
   function add(src, onload, onerror){ var s = document.createElement("script"); s.src = src; s.async = false;
     if(onload) s.onload = onload; if(onerror) s.onerror = onerror; document.body.appendChild(s); return s; }
   function fail(missing){
-    if(shown) { var l = document.getElementById("loadFailList"); if(l) l.textContent = missing.join(", "); return; }
+    if(shown){ var l = document.getElementById("loadFailList"); if(l) l.textContent = missing.join(", "); return; }
     shown = true;
     var d = document.createElement("div"); d.id = "loadFail"; d.setAttribute("role", "alert");
     d.style.cssText = "position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(8,10,16,.88);font-family:system-ui,sans-serif;padding:20px";
@@ -636,18 +637,41 @@
       + '<h2 style="margin:0 0 8px;font-size:19px">Programmdateien konnten nicht geladen werden</h2>'
       + '<p style="margin:0 0 10px"><strong>Deine Daten sind sicher</strong> – sie liegen in deinem Browser, nicht in diesen Dateien. Bitte nicht auf „Reset“ klicken.</p>'
       + '<p style="margin:0 0 6px;color:#b9c0cf">Fehlt: <span id="loadFailList" style="color:#ffb4b4"></span></p>'
-      + '<p style="margin:0 0 14px;color:#b9c0cf">Lösung: Auf GitHub prüfen, ob der Ordner <code>js</code> mit allen Programmdateien vorhanden ist (beim Hochladen den <em>Ordner selbst</em> ins Feld ziehen). Danach diese Seite neu laden.</p>'
+      + '<p style="margin:0 0 14px;color:#b9c0cf">Lösung: Alle Dateien der neuen Version auf GitHub hochladen (mit oder ohne Ordner „js“ – beides geht). Danach diese Seite neu laden.</p>'
       + '<button onclick="location.reload()" style="font:inherit;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:#4f8cff;color:#fff;cursor:pointer">Neu laden</button></div>';
     document.body.appendChild(d);
     document.getElementById("loadFailList").textContent = missing.join(", ");
   }
-  function loadRest(prefix){
+  function loadAll(prefix){
+    window.FM27_FLAT = prefix === "";
     var missing = [];
-    parts.slice(1).forEach(function(p){ add(prefix + p, null, function(){ missing.push(prefix + p); fail(missing); }); });
+    parts.forEach(function(p){ add(prefix + p, null, function(){ missing.push(prefix + p); fail(missing); }); });
   }
-  add("js/" + parts[0], function(){ loadRest("js/"); }, function(){
-    this.parentNode && this.parentNode.removeChild(this);
-    add(parts[0], function(){ window.FM27_FLAT = true; loadRest(""); }, function(){ fail(["js/" + parts[0]]); });
+  // which copy fits? "match" = right version, "other" = an older/newer copy, "missing", "unknown" (file:// or no fetch)
+  function probe(prefix){
+    if(!window.fetch || location.protocol === "file:") return Promise.resolve("unknown");
+    return fetch(prefix + parts[0], {cache:"no-store"}).then(function(r){
+      if(!r.ok) return "missing";
+      return r.text().then(function(t){ return t.indexOf('FM27_BUILD = "' + build + '"') >= 0 ? "match" : "other"; });
+    }).catch(function(){ return "unknown"; });
+  }
+  function scriptProbe(){            // without fetch (file://): first js/, then the main folder
+    add("js/" + parts[0], function(){ loadRest("js/"); }, function(){
+      this.parentNode && this.parentNode.removeChild(this);
+      add(parts[0], function(){ loadRest(""); }, function(){ fail(["js/" + parts[0]]); });
+    });
+  }
+  function loadRest(prefix){ window.FM27_FLAT = prefix === ""; var missing = [];
+    parts.slice(1).forEach(function(p){ add(prefix + p, null, function(){ missing.push(prefix + p); fail(missing); }); }); }
+  Promise.all([probe("js/"), probe("")]).then(function(r){
+    var a = r[0], b = r[1];
+    if(a === "match") return loadAll("js/");
+    if(b === "match") return loadAll("");
+    if(a === "unknown" && b === "unknown") return scriptProbe();
+    window.FM27_STALE = true;        // no copy fits this index.html – take what is there
+    if(a === "other") return loadAll("js/");
+    if(b === "other") return loadAll("");
+    fail(["js/" + parts[0]]);
   });
 })();
 </script>

@@ -4,7 +4,8 @@ const DIR = require("path").join(__dirname, "..") + "/";   // repository root (w
 // 11.3: the app is split into js/*.js – loaded one by one in the order of index.html (exactly like the browser)
 const htmlRaw = fs.readFileSync(DIR+"index.html","utf8");
 // 11.3.1: index.html lists the parts in <script id="appParts"> and loads them with a small loader
-const SCRIPTS = JSON.parse(/<script id="appParts" type="application\/json">([^<]*)<\/script>/.exec(htmlRaw)[1]).map(f=>"js/"+f);
+const APP_PARTS = JSON.parse(/<script id="appParts" type="application\/json">([^<]*)<\/script>/.exec(htmlRaw)[1]);
+const SCRIPTS = APP_PARTS.parts.map(f=>"js/"+f);
 const html = htmlRaw.replace(/<script id="appParts"[^>]*>[^<]*<\/script>\n?/, "").replace(/<script id="appLoader">[\s\S]*?<\/script>\n?/, "");
 const JS_PARTS = SCRIPTS.map(f=>fs.readFileSync(DIR+f,"utf8"));
 const js = JS_PARTS.join("");                                   // for text checks only
@@ -2914,6 +2915,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     const pkg = JSON.parse(require("fs").readFileSync(DIR+"package.json","utf8"));
     const appV = js.match(/APP_VERSION = "([^"]+)"/)[1], full = appV.split(".").concat(["0","0"]).slice(0,3).join(".");
     ok(pkg.version===full, `Versionsnummer App ${appV} = package.json`);
+    ok(APP_PARTS.build===appV && js.includes(`window.FM27_BUILD = "${appV}";`), `Versionsstempel: index.html (${APP_PARTS.build}) = Programmdateien = App`);
     ok(!require("fs").existsSync(DIR+"src-tauri") && !require("fs").existsSync(DIR+"scripts") && !require("fs").existsSync(DIR+".github/workflows/desktop.yml") && !pkg.devDependencies["@tauri-apps/cli"] && !/IS_DESKTOP|__TAURI/.test(js),
        "Fokus Web-App: keine Desktop-Reste mehr (Tauri, Skripte, Workflow, Erkennung)"); }
   ({w,d,errs,S} = await boot());
