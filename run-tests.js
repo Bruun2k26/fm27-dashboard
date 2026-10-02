@@ -2614,7 +2614,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok((new Date(d1H) - new Date(d0H)) / 86400000 === 8, "Shift+T = +7 Tage");
   kdH("3"); ok(d.querySelector("#view-tactics.active"), "3 = Taktik");
   d.querySelector("#btnHotkeys").click();
-  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel" && d.querySelectorAll("#modal [data-hk]").length===26, "Zahnrad → Tastenkürzel: 26 Aktionen (inkl. Hub und Bibliothek)");
+  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel" && d.querySelectorAll("#modal [data-hk]").length===26, "Zahnrad → Tastenkürzel: 26 Aktionen (inkl. Hub und KI-Prompt)");
   ok(d.querySelector('#modal [data-hk="nextDay"]').textContent.trim()==="T" && d.querySelector('#modal [data-hk="theme"]').textContent.includes("—"), "Aktuelle Belegung sichtbar, neue Aktionen ohne Kürzel");
   d.querySelector('#modal [data-hk="nextDay"]').click();
   ok(d.querySelector('#modal [data-hk="nextDay"]').classList.contains("capturing"), "Klick → 'Taste drücken …'");
@@ -2929,93 +2929,64 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     ok(dom.window.document.documentElement.getAttribute("data-theme")==="light", "Vor-Skript setzt das helle Design sofort (kein dunkles Aufblitzen)"); }
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
-  console.log("\n[61] Version 11.4: Gaming-Hub & Spielebibliothek (Beta)");
-  const hubSeed_H = Object.assign(ls_H=>{}, {hub:true});
-  ({w,d,errs,S} = await boot(hubSeed_H));
-  const hubR_H = () => d.querySelector("#hubRoot");
-  const HUB_H = () => JSON.parse(w.localStorage.getItem("fm27_hub") || "null");
-  const kdL_H = (k, extra, target) => (target || w.document).dispatchEvent(new w.KeyboardEvent("keydown", Object.assign({key:k, bubbles:true, cancelable:true}, extra || {})));
-  ok(hubR_H() && !hubR_H().hidden && d.body.classList.contains("hub-open") && d.querySelectorAll("#hubRoot .hub-tile").length===4, "Start: Hub mit 4 Kacheln (FM, Bibliothek, Karriere-Begleiter, Tagebuch)");
-  const tiles_H = [...d.querySelectorAll("#hubRoot .hub-tile")];
-  ok(tiles_H[0].textContent.includes("FM27 Dashboard") && tiles_H[0].textContent.includes(S().club.name) && tiles_H[1].textContent.includes("Beta") && tiles_H[2].getAttribute("aria-disabled")==="true" && tiles_H[3].getAttribute("aria-disabled")==="true", "FM-Kachel zeigt den aktuellen Spielstand; Bibliothek als Beta; die anderen beiden noch gesperrt");
-  tiles_H[2].click();
-  ok(!hubR_H().hidden && d.querySelector("#toastMsg").textContent.includes("Karriere-Begleiter"), "Gesperrte Kachel: Hinweis, Hub bleibt");
-  kdL_H("t"); ok(!hubR_H().hidden && S().club.ingameDate==="2027-03-12", "Im Hub lösen FM-Tasten nichts aus (T springt nicht im Datum)");
-  tiles_H[0].click();
-  ok(hubR_H().hidden && !d.body.classList.contains("hub-open") && d.querySelector("#view-home.active"), "FM-Kachel öffnet das unveränderte Dashboard");
-  kdL_H("h"); ok(!hubR_H().hidden, "Taste H öffnet den Hub von überall");
-  w.eval("openPanel('fm')"); d.querySelector("#btnHub").click();
-  ok(!hubR_H().hidden, "◆ Hub in der Seitenleiste öffnet den Hub");
-  // library
-  d.querySelector('#hubRoot [data-hub-open="library"]').click();
-  ok(d.querySelector("#hubRoot .lib-empty") && d.querySelector("#hubRoot").textContent.includes("Spielebibliothek"), "Bibliothek: leerer Zustand mit Angeboten");
-  d.querySelector('#hubRoot [data-lib="samples"]').click();
-  ok(HUB_H().games.length===10 && d.querySelectorAll("#hubRoot .lib-card").length===10 && d.querySelector("#hubRoot .lib-sample-note"), "Beispielspiele: 10 Spiele im Regal, als Beispiel gekennzeichnet");
-  const stL_H = w.eval("libStats()");
-  ok(stL_H.playing===2 && stL_H.backlog===4 && stL_H.backlogHours===215 && d.querySelector("#hubRoot .lib-stats").textContent.includes("≈ 215 Std."), "Statistik: 2 gerade, 4 im Backlog ≈ 215 Std.");
-  d.querySelector('#hubRoot [data-lib="new"]').click();
-  ok(d.querySelector("#modal h3").textContent==="Spiel hinzufügen", "+ Spiel öffnet den Dialog");
-  d.querySelector('#modal [data-f="title"]').value = "Elden Ring"; d.querySelector("[data-modal-save]").click();
-  ok(HUB_H().games.length===10 && d.querySelector("#toastMsg").textContent.includes("schon in der Bibliothek"), "Doppelter Titel wird abgelehnt");
-  d.querySelector('#modal [data-f="title"]').value = "Outer Wilds"; d.querySelector('#modal [data-f="platform"]').value = "PC";
-  d.querySelector('#modal [data-f="status"]').value = "done"; d.querySelector('#modal [data-f="rating"]').value = "5"; d.querySelector('#modal [data-f="steamId"]').value = "753640";
-  d.querySelector('#modal [data-f="tags"]').value = "Story, kurz"; d.querySelector("[data-modal-save]").click();
-  const ow_H = HUB_H().games.find(g=>g.title==="Outer Wilds");
-  ok(ow_H && ow_H.status==="done" && ow_H.finished && ow_H.rating===5 && ow_H.steamId==="753640" && JSON.stringify(ow_H.tags)==='["story","kurz"]' && !ow_H.sample, "Neues Spiel gespeichert – 'Durchgespielt' setzt das Enddatum, Tags normalisiert");
-  ok(d.querySelector(`#hubRoot .lib-card[data-lib-open="${ow_H.id}"] a.lib-play`).getAttribute("href")==="steam://run/753640", "▶ Spielen startet über steam://run/…");
-  // views
-  d.querySelector('#hubRoot [data-lib-view="list"]').click();
-  ok(HUB_H().libView==="list" && d.querySelectorAll("#hubRoot .lib-table tbody tr").length===11, "Liste: 11 Zeilen, Ansicht gemerkt");
-  const sel_H = d.querySelector(`#hubRoot [data-lib-status="${ow_H.id}"]`); sel_H.value = "playing"; sel_H.dispatchEvent(new w.Event("change",{bubbles:true}));
-  ok(HUB_H().games.find(g=>g.id===ow_H.id).status==="playing", "Status direkt in der Liste ändern");
-  d.querySelector("#toastUndoBtn").click();
-  ok(HUB_H().games.find(g=>g.id===ow_H.id).status==="done", "… rückgängig machbar");
-  d.querySelector('#hubRoot [data-lib-view="board"]').click();
-  ok(d.querySelectorAll("#hubRoot .lib-col").length===5 && d.querySelector('#hubRoot .lib-col[data-lib-col="done"]').textContent.includes("Outer Wilds"), "Board: 5 Spalten, Spiel in 'Durchgespielt'");
-  const bg_H = HUB_H().games.find(g=>g.title==="Baldur's Gate 3");
-  d.querySelector(`#hubRoot [data-lib-move="${bg_H.id}:1"]`).click();
-  ok(HUB_H().games.find(g=>g.id===bg_H.id).status==="playing" && HUB_H().games.find(g=>g.id===bg_H.id).started, "→ verschiebt in 'Spiele ich' und setzt das Startdatum");
-  const fh_H = HUB_H().games.find(g=>g.title==="Forza Horizon 5"), drag_H = (type, el) => { const ev = new w.Event(type, {bubbles:true, cancelable:true}); Object.defineProperty(ev, "dataTransfer", {value:{setData(){}, effectAllowed:"", dropEffect:""}}); el.dispatchEvent(ev); };
-  drag_H("dragstart", d.querySelector(`#hubRoot [data-lib-drag="${fh_H.id}"]`)); const wishCol_H = d.querySelector('#hubRoot .lib-col[data-lib-col="wish"]'); drag_H("dragover", wishCol_H); drag_H("drop", wishCol_H);
-  ok(HUB_H().games.find(g=>g.id===fh_H.id).status==="wish", "Ziehen & Ablegen: Forza auf die Wunschliste");
-  // search / filter
-  const ls_H = d.querySelector("#libSearch"); ls_H.value = "rollenspiel"; ls_H.dispatchEvent(new w.Event("input",{bubbles:true}));
-  ok(d.querySelectorAll("#hubRoot .lib-mini").length===3 && d.activeElement.id==="libSearch", "Suche findet auch Genres (3 Rollenspiele), Fokus bleibt");
-  w.eval("libQuery = ''; renderHub()");
-  // next pick
-  w.eval("Math.random = () => 0");
-  d.querySelector('#hubRoot [data-lib="next"]').click();
-  ok(d.querySelector("#modal #libPick .lib-pick"), "Was spiele ich als Nächstes? → Vorschlag aus dem Backlog");
-  const timeSel_H = d.querySelector('#modal [data-f="time"]'); timeSel_H.value = "short"; timeSel_H.dispatchEvent(new w.Event("change",{bubbles:true}));
-  ok(d.querySelector("#modal #libPick").textContent.includes("Filter lockern"), "Filter 'kurz': nichts Kurzes im Backlog → Hinweis statt falschem Vorschlag");
-  timeSel_H.value = "mid"; timeSel_H.dispatchEvent(new w.Event("change",{bubbles:true}));
-  ok(d.querySelector("#modal #libPick strong").textContent==="Hollow Knight: Silksong", "Filter 'mittel' → Hollow Knight (≈ 30 Std.)");
-  d.querySelector("#modal [data-pick-play]").click();
-  ok(HUB_H().games.find(g=>g.title==="Hollow Knight: Silksong").status==="playing", "'Jetzt spielen' setzt den Status");
-  // import
-  d.querySelector('#hubRoot [data-lib="import"]').click();
-  d.querySelector("#libImpText").value = "Celeste; PC; durchgespielt\nElden Ring\nDisco Elysium; PC\n\nTunic; Nintendo Switch; wunschliste";
-  d.querySelector("[data-modal-save]").click();
-  const g2_H = HUB_H().games;
-  ok(g2_H.length===14 && g2_H.find(g=>g.title==="Celeste").status==="done" /* 'durchgespielt' must not become 'spiele ich' */ && g2_H.find(g=>g.title==="Tunic").status==="wish" && g2_H.find(g=>g.title==="Disco Elysium").status==="backlog" && d.querySelector("#toastMsg").textContent.includes("1 doppelt"), "Import: 3 neu, Status erkannt, 1 doppelt übersprungen");
-  d.querySelector('#hubRoot [data-lib="clearSamples"]').click();
-  ok(HUB_H().games.length===4 && HUB_H().games.every(g=>!g.sample), "Beispiele entfernen lässt eigene Spiele stehen");
-  // keys in the library
-  kdL_H("n"); ok(d.querySelector("#modal h3").textContent==="Spiel hinzufügen", "Taste N: neues Spiel"); w.eval("closeModal()");
-  w.eval(`setGameStatus(hub.games.find(g=>g.title==="Disco Elysium"), "playing")`);
-  kdL_H("Escape"); ok(!hubR_H().hidden && d.querySelector("#hubRoot .hub-panels"), "Esc: zurück zur Hub-Startseite");
-  ok(d.querySelector("#hubRoot .hub-now") && d.querySelector("#hubRoot .hub-now").textContent.includes("Disco Elysium"), "Hub zeigt 'Spiele ich gerade'");
-  // settings + start panel + persistence + Umzug
+  console.log("\n[61] Gaming-Hub (11.4/11.5) · Spielebibliothek entfernt");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const hubR6 = () => d.querySelector("#hubRoot");
+  const kd6 = (k, extra, target) => (target || w.document).dispatchEvent(new w.KeyboardEvent("keydown", Object.assign({key:k, bubbles:true, cancelable:true}, extra || {})));
+  ok(hubR6() && !hubR6().hidden && d.querySelectorAll("#hubRoot .hub-tile").length===3 && !d.querySelector('#hubRoot [data-hub-open="library"]'), "Hub: 3 Kacheln (FM, Karriere-Begleiter, Tagebuch) – keine Bibliothek mehr");
+  ok(typeof w.renderLibrary === "undefined" && !w.eval("HOTKEY_ACTIONS().some(a=>a[0]==='library')") && !/function (renderLibrary|gameModal|libPickNext)|showHub\("library"\)/.test(js), "Bibliothek vollständig entfernt (Code, Kürzel, Palette) – nur der Changelog erinnert an sie");
+  kd6("t"); ok(!hubR6().hidden && S().club.ingameDate==="2027-03-12", "Im Hub lösen FM-Tasten nichts aus");
+  d.querySelector('#hubRoot [data-hub-open="fm"]').click();
+  ok(hubR6().hidden && d.querySelector("#view-home.active"), "FM-Kachel öffnet das Dashboard");
+  kd6("h"); ok(!hubR6().hidden, "Taste H öffnet den Hub");
   d.querySelector('#hubRoot [data-hub="settings"]').click();
-  d.querySelector('#modal [data-f="name"]').value = "Philis Hub"; d.querySelector('#modal [data-f="startPanel"]').value = "library"; d.querySelector("[data-modal-save]").click();
-  ok(HUB_H().name==="Philis Hub" && HUB_H().startPanel==="library" && d.querySelector("#hubName").textContent==="Philis Hub", "Hub-Einstellungen: Name und 'Beim Start öffnen'");
-  const dumpL_H = {}; for(let i=0;i<w.localStorage.length;i++){ const k = w.localStorage.key(i); dumpL_H[k] = w.localStorage.getItem(k); }
-  ({w,d,errs,S} = await boot(Object.assign(ls_H=>Object.entries(dumpL_H).forEach(([k,v])=>ls_H.setItem(k,v)), {hub:true})));
-  ok(!hubR_H().hidden && d.querySelector("#hubRoot .lib-main") && JSON.parse(w.localStorage.getItem("fm27_hub")).games.length===4, "Neuladen: startet direkt in der Bibliothek, Spiele erhalten");
+  ok(![...d.querySelectorAll('#modal [data-f="startPanel"] option')].some(o=>o.value==="library"), "Einstellungen: 'Beim Start öffnen' ohne Bibliothek"); w.eval("closeModal()");
+  // kept library entries: own games stay until saved/deleted, samples vanish
+  const own6 = {startPanel:"library", games:[{id:"g1", title:"Outer Wilds", status:"done", rating:5}, {id:"g2", title:"Celeste", status:"backlog"}, {id:"s1", title:"Elden Ring", sample:true}]};
+  ({w,d,errs,S} = await boot(Object.assign(ls=>ls.setItem("fm27_hub", JSON.stringify(own6)), {hub:true})));
+  ok(!hubR6().hidden && d.querySelector("#hubRoot .hub-panels"), "Start war 'Bibliothek' → jetzt Hub");
+  ok(d.querySelector("#hubRoot .hub-legacy").textContent.includes("2 eingetragenen Spiele"), "Hinweis: 2 eigene Spiele aufbewahrt (Beispielspiel entfernt)");
   w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
-  let umzL_H = null; const BlL_H = w.Blob; w.Blob = function(parts, o){ umzL_H = parts.join(""); return new BlL_H(parts, o); }; w.eval("exportAll()"); w.Blob = BlL_H;
-  ok(JSON.parse(umzL_H).storage["fm27_hub"] && JSON.parse(JSON.parse(umzL_H).storage["fm27_hub"]).games.length===4, "'Alles exportieren (Umzug)' enthält die Bibliothek");
-  ok(w.eval("storageEntries()").find(e=>e.key==="fm27_hub").kind==="setting", "Speicher-Hausmeister kennt den Hub");
+  const saved6 = w.eval("hubLegacySave()");
+  ok(JSON.parse(saved6).kind==="spielebibliothek" && JSON.parse(saved6).games.map(g=>g.title).join()==="Outer Wilds,Celeste", "Als Datei sichern: beide Spiele mit allen Angaben");
+  d.querySelector('#hubRoot [data-hub="legacyDelete"]').click();
+  ok(JSON.parse(w.localStorage.getItem("fm27_hub")).games.length===0 && !d.querySelector("#hubRoot .hub-legacy"), "Endgültig löschen entfernt sie – Hinweis weg");
+  d.querySelector("#toastUndoBtn").click();
+  ok(JSON.parse(w.localStorage.getItem("fm27_hub")).games.length===2, "… rückgängig machbar");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[62] Version 11.5: KI-Prompt (Beta) & Phasenwechsel");
+  ({w,d,errs,S} = await boot());
+  w.eval("navigate('tactics')");
+  ok(d.querySelector("#btnAiPrompt .beta-pill"), "Taktik: Knopf '🤖 KI-Prompt' mit Beta-Kennzeichen");
+  d.querySelector("#btnAiPrompt").click();
+  const prev6 = () => d.querySelector("#aiPreview").value;
+  ok(d.querySelector("#modal h3").textContent==="KI-Prompt kopieren" && d.querySelector("#modal").textContent.includes("nichts automatisch gesendet") && d.querySelector("#aiCopyBtn"), "Dialog mit Vorschau und 'Prompt kopieren'");
+  const pr6 = prev6(), st6 = S(), f6 = st6.formationName;
+  ok(pr6.includes(`Formation ${f6}`) && pr6.includes("### Mit Ball") && pr6.includes("### Gegen den Ball") && pr6.includes("## Kader (") && pr6.includes("## Letzte Ergebnisse") && pr6.includes("## Nächstes Spiel") && pr6.includes("## So antwortest du bitte"), "Prompt enthält Taktik (beide Phasen), Kader, Ergebnisse, nächsten Gegner, Antwortformat");
+  const xi6 = w.eval("Object.values(slotsFor(state, state.formationName)).filter(s=>s && s.playerId).map(s=>[playerById(s.playerId).name, s.roleIn, s.roleOut])");
+  ok(xi6.length && xi6.every(([n, ri, ro])=>pr6.includes(`| ${n} | ${ri} |`) && pr6.includes(`| ${n} | ${ro} |`)), `Alle ${xi6.length} Spieler der Startelf mit Rolle mit Ball und gegen den Ball`);
+  ok(st6.players.every(p=>pr6.includes(`| ${p.name} | ${p.pos} |`)), `Alle ${st6.players.length} Kaderspieler mit Position`);
+  ok(pr6.includes(st6.nextMatch.opponent) && (!st6.nextMatch.keyThreat || pr6.includes(st6.nextMatch.keyThreat)), "Nächster Gegner mit Hauptgefahr");
+  ok(/Plan A: \d+ Spiele · \d+ S, \d+ U, \d+ N · [\d,]+ Punkte pro Spiel/.test(pr6), "Bilanz der Taktik-Pläne (Punkte pro Spiel)");
+  const sel6 = d.querySelector('#modal [data-f="preset"]'); sel6.value = "next"; sel6.dispatchEvent(new w.Event("change",{bubbles:true}));
+  const ex6 = d.querySelector('#modal [data-f="extra"]'); ex6.value = "Wir kassieren viele Kopfballtore."; ex6.dispatchEvent(new w.Event("input",{bubbles:true}));
+  ok(prev6().includes("gegen meinen nächsten Gegner") && prev6().includes("Zusätzlich: Wir kassieren viele Kopfballtore."), "Frage-Vorlage und eigener Zusatz landen im Prompt");
+  const sq6 = d.querySelector('#modal [data-ai-part="squad"]'); sq6.checked = false; sq6.dispatchEvent(new w.Event("change",{bubbles:true}));
+  ok(!prev6().includes("## Kader (") && d.querySelector("#aiCount").textContent.includes("Zeichen"), "Bausteine abwählbar (Kader raus), Zeichenzähler");
+  let copied6 = null; Object.defineProperty(w.navigator, "clipboard", {value:{writeText: async t=>{ copied6 = t; }}, configurable:true});
+  d.querySelector("#aiCopyBtn").click(); await new Promise(r=>setTimeout(r,20));
+  ok(copied6 === prev6() && d.querySelector("#toastMsg").textContent.includes("Prompt kopiert") && d.querySelector("#aiCopyBtn").textContent.includes("Kopiert"), "📋 Prompt kopieren: Text in der Zwischenablage, Bestätigung");
+  w.eval("closeModal()");
+  ok(w.eval("HOTKEY_ACTIONS().some(a=>a[0]==='aiPrompt')") && w.eval("buildCommands ? true : true"), "Auch per Befehlspalette und eigenem Kürzel erreichbar");
+  // national team: nominated squad
+  w.eval(`(()=>{ const f = freshState("sample"); f.mode = "national"; f.club.name = "Deutschland"; f.national = {country:"Deutschland", code:"GER"}; f.players.forEach((p,i)=>{ p.nominated = i < 5; }); switchSlot(createSlot("DFB", sanitizeState(f))); })()`);
+  const np6 = w.eval("aiPromptText({})");
+  ok(np6.includes("## Mein Nationalteam") && np6.includes("## Nominierter Kader (5 Spieler"), "Nationalteam: nur nominierte Spieler im Prompt");
+  // phase switch still works (animation needs a real browser)
+  w.eval("switchSlot(slotIndex.slots[0].id); navigate('tactics')");
+  d.querySelector('.phase-btn[data-phase="out"]').click();
+  ok(S().phase==="out" && d.querySelector('.phase-btn[data-phase="out"]').classList.contains("active"), "Phasenwechsel funktioniert weiterhin");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

@@ -134,7 +134,7 @@ const HOTKEY_ACTIONS = () => [
   ["admin","Admin-Bereich öffnen","","Ansicht"],
   ["export","Spielstand exportieren","","Ansicht"],
   ["hub","Gaming-Hub öffnen","h","Allgemein"],
-  ["library","Spielebibliothek öffnen","","Allgemein"],
+  ["aiPrompt","KI-Prompt kopieren (Beta)","","Spieltag"],
   ...VIEWS.map((v,i)=>["view:" + v, `Modul: ${VIEW_LABEL[v]}`, String(i+1), "Module"])
 ];
 const HK_RESERVED = new Set(["escape","enter","tab","arrowup","arrowdown","arrowleft","arrowright","backspace","delete"," ","shift","control","alt","meta","altgraph","capslock","contextmenu"]);
@@ -176,7 +176,7 @@ function runHotkey(id, e){
     case "admin": return navigate("admin");
     case "export": return qs("#btnExport").click();
     case "hub": return showHub("home");
-    case "library": return showHub("library");
+    case "aiPrompt": navigate("tactics"); return openAiPromptModal();
   }
 }
 /** Key hints in the gear menu follow your own keys. */

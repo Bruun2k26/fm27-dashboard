@@ -2,6 +2,25 @@
    TACTICS — PITCH
    ========================================================================== */
 let selectedSlot = null;
+/* 11.5: when switching "Mit Ball / Gegen den Ball" the players move visibly to their new spots.
+   Uses the separate CSS property "translate" – "transform" already centres the dots. */
+function pitchPositions(){
+  const m = {}; qsa("#pitch .pitch-slot[data-slot]").forEach(el=>{ m[el.dataset.slot] = {l:parseFloat(el.style.left), t:parseFloat(el.style.top)}; }); return m;
+}
+function animatePitchFrom(before){
+  try{ if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return; }catch(e){}
+  const pitch = qs("#pitch"); if(!pitch) return;
+  const r = pitch.getBoundingClientRect(); if(!r.width) return;
+  qsa("#pitch .pitch-slot[data-slot]").forEach(el=>{
+    const b = before[el.dataset.slot]; if(!b) return;
+    const dx = (b.l - parseFloat(el.style.left)) / 100 * r.width, dy = (b.t - parseFloat(el.style.top)) / 100 * r.height;
+    if(Math.abs(dx) < .5 && Math.abs(dy) < .5) return;
+    el.style.transition = "none"; el.style.translate = `${dx}px ${dy}px`;
+    void el.offsetWidth;
+    el.style.transition = "translate .45s cubic-bezier(.2,.7,.2,1)"; el.style.translate = "0px 0px";
+    el.addEventListener("transitionend", ()=>{ el.style.transition = ""; el.style.translate = ""; }, {once:true});
+  });
+}
 
 function pitchHTML({mini=false}={}){
   const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f);
@@ -373,7 +392,10 @@ function initTactics(){
     if(empty && state.players.length){ autoFillXI(state, state.formationName); toast("Neue Formation – beste Elf vorgeschlagen"); }
     saveState(); renderTactics(); renderHeader();
   });
-  qsa(".phase-btn").forEach(btn=> btn.addEventListener("click", ()=>{ state.phase = btn.dataset.phase; saveState(); renderTactics(); }));
+  qsa(".phase-btn").forEach(btn=> btn.addEventListener("click", ()=>{
+    if(state.phase === btn.dataset.phase) return;
+    const before = pitchPositions(); state.phase = btn.dataset.phase; saveState(); renderTactics(); animatePitchFrom(before);
+  }));
   qs("#toggleLinks").addEventListener("change", e=>{ state.ui.showLinks = e.target.checked; saveState(); renderTactics(); });
   qs("#benchFilter").addEventListener("change", renderBench);
   qs("#btnBestXI").addEventListener("click", runBestXI);

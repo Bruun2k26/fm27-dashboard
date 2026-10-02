@@ -27,7 +27,7 @@ function storageEntries(){
     else if(key === ERROR_KEY) label = "Fehlerprotokoll";
     else if(key === HOTKEY_KEY) label = "Eigene Tastenkürzel";
     else if(key === "fm27_theme_hint") label = "Design-Hinweis (gegen Aufblitzen beim Start)";
-    else if(key === "fm27_hub") label = "Gaming-Hub & Spielebibliothek";
+    else if(key === "fm27_hub") label = "Gaming-Hub";
     else if(!KNOWN_KEYS().has(key)) kind = "unknown";
     out.push({key, size, kind, label});
   }

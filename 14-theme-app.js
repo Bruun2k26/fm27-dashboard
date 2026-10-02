@@ -113,10 +113,14 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.4.1";
+const APP_VERSION = "11.5";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.5", beta:true, title:"KI-Prompt für die Taktik (Beta) · Bibliothek entfernt", items:[
+    ["neu","Taktik → „🤖 KI-Prompt“: stellt eine fertige Anfrage aus Kader, Taktik (mit Ball und gegen den Ball), letzten Ergebnissen, Taktik-Bilanz und nächstem Gegner zusammen – Vorschau, ein Klick auf „Prompt kopieren“, bei Claude oder einer anderen KI einfügen. Nichts wird automatisch gesendet."],
+    ["besser","Beim Wechsel „Mit Ball / Gegen den Ball“ laufen die Spieler sichtbar auf ihre neuen Positionen."],
+    ["besser","Die Spielebibliothek ist wieder entfernt (dafür gibt es Steam). Selbst eingetragene Spiele bleiben gespeichert, bis du sie im Hub als Datei sicherst oder löschst."]]},
   {v:"11.4.1", title:"Lädt immer die passende Version", items:[
     ["fix","Lagen nach mehreren Uploads alte Programmdateien im Ordner „js“ und neue im Hauptverzeichnis, lud das Dashboard die alten – der Hub fehlte. Jetzt trägt jede Version einen Stempel, und das Dashboard nimmt genau die Dateien, die zur aktuellen Version passen."]]},
   {v:"11.4", beta:true, title:"Gaming-Hub & Spielebibliothek (Beta)", items:[

@@ -236,7 +236,7 @@ function buildCommands(){
   if(state.link) add("Aktion","Zum verknüpften Spielstand wechseln","", switchLinked);
   add("Aktion","Spielstand wechseln","", ()=>openSaveMenu());
   add("Modul","Gaming-Hub","", ()=>showHub("home"));
-  add("Modul","Spielebibliothek (Beta)","", ()=>showHub("library"));
+  add("Aktion","KI-Prompt kopieren (Taktik, Beta)","", ()=>{ navigate("tactics"); openAiPromptModal(); });
   add("Aktion","Tastenkürzel anpassen","", ()=>openHotkeyModal());
   add("Modul","Transfer-Center","", ()=>{ state.ui.transferTab = "center"; navigate("recruitment"); renderRecruitment(); });
   add("Modul","Deadline Day (Transfer-Center)","", ()=>{ state.ui.transferTab = "center"; navigate("recruitment"); renderRecruitment(); });
