@@ -1417,7 +1417,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   await new Promise(r=>setTimeout(r,2400));
   ok(d.querySelector("#toastMsg").textContent.startsWith("Update auf v") && d.querySelector("#toastUndoBtn").textContent==="Was ist neu?", "Nach einem Update: einmaliger Hinweis mit 'Was ist neu?'");
   d.querySelector("#toastUndoBtn").click();
-  ok(d.querySelector("#view-admin").classList.contains("active") && w.eval("adminTab")==="changelog", "'Was ist neu?' führt zum Changelog (nach PIN)");
+  ok(d.querySelector("#modal h3").textContent.includes("Changelog") && d.querySelector(`#modal details[data-cl-v="${w.eval("APP_VERSION")}"]`).open && !d.querySelector("#view-admin.active"), "'Was ist neu?' öffnet den Changelog direkt – ohne PIN (11.6.1)");
   ok(w.localStorage.getItem("fm27_seen_version") === w.eval("APP_VERSION"), "Version als gesehen gespeichert → kein zweites Mal");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
@@ -3028,6 +3028,43 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval(`(()=>{ const f = freshState("sample"); f.mode = "national"; f.club.name = "Deutschland"; f.national = {country:"Deutschland", code:"GER", colors:["#000000","#DD0000","#FFCE00"], accent:"#FFCE00", maxSquad:26}; f.players.forEach((p,i)=>{ p.nominated = i < 7; }); switchSlot(createSlot("DFB", sanitizeState(f))); })()`);
   w.eval("showHub('home')");
   ok(H7(".hub2-hero h2").textContent.includes("Nationalteam") && H7(".hub2-hero-stripe") && H7(".hub2-stats").textContent.includes("7 / 26") && H7(".hub2-stats").textContent.includes("Bilanz"), "Nationalteam: Landesfarben-Streifen, Nominiert 7 / 26, Bilanz");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[64] Version 11.6.1: ganze Panels klickbar & Neuigkeiten");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  w.eval(`createSlot("Napoli", freshState("sample")); renderHub()`);
+  const hR8 = () => d.querySelector("#hubRoot"), q8 = sel => d.querySelector("#hubRoot " + sel);
+  q8(".hub2-hero h2").click();
+  ok(hR8().hidden && d.querySelector("#view-home.active"), "Klick auf die Überschrift der Weiterspielen-Karte öffnet das Dashboard");
+  w.eval("showHub('home')"); q8(".hub2-hero .hub2-stats").click();
+  ok(hR8().hidden, "… auch ein Klick auf die Kennzahlen");
+  w.eval("showHub('home')"); q8(".hub2-saves .hub2-card-head").click();
+  ok(!hR8().hidden && !d.querySelector("#saveMenu").hidden, "Klick auf das Spielstände-Panel öffnet die Spielstand-Auswahl");
+  w.eval("closeSaveMenu()");
+  const nap8 = w.eval("slotIndex.slots.find(x=>x.name==='Napoli').id");
+  q8(`[data-hub-save="${nap8}"] .hub2-save-main`).click();
+  ok(w.eval("slotIndex.active")===nap8 && hR8().hidden && (!d.querySelector("#saveMenu") || d.querySelector("#saveMenu").hidden), "Klick auf einen Spielstand darin wechselt genau dorthin (nicht die Auswahl)");
+  w.eval("showHub('home')"); w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
+  q8('.hub2-admin [data-hub="exportAll"]').click();
+  ok(!hR8().hidden && !d.querySelector("#view-admin.active"), "'Alles exportieren' im Admin-Panel exportiert nur – öffnet nicht den Admin");
+  q8(".hub2-admin .hub2-admin-rows li:nth-child(3)").click();
+  ok(hR8().hidden && d.querySelector("#view-admin.active"), "Klick irgendwo sonst auf das Admin-Panel öffnet den Admin-Bereich");
+  w.eval("showHub('home')"); q8('.hub2-mod[data-hub-open="diary"] p').click();
+  ok(!hR8().hidden && d.querySelector("#toastMsg").textContent.includes("Tagebuch"), "Auch die Modul-Kacheln reagieren auf Klicks überall");
+  // news
+  const items8 = [...d.querySelectorAll("#hubRoot .hub2-news-item")];
+  ok(items8.length===3 && items8[0].textContent.includes("v" + w.eval("APP_VERSION")) && items8[0].textContent.includes("aktuell") && items8[0].querySelector(".cl-tag"), "Neuigkeiten: die letzten 3 Versionen, neueste als 'aktuell', mit Markierungen");
+  const v2_8 = w.eval("CHANGELOG[1].v");
+  items8[1].querySelector("strong").click();
+  ok(d.querySelector("#modal h3").textContent.includes("Changelog") && d.querySelector(`#modal details[data-cl-v="${v2_8}"]`).open && !d.querySelector(`#modal details[data-cl-v="${w.eval("APP_VERSION")}"]`).open, "Klick auf eine Version öffnet den Changelog genau dort");
+  ok(d.querySelectorAll("#modal details.cl-entry").length===w.eval("CHANGELOG.length"), "Changelog-Dialog zeigt alle Versionen – ohne PIN");
+  w.eval("closeModal()"); q8(".hub2-news .hub2-card-head").click();
+  ok(d.querySelector(`#modal details[data-cl-v="${w.eval("APP_VERSION")}"]`).open, "Klick auf das Panel öffnet die neueste Version");
+  w.eval("closeModal()");
+  const news8 = q8(".hub2-news"); news8.focus(); news8.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Enter", bubbles:true}));
+  ok(d.querySelector("#modalOverlay").classList.contains("active"), "Neuigkeiten auch per Tastatur (Enter)");
+  w.eval("closeModal()");
+  ok(/onUndo:\(\)=>openHubChangelog\(APP_VERSION\)/.test(js), "'Was ist neu?' nach einem Update öffnet den Changelog (ohne PIN)");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

@@ -113,10 +113,14 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.6";
+const APP_VERSION = "11.6.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.6.1", beta:true, title:"Hub: ganze Panels klickbar & Neuigkeiten", items:[
+    ["besser","Im Hub öffnet ein Klick irgendwo auf ein Panel dieses Panel: „Weiterspielen“ das Dashboard, „Spielstände“ die Auswahl, „Admin & Sicherung“ den Admin-Bereich. Knöpfe darin tun weiterhin nur ihre eigene Aufgabe."],
+    ["neu","Panel „Neuigkeiten“ mit den letzten drei Versionen – ein Klick öffnet den kompletten Changelog (ohne PIN)."],
+    ["besser","„Was ist neu?“ nach einem Update öffnet jetzt direkt den Changelog statt des PIN-geschützten Admin-Bereichs."]]},
   {v:"11.6", beta:true, title:"Neue Hub-Startseite (Beta)", items:[
     ["neu","Begrüßung mit Uhrzeit und Datum, darunter die große Karte „Weiterspielen“: aktueller Spielstand mit Wappen, Verein, Saison, Spieldatum und Kennzahlen (Transfer frei, Taktik, nächstes Spiel – im Nationalteam Nominierung und Bilanz). Die Karte nimmt die Farben deines Vereins an."],
     ["neu","Karte „Spielstände“: die letzten vier, sortiert nach „zuletzt gespielt“ – ein Klick wechselt und öffnet; „Alle Spielstände“ öffnet den Schnellwechsler."],
@@ -366,7 +370,7 @@ function announceUpdate(firstStart){
   if(seen === APP_VERSION || firstStart) return false;              // brand-new users don't need an update note
   const entry = CHANGELOG.find(r=>r.v === APP_VERSION);
   setTimeout(()=>toast(`Update auf v${APP_VERSION}${entry ? " – " + entry.title : ""}`, {actionLabel:"Was ist neu?", duration:9000,
-    onUndo:()=>{ adminTab = "changelog"; navigate("admin"); }}), 2200);
+    onUndo:()=>openHubChangelog(APP_VERSION)}), 2200);
   return true;
 }
 

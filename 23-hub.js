@@ -44,7 +44,7 @@ function ensureHubRoot(){
   root.setAttribute("role", "region"); root.setAttribute("aria-label", "Gaming-Hub");
   document.body.appendChild(root);
   root.addEventListener("click", hubClick);
-  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open]:not(button)")){ e.preventDefault(); e.target.click(); } });
+  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex]")){ e.preventDefault(); e.target.click(); } });
   return root;
 }
 function showHub(view){
@@ -71,6 +71,8 @@ function hubTick(){
 function openPanel(id){
   if(id === "fm"){ markPlayed(); hideHub(); renderAll(); toast(`FM27 Dashboard · ${esc((activeSlotMeta() || {}).name || state.club.name)}`); return; }
   if(id === "admin"){ markPlayed(); hideHub(); renderAll(); navigate("admin"); return; }
+  if(id === "saves") return openSaveMenu();
+  if(id === "changelog") return openHubChangelog();
   toast(id === "career" ? "Der Karriere-Begleiter ist als Nächstes dran." : "Das Spiel-Tagebuch ist geplant.");
 }
 const hubWhen = ts => ts ? relTime(ts) : "noch nie";
@@ -88,6 +90,19 @@ function hubHeroStats(){
     out.push(["Nächstes Spiel", `${n.opponent}${days === 0 ? " · heute" : days === 1 ? " · morgen" : days > 1 ? ` · in ${days} Tagen` : ""}`]);
   }
   return out;
+}
+/** 11.6.1: full changelog without PIN – the chosen version (or the newest) is open */
+function openHubChangelog(v){
+  const openV = v || APP_VERSION;
+  openModal({title:"Neuigkeiten · Changelog", wide:true, body:`
+    <p class="lead" style="margin-top:0">Du nutzt <strong>Version ${esc(APP_VERSION)}</strong> · ${CHANGELOG.length} Versionen.</p>
+    <div class="cl-list hub2-cl-modal">${CHANGELOG.map(r=>`
+      <details class="cl-entry" ${r.v === openV ? "open" : ""} data-cl-v="${esc(r.v)}">
+        <summary><span class="cl-ver">v${esc(r.v)}</span><span class="cl-title">${esc(r.title)}</span>${r.beta ? '<span class="beta-pill">Beta</span>' : ""}${r.v === APP_VERSION ? '<span class="sm-badge ok">aktuell</span>' : ""}</summary>
+        <ul>${r.items.map(([t, text])=>`<li><span class="cl-tag t-${t}">${CL_TAG[t]}</span><span>${esc(text)}</span></li>`).join("")}</ul>
+      </details>`).join("")}</div>`,
+    saveLabel:"Schließen",
+    onOpen: m=>{ const el = qs(`[data-cl-v="${CSS.escape ? CSS.escape(openV) : openV}"]`, m); if(el && el.scrollIntoView) el.scrollIntoView({block:"nearest"}); }});
 }
 function hubAdminRows(){
   const rows = [];
@@ -121,7 +136,7 @@ function renderHub(){
         </div>
       </header>
       <div class="hub2-grid">
-        <section class="hub2-hero" style="--hero-accent:${esc(cur.accent)}" aria-label="Weiterspielen">
+        <section class="hub2-hero hub2-click" data-hub-open="fm" style="--hero-accent:${esc(cur.accent)}" aria-label="Weiterspielen – Klick öffnet den Spielstand">
           ${stripe ? `<div class="hub2-hero-stripe" style="background:${stripe}"></div>` : ""}
           <div class="hub2-hero-top">${smCrest(cur, "xl")}<span class="hub2-pill"><i aria-hidden="true"></i>Zuletzt gespielt</span></div>
           <h2>FM27 Dashboard${nat ? " · Nationalteam" : ""}</h2>
@@ -132,7 +147,7 @@ function renderHub(){
             <button class="btn btn-accent hub2-go" data-hub-open="fm" data-hub-first>▶ Weiterspielen</button>
           </div>
         </section>
-        <section class="hub2-card hub2-saves" aria-label="Spielstände">
+        <section class="hub2-card hub2-saves hub2-click" data-hub-open="saves" aria-label="Spielstände – Klick öffnet die Spielstand-Auswahl">
           <div class="hub2-card-head"><h3><span aria-hidden="true">🗂</span> Spielstände</h3><span class="muted small">${sums.length} gespeichert</span></div>
           <div class="hub2-save-list">${recent.map(x=>`
             <button class="hub2-save ${x.active ? "active" : ""}" data-hub-save="${x.id}" title="${x.active ? "Aktiver Spielstand – öffnen" : "Wechseln und öffnen"}">
@@ -141,18 +156,28 @@ function renderHub(){
             </button>`).join("")}</div>
           <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="saves">Alle Spielstände <kbd>S</kbd></button></div>
         </section>
-        <article class="hub2-card hub2-mod soon" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter (bald)">
+        <article class="hub2-card hub2-mod hub2-click soon" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter (bald)">
           <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="hub-soon">bald</span></h3>
           <p class="muted">Kader, Ziele und Saisonverlauf für andere Karriere- und Managementspiele.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>In Arbeit</span>
         </article>
-        <article class="hub2-card hub2-mod soon" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch (geplant)">
+        <article class="hub2-card hub2-mod hub2-click soon" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch (geplant)">
           <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="hub-soon">geplant</span></h3>
           <p class="muted">Sessions, Notizen und Challenges – verknüpft mit deiner Journey.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>Geplant</span>
         </article>
-        <section class="hub2-card hub2-admin" aria-label="Admin und Sicherung">
+        <section class="hub2-card hub2-admin hub2-click" data-hub-open="admin" aria-label="Admin und Sicherung – Klick öffnet den Admin-Bereich">
           <div class="hub2-card-head"><h3><span aria-hidden="true">🛡</span> Admin &amp; Sicherung</h3></div>
           <ul class="hub2-admin-rows">${hubAdminRows().map(([k,v,st])=>`<li><span>${esc(k)}</span><strong class="${st}">${esc(v)}</strong></li>`).join("")}</ul>
           <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="admin">Admin öffnen</button><button class="btn btn-sm" data-hub="exportAll" title="Alle Spielstände, Einstellungen und Hub in eine Datei">Alles exportieren</button></div>
+        </section>
+        <section class="hub2-card hub2-news hub2-click" data-hub-open="changelog" role="button" tabindex="0" aria-label="Neuigkeiten – Klick öffnet den Changelog">
+          <div class="hub2-card-head"><h3><span aria-hidden="true">📰</span> Neuigkeiten</h3><span class="muted small">Version ${esc(APP_VERSION)} · alle Versionen ansehen →</span></div>
+          <div class="hub2-news-list">${CHANGELOG.slice(0,3).map((r,i)=>`
+            <div class="hub2-news-item" data-hub-cl="${esc(r.v)}">
+              <div class="hub2-news-top"><span class="cl-ver">v${esc(r.v)}</span>${r.beta ? '<span class="beta-pill">Beta</span>' : ""}${i === 0 ? '<span class="sm-badge ok">aktuell</span>' : ""}</div>
+              <strong>${esc(r.title)}</strong>
+              <span class="cl-tags">${Object.keys(CL_TAG).map(t=>{ const n = r.items.filter(x=>x[0] === t).length; return n ? `<span class="cl-tag t-${t}">${n} ${CL_TAG[t]}</span>` : ""; }).join("")}</span>
+              <p>${esc((r.items[0] || ["",""])[1])}</p>
+            </div>`).join("")}</div>
         </section>
       </div>
       ${hub.games.length ? `<section class="card hub-legacy" role="note"><div class="card-head"><h2>Spielebibliothek entfernt</h2></div>
@@ -179,9 +204,12 @@ function hubSettingsModal(){
 }
 function hubClick(e){
   const t = e.target;
-  const open = t.closest("[data-hub-open]"); if(open){ openPanel(open.dataset.hubOpen); return; }
-  const sv = t.closest("[data-hub-save]"); if(sv){ if(sv.dataset.hubSave !== slotIndex.active) switchSlot(sv.dataset.hubSave); openPanel("fm"); return; }
-  const a = t.closest("[data-hub]"); if(a){
+  // 11.6.1: whole panels are clickable – the innermost target wins, so buttons inside a panel only do their own job
+  const target = t.closest("[data-hub-save], [data-hub], [data-hub-cl], [data-hub-open]"); if(!target) return;
+  if(target.dataset.hubSave){ if(target.dataset.hubSave !== slotIndex.active) switchSlot(target.dataset.hubSave); openPanel("fm"); return; }
+  if(target.dataset.hubCl){ openHubChangelog(target.dataset.hubCl); return; }
+  if(target.dataset.hubOpen){ openPanel(target.dataset.hubOpen); return; }
+  const a = target; if(a.dataset.hub){
     const k = a.dataset.hub;
     if(k === "settings") hubSettingsModal();
     else if(k === "theme"){ toggleTheme(); renderHub(); }

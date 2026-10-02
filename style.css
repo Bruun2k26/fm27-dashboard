@@ -1894,3 +1894,19 @@ body.hub-open{overflow:hidden;}
 @media (prefers-reduced-motion: reduce){ .hub2-save, .hub2-mod{transition:none;} }
 .hub2-hero-foot{margin-top:auto;padding-top:14px;}
 .sm-crest.flag b{padding:1px 4px;border-radius:5px;background:rgba(8,10,16,.62);color:#fff;font-weight:900;line-height:1.2;}
+
+/* ---------- 11.6.1: whole hub panels clickable, news panel ---------- */
+.hub2-click{cursor:pointer;transition:border-color .15s, box-shadow .15s, transform .15s;}
+.hub2-click:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border));box-shadow:0 10px 26px rgba(0,0,0,.22);transform:translateY(-2px);}
+.hub2-click:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.hub2-hero.hub2-click:hover{border-color:color-mix(in srgb, var(--hero-accent) 70%, var(--border));}
+.hub2-news{grid-column:1 / -1;}
+.hub2-news-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+@media (max-width:1000px){ .hub2-news-list{grid-template-columns:1fr;} }
+.hub2-news-item{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:var(--radius-m);background:var(--bg-800);border:1px solid var(--border);min-width:0;}
+.hub2-news-item:hover{border-color:var(--border-strong);}
+.hub2-news-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.hub2-news-item strong{font-size:13.5px;}
+.hub2-news-item p{margin:0;font-size:12.5px;color:var(--text-secondary);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.hub2-cl-modal{max-height:62vh;overflow-y:auto;}
+@media (prefers-reduced-motion: reduce){ .hub2-click{transition:none;} .hub2-click:hover{transform:none;} }
