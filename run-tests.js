@@ -2933,18 +2933,18 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
   const hubR6 = () => d.querySelector("#hubRoot");
   const kd6 = (k, extra, target) => (target || w.document).dispatchEvent(new w.KeyboardEvent("keydown", Object.assign({key:k, bubbles:true, cancelable:true}, extra || {})));
-  ok(hubR6() && !hubR6().hidden && d.querySelectorAll("#hubRoot .hub-tile").length===3 && !d.querySelector('#hubRoot [data-hub-open="library"]'), "Hub: 3 Kacheln (FM, Karriere-Begleiter, Tagebuch) – keine Bibliothek mehr");
+  ok(hubR6() && !hubR6().hidden && d.querySelector("#hubRoot .hub2-hero") && d.querySelectorAll("#hubRoot .hub2-mod").length===2 && !d.querySelector('#hubRoot [data-hub-open="library"]'), "Hub: Weiterspielen + Karriere-Begleiter + Tagebuch – keine Bibliothek mehr");
   ok(typeof w.renderLibrary === "undefined" && !w.eval("HOTKEY_ACTIONS().some(a=>a[0]==='library')") && !/function (renderLibrary|gameModal|libPickNext)|showHub\("library"\)/.test(js), "Bibliothek vollständig entfernt (Code, Kürzel, Palette) – nur der Changelog erinnert an sie");
   kd6("t"); ok(!hubR6().hidden && S().club.ingameDate==="2027-03-12", "Im Hub lösen FM-Tasten nichts aus");
   d.querySelector('#hubRoot [data-hub-open="fm"]').click();
-  ok(hubR6().hidden && d.querySelector("#view-home.active"), "FM-Kachel öffnet das Dashboard");
+  ok(hubR6().hidden && d.querySelector("#view-home.active"), "'Weiterspielen' öffnet das Dashboard");
   kd6("h"); ok(!hubR6().hidden, "Taste H öffnet den Hub");
   d.querySelector('#hubRoot [data-hub="settings"]').click();
   ok(![...d.querySelectorAll('#modal [data-f="startPanel"] option')].some(o=>o.value==="library"), "Einstellungen: 'Beim Start öffnen' ohne Bibliothek"); w.eval("closeModal()");
   // kept library entries: own games stay until saved/deleted, samples vanish
   const own6 = {startPanel:"library", games:[{id:"g1", title:"Outer Wilds", status:"done", rating:5}, {id:"g2", title:"Celeste", status:"backlog"}, {id:"s1", title:"Elden Ring", sample:true}]};
   ({w,d,errs,S} = await boot(Object.assign(ls=>ls.setItem("fm27_hub", JSON.stringify(own6)), {hub:true})));
-  ok(!hubR6().hidden && d.querySelector("#hubRoot .hub-panels"), "Start war 'Bibliothek' → jetzt Hub");
+  ok(!hubR6().hidden && d.querySelector("#hubRoot .hub2-grid"), "Start war 'Bibliothek' → jetzt Hub");
   ok(d.querySelector("#hubRoot .hub-legacy").textContent.includes("2 eingetragenen Spiele"), "Hinweis: 2 eigene Spiele aufbewahrt (Beispielspiel entfernt)");
   w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
   const saved6 = w.eval("hubLegacySave()");
@@ -2989,6 +2989,47 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(S().phase==="out" && d.querySelector('.phase-btn[data-phase="out"]').classList.contains("active"), "Phasenwechsel funktioniert weiterhin");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
+  console.log("\n[63] Version 11.6: neue Hub-Startseite (Beta)");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  w.eval(`createSlot("Napoli", freshState("sample")); createSlot("Alt", freshState("empty")); renderHub()`);
+  const H7 = sel => d.querySelector("#hubRoot " + sel);
+  ok(H7("h1").textContent.endsWith("!") && /^\d\d:\d\d$/.test(H7("#hubClockTime").textContent) && H7("#hubClockDate").textContent.includes(String(new Date().getFullYear())), "Begrüßung, Uhrzeit und echtes Datum");
+  ok(H7(".hub2-brand .beta-pill"), "Startseite als Beta gekennzeichnet");
+  const hero7 = H7(".hub2-hero"), st7 = S();
+  ok(hero7.textContent.includes("Zuletzt gespielt") && hero7.textContent.includes(st7.club.name) && hero7.textContent.includes(st7.club.season) && hero7.querySelector(".sm-crest.xl"), "Weiterspielen-Karte: Wappen, Verein, Saison");
+  const stats7 = [...hero7.querySelectorAll(".hub2-stats > div")].map(x=>x.textContent);
+  ok(stats7[0].includes(d.querySelector("#transferBudgetChip").textContent) && stats7[1].includes(d.querySelector("#formationChip").textContent) && stats7[2].includes(st7.nextMatch.opponent) && stats7[2].includes("in 3 Tagen"), "Kennzahlen identisch mit der Kopfleiste + nächstes Spiel ('in 3 Tagen')");
+  ok(hero7.getAttribute("style").includes(st7.club.accent), "Karte nimmt die Vereinsfarbe an");
+  const saves7 = () => [...d.querySelectorAll("#hubRoot .hub2-save")];
+  ok(saves7().length===3 && saves7()[0].classList.contains("active"), "Spielstände: 3 Einträge, aktiver zuerst");
+  H7('[data-hub-open="fm"]').click(); await new Promise(r=>setTimeout(r,5)); w.eval("showHub('home')");   // Karriere 1 is really played once
+  const nap7 = w.eval("slotIndex.slots.find(x=>x.name==='Napoli').id");
+  d.querySelector(`#hubRoot [data-hub-save="${nap7}"]`).click();
+  ok(w.eval("slotIndex.active")===nap7 && hubR6().hidden && w.eval("slotIndex.slots.find(x=>x.id===slotIndex.active).lastPlayedAt") > 0, "Klick auf einen Spielstand: wechselt, öffnet ihn, merkt 'zuletzt gespielt'");
+  w.eval("showHub('home')");
+  ok(saves7()[0].textContent.includes("Napoli") && H7(".hub2-hero").textContent.includes("Napoli"), "Hub zeigt danach Napoli oben und als 'Weiterspielen'");
+  ok(saves7()[1].textContent.includes("Karriere 1") && saves7()[2].textContent.includes("Alt"), "Sortierung nach 'zuletzt gespielt' (Karriere 1 vor Alt)");
+  w.eval(`openSaveMenu()`); const alt7 = w.eval("slotIndex.slots.find(x=>x.name==='Alt').id");
+  d.querySelector(`#saveMenu li[data-sm-open="${alt7}"]`).click();
+  ok(!hubR6().hidden && H7(".hub2-hero").textContent.includes("Alt"), "Wechsel über 'Alle Spielstände' bei offenem Hub: Startseite zieht mit");
+  // admin card
+  const rows7 = [...d.querySelectorAll("#hubRoot .hub2-admin-rows li")].map(x=>x.textContent);
+  ok(rows7.length===4 && rows7[0].includes("Ordner-Sicherung") && rows7[0].includes("aus") && rows7[1].includes("noch nie") && rows7[2].includes("%") && rows7[3].includes("keine Fehler"), "Admin & Sicherung: Ordner-Sicherung, Export, Speicher, Fehlerprotokoll");
+  w.eval(`logError("Testfehler", "")`); w.eval("renderHub()");
+  ok(d.querySelector("#hubRoot .hub2-admin-rows li:nth-child(4) strong").textContent==="1 Einträge" && d.querySelector("#hubRoot .hub2-admin-rows li:nth-child(4) strong").classList.contains("warn"), "Fehler im Protokoll → Warnfarbe");
+  w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
+  H7('[data-hub="exportAll"]').click(); w.eval("renderHub()");
+  ok(d.querySelector("#hubRoot .hub2-admin-rows li:nth-child(2)").textContent.includes("gerade eben"), "'Alles exportieren' → 'Letzter Export: gerade eben'");
+  H7('[data-hub="admin"]').click();
+  ok(hubR6().hidden && d.querySelector("#view-admin.active"), "'Admin öffnen' führt in den Admin-Bereich");
+  // coming modules + national variant
+  w.eval("showHub('home')"); H7('[data-hub-open="career"]').click();
+  ok(!hubR6().hidden && d.querySelector("#toastMsg").textContent.includes("Karriere-Begleiter"), "Karriere-Begleiter: Hinweis 'als Nächstes'");
+  w.eval(`(()=>{ const f = freshState("sample"); f.mode = "national"; f.club.name = "Deutschland"; f.national = {country:"Deutschland", code:"GER", colors:["#000000","#DD0000","#FFCE00"], accent:"#FFCE00", maxSquad:26}; f.players.forEach((p,i)=>{ p.nominated = i < 7; }); switchSlot(createSlot("DFB", sanitizeState(f))); })()`);
+  w.eval("showHub('home')");
+  ok(H7(".hub2-hero h2").textContent.includes("Nationalteam") && H7(".hub2-hero-stripe") && H7(".hub2-stats").textContent.includes("7 / 26") && H7(".hub2-stats").textContent.includes("Bilanz"), "Nationalteam: Landesfarben-Streifen, Nominiert 7 / 26, Bilanz");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");
@@ -2996,4 +3037,5 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(/right:0(;|$)/.test(gripRule) && !/right:-/.test(gripRule), "Ziehgriff liegt vollständig in der eigenen Kopfzelle (right:0)");
   console.log(failures ? `\n${failures} FEHLER` : "\nALLE TESTS BESTANDEN");
   process.exitCode = failures ? 1 : 0;            // GitHub Actions: red ✗ on any failed check
+  setTimeout(()=>process.exit(), 50);              // open test windows keep timers (e.g. the hub clock) alive – end explicitly
 })().catch(err=>{ console.error("\nABBRUCH:", err && err.stack || err); process.exitCode = 1; });

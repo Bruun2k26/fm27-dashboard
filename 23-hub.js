@@ -35,23 +35,16 @@ function hubUndo(label, fn){
   toast(label, {onUndo:()=>{ hub = sanitizeHub(JSON.parse(before)); saveHub(); renderHub(); }});
 }
 const hubGreeting = () => { const h = new Date().getHours(); return h < 5 ? "Gute Nacht" : h < 11 ? "Guten Morgen" : h < 17 ? "Hallo" : h < 22 ? "Guten Abend" : "Gute Nacht"; };
-/* ---------- panels of the hub ---------- */
-function hubPanels(){
-  const meta = (typeof activeSlotMeta === "function" && activeSlotMeta()) || {};
-  return [
-    {id:"fm", title:"FM27 Dashboard", icon:"⚽", status:"live", desc:"Kader, Taktik, Transfers, Journey, Nationalteam",
-      meta: state ? `${esc(meta.name || state.club.name)} · ${esc(state.club.name)} · ${fmtDate(state.club.ingameDate, {day:"2-digit", month:"2-digit", year:"numeric"})}` : ""},
-    {id:"career", title:"Karriere-Begleiter", icon:"🏆", status:"soon", desc:"Begleiter für andere Karriere- und Managementspiele", meta:"In Arbeit"},
-    {id:"diary", title:"Spiel-Tagebuch", icon:"📓", status:"planned", desc:"Sessions, Challenges, Wochenüberblick", meta:"Geplant"}
-  ];
-}
+/* ---------- 11.6 (Beta): start page – "Weiterspielen" hero, saves, admin, coming modules ---------- */
+let hubClockTimer = null;
+function markPlayed(){ const m = typeof activeSlotMeta === "function" && activeSlotMeta(); if(m){ m.lastPlayedAt = Date.now(); writeIndex(); } }
 function ensureHubRoot(){
   let root = qs("#hubRoot"); if(root) return root;
   root = document.createElement("div"); root.id = "hubRoot"; root.className = "hub-root"; root.hidden = true;
   root.setAttribute("role", "region"); root.setAttribute("aria-label", "Gaming-Hub");
   document.body.appendChild(root);
   root.addEventListener("click", hubClick);
-  root.addEventListener("keydown", e=>{ if(e.key === "Enter" && e.target.matches("[data-hub-open]")){ e.preventDefault(); e.target.click(); } });
+  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open]:not(button)")){ e.preventDefault(); e.target.click(); } });
   return root;
 }
 function showHub(view){
@@ -61,36 +54,107 @@ function showHub(view){
   document.body.classList.add("hub-open");
   if(typeof closeMenu === "function") closeMenu();
   renderHub();
+  clearInterval(hubClockTimer); hubClockTimer = setInterval(hubTick, 20000);
   const f = qs("#hubRoot [data-hub-first]"); if(f) f.focus({preventScroll:true});
   window.scrollTo && window.scrollTo(0, 0);
 }
 function hideHub(){
   const r = qs("#hubRoot"); if(r) r.hidden = true;
-  hubView = null; document.body.classList.remove("hub-open");
+  hubView = null; document.body.classList.remove("hub-open"); clearInterval(hubClockTimer);
+}
+function hubTick(){
+  const t = qs("#hubClockTime"), d = qs("#hubClockDate"); if(!t) return;
+  const now = new Date();
+  t.textContent = now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
+  d.textContent = now.toLocaleDateString("de-DE", {weekday:"long", day:"numeric", month:"short", year:"numeric"});
 }
 function openPanel(id){
-  if(id === "fm"){ hideHub(); renderAll(); toast(`FM27 Dashboard · ${esc((activeSlotMeta() || {}).name || state.club.name)}`); return; }
+  if(id === "fm"){ markPlayed(); hideHub(); renderAll(); toast(`FM27 Dashboard · ${esc((activeSlotMeta() || {}).name || state.club.name)}`); return; }
+  if(id === "admin"){ markPlayed(); hideHub(); renderAll(); navigate("admin"); return; }
   toast(id === "career" ? "Der Karriere-Begleiter ist als Nächstes dran." : "Das Spiel-Tagebuch ist geplant.");
+}
+const hubWhen = ts => ts ? relTime(ts) : "noch nie";
+function hubHeroStats(){
+  const nat = isNat(), n = state.nextMatch, out = [];
+  if(nat){
+    const nom = state.players.filter(p=>p.nominated).length, r = state.results, w = r.filter(x=>x.gf > x.ga).length, d = r.filter(x=>x.gf === x.ga).length;
+    out.push(["Nominiert", `${nom} / ${state.national.maxSquad}`], ["Bilanz", `${w}-${d}-${r.length - w - d}`]);
+  } else {
+    const b = budgetCalc();
+    out.push(["Transfer frei", fmtEUR(b.transferLeft)], ["Taktik", `${activePlan().name} · ${formationLabel(state.formationName)}`]);
+  }
+  if(n.opponent){
+    const days = n.date ? Math.round((parseISO(n.date) - ingameDate()) / 86400000) : null;
+    out.push(["Nächstes Spiel", `${n.opponent}${days === 0 ? " · heute" : days === 1 ? " · morgen" : days > 1 ? ` · in ${days} Tagen` : ""}`]);
+  }
+  return out;
+}
+function hubAdminRows(){
+  const rows = [];
+  const c = typeof backupCfg === "function" ? backupCfg() : {};
+  const folderOn = typeof backupPerm !== "undefined" && backupPerm === "granted" && c.enabled;
+  rows.push(["Ordner-Sicherung", folderOn ? `aktiv · ${hubWhen(c.lastAt)}` : "aus", folderOn ? "ok" : "warn"]);
+  const lastExp = Math.max(0, ...slotIndex.slots.map(m=>m.lastExport || 0));
+  rows.push(["Letzter Export", hubWhen(lastExp), lastExp && Date.now() - lastExp < 14 * 86400000 ? "ok" : folderOn ? "" : "warn"]);
+  const u = storageUsage(), pct = u.quota ? Math.round(u.total / u.quota * 100) : 0;
+  rows.push(["Speicher", `${pct} % · ${fmtBytes(u.total)}`, pct >= 80 ? "warn" : "ok"]);
+  const errs = (readJSON(ERROR_KEY) || []).length;
+  rows.push(["Fehlerprotokoll", errs ? `${errs} Einträge` : "keine Fehler", errs ? "warn" : "ok"]);
+  return rows;
 }
 function renderHub(){
   const root = qs("#hubRoot"); if(!root || root.hidden) return;
-  const panels = hubPanels();
+  const sums = slotSummaries(), cur = sums.find(x=>x.active) || sums[0];
+  const metaOf = id => slotIndex.slots.find(m=>m.id === id) || {};
+  const recent = sums.slice().sort((a,b)=>(b.active - a.active) || ((metaOf(b.id).lastPlayedAt || b.updatedAt || 0) - (metaOf(a.id).lastPlayedAt || a.updatedAt || 0))).slice(0,4);
+  const nat = cur.mode === "national", stripe = cur.colors ? `linear-gradient(90deg, ${cur.colors[0]} 0 33.3%, ${cur.colors[1]} 33.3% 66.6%, ${cur.colors[2]} 66.6%)` : "";
+  const now = new Date();
   root.innerHTML = `
-    <header class="hub-top">
-      <div class="hub-brand"><span class="hub-logo" aria-hidden="true">◆</span><div><strong id="hubName">${esc(hub.name)}</strong><span class="muted small">${hubGreeting()}! Was spielen wir heute?</span></div></div>
-      <div class="hub-top-actions">
-        <button class="btn btn-sm" data-hub="settings" title="Hub-Einstellungen">⚙ Einstellungen</button>
-        <button class="btn btn-sm" data-hub="theme" title="Hell / Dunkel">${layout.theme === "light" ? "🌙 Dunkel" : "☀ Hell"}</button>
+    <main class="hub-main hub2">
+      <header class="hub2-head">
+        <div><span class="hub2-brand"><span class="hub-logo sm" aria-hidden="true">◆</span>${esc(hub.name)} <span class="beta-pill">Beta</span></span>
+          <h1>${hubGreeting()}!</h1><p class="muted">Dein Command Center ist bereit für die nächste Session.</p></div>
+        <div class="hub2-side">
+          <div class="hub2-clock" aria-label="Uhrzeit"><span class="hub2-clock-icon" aria-hidden="true">🕒</span><div><strong id="hubClockTime">${now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"})}</strong>
+            <span id="hubClockDate">${now.toLocaleDateString("de-DE", {weekday:"long", day:"numeric", month:"short", year:"numeric"})}</span></div></div>
+          <div class="hub2-tools"><button class="btn btn-sm" data-hub="settings">⚙ Einstellungen</button><button class="btn btn-sm" data-hub="theme">${layout.theme === "light" ? "🌙 Dunkel" : "☀ Hell"}</button></div>
+        </div>
+      </header>
+      <div class="hub2-grid">
+        <section class="hub2-hero" style="--hero-accent:${esc(cur.accent)}" aria-label="Weiterspielen">
+          ${stripe ? `<div class="hub2-hero-stripe" style="background:${stripe}"></div>` : ""}
+          <div class="hub2-hero-top">${smCrest(cur, "xl")}<span class="hub2-pill"><i aria-hidden="true"></i>Zuletzt gespielt</span></div>
+          <h2>FM27 Dashboard${nat ? " · Nationalteam" : ""}</h2>
+          <p class="hub2-hero-sub"><strong>${esc(cur.name)}</strong> · ${esc(cur.club)}${cur.season ? ` (Saison ${esc(cur.season)})` : ""}</p>
+          <p class="muted small">Spieldatum ${smDate(cur)} · gespeichert ${hubWhen(cur.updatedAt)}</p>
+          <div class="hub2-hero-foot">
+            <div class="hub2-stats">${hubHeroStats().map(([k,v])=>`<div><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</div>
+            <button class="btn btn-accent hub2-go" data-hub-open="fm" data-hub-first>▶ Weiterspielen</button>
+          </div>
+        </section>
+        <section class="hub2-card hub2-saves" aria-label="Spielstände">
+          <div class="hub2-card-head"><h3><span aria-hidden="true">🗂</span> Spielstände</h3><span class="muted small">${sums.length} gespeichert</span></div>
+          <div class="hub2-save-list">${recent.map(x=>`
+            <button class="hub2-save ${x.active ? "active" : ""}" data-hub-save="${x.id}" title="${x.active ? "Aktiver Spielstand – öffnen" : "Wechseln und öffnen"}">
+              ${smCrest(x)}<span class="hub2-save-main"><strong>${esc(x.name)}</strong><span>${esc(x.club)}${x.mode === "national" ? " · Nationalteam" : ""} · ${smDate(x)}</span></span>
+              <span class="hub2-save-when">${x.active ? '<span class="sm-badge ok">aktiv</span>' : esc(hubWhen(metaOf(x.id).lastPlayedAt || x.updatedAt))}</span>
+            </button>`).join("")}</div>
+          <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="saves">Alle Spielstände <kbd>S</kbd></button></div>
+        </section>
+        <article class="hub2-card hub2-mod soon" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter (bald)">
+          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="hub-soon">bald</span></h3>
+          <p class="muted">Kader, Ziele und Saisonverlauf für andere Karriere- und Managementspiele.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>In Arbeit</span>
+        </article>
+        <article class="hub2-card hub2-mod soon" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch (geplant)">
+          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="hub-soon">geplant</span></h3>
+          <p class="muted">Sessions, Notizen und Challenges – verknüpft mit deiner Journey.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>Geplant</span>
+        </article>
+        <section class="hub2-card hub2-admin" aria-label="Admin und Sicherung">
+          <div class="hub2-card-head"><h3><span aria-hidden="true">🛡</span> Admin &amp; Sicherung</h3></div>
+          <ul class="hub2-admin-rows">${hubAdminRows().map(([k,v,st])=>`<li><span>${esc(k)}</span><strong class="${st}">${esc(v)}</strong></li>`).join("")}</ul>
+          <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="admin">Admin öffnen</button><button class="btn btn-sm" data-hub="exportAll" title="Alle Spielstände, Einstellungen und Hub in eine Datei">Alles exportieren</button></div>
+        </section>
       </div>
-    </header>
-    <main class="hub-main">
-      <section class="hub-panels" aria-label="Panels">${panels.map((p,i)=>`
-        <article class="hub-tile ${p.status}" ${p.status === "live" || p.status === "beta" ? `role="button" tabindex="0" data-hub-open="${p.id}" ${i === 0 ? "data-hub-first" : ""}` : `aria-disabled="true" data-hub-open="${p.id}"`} aria-label="${esc(p.title)} öffnen">
-          <div class="hub-tile-icon" aria-hidden="true">${p.icon}</div>
-          <div class="hub-tile-body"><div class="hub-tile-title"><strong>${esc(p.title)}</strong>${p.status === "beta" ? '<span class="beta-pill">Beta</span>' : p.status === "soon" ? '<span class="hub-soon">bald</span>' : p.status === "planned" ? '<span class="hub-soon">geplant</span>' : ""}</div>
-            <p>${esc(p.desc)}</p><span class="hub-tile-meta">${p.meta}</span></div>
-          ${p.status === "live" || p.status === "beta" ? '<span class="hub-tile-go" aria-hidden="true">→</span>' : ""}
-        </article>`).join("")}</section>
       ${hub.games.length ? `<section class="card hub-legacy" role="note"><div class="card-head"><h2>Spielebibliothek entfernt</h2></div>
         <p class="lead" style="margin:0 0 10px">Die Beta der Spielebibliothek ist wieder raus (dafür gibt es ja Steam). Deine <strong>${hub.games.length} eingetragenen Spiele</strong> sind noch gespeichert – sichere sie als Datei oder lösche sie.</p>
         <div class="adm2-actions"><button class="btn btn-sm" data-hub="legacySave">Als Datei sichern</button><button class="btn btn-sm btn-danger-outline" data-hub="legacyDelete">Endgültig löschen</button></div></section>` : ""}
@@ -116,12 +180,16 @@ function hubSettingsModal(){
 function hubClick(e){
   const t = e.target;
   const open = t.closest("[data-hub-open]"); if(open){ openPanel(open.dataset.hubOpen); return; }
+  const sv = t.closest("[data-hub-save]"); if(sv){ if(sv.dataset.hubSave !== slotIndex.active) switchSlot(sv.dataset.hubSave); openPanel("fm"); return; }
   const a = t.closest("[data-hub]"); if(a){
     const k = a.dataset.hub;
     if(k === "settings") hubSettingsModal();
     else if(k === "theme"){ toggleTheme(); renderHub(); }
     else if(k === "home") showHub("home");
     else if(k === "fm") openPanel("fm");
+    else if(k === "saves") openSaveMenu();
+    else if(k === "admin") openPanel("admin");
+    else if(k === "exportAll") exportAll();
     else if(k === "legacySave") hubLegacySave();
     else if(k === "legacyDelete") hubUndo(`${hub.games.length} Spiele gelöscht`, ()=>{ hub.games = []; });
     return;
@@ -132,5 +200,5 @@ function hubInit(firstStart){
   loadHub();
   ensureHubRoot();
   const btn = qs("#btnHub"); if(btn) btn.addEventListener("click", ()=>showHub("home"));
-  if(hub.startPanel === "hub") showHub("home");
+  if(hub.startPanel === "hub") showHub("home"); else markPlayed();
 }

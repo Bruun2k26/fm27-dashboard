@@ -113,10 +113,15 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.5";
+const APP_VERSION = "11.6";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.6", beta:true, title:"Neue Hub-Startseite (Beta)", items:[
+    ["neu","Begrüßung mit Uhrzeit und Datum, darunter die große Karte „Weiterspielen“: aktueller Spielstand mit Wappen, Verein, Saison, Spieldatum und Kennzahlen (Transfer frei, Taktik, nächstes Spiel – im Nationalteam Nominierung und Bilanz). Die Karte nimmt die Farben deines Vereins an."],
+    ["neu","Karte „Spielstände“: die letzten vier, sortiert nach „zuletzt gespielt“ – ein Klick wechselt und öffnet; „Alle Spielstände“ öffnet den Schnellwechsler."],
+    ["neu","Karte „Admin & Sicherung“: Ordner-Sicherung, letzter Export, Speicher und Fehlerprotokoll auf einen Blick, mit „Admin öffnen“ und „Alles exportieren“."],
+    ["besser","Karriere-Begleiter und Spiel-Tagebuch haben ihre Plätze schon – sie folgen in den nächsten Versionen."]]},
   {v:"11.5", beta:true, title:"KI-Prompt für die Taktik (Beta) · Bibliothek entfernt", items:[
     ["neu","Taktik → „🤖 KI-Prompt“: stellt eine fertige Anfrage aus Kader, Taktik (mit Ball und gegen den Ball), letzten Ergebnissen, Taktik-Bilanz und nächstem Gegner zusammen – Vorschau, ein Klick auf „Prompt kopieren“, bei Claude oder einer anderen KI einfügen. Nichts wird automatisch gesendet."],
     ["besser","Beim Wechsel „Mit Ball / Gegen den Ball“ laufen die Spieler sichtbar auf ihre neuen Positionen."],

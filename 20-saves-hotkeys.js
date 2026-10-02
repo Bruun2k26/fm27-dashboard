@@ -16,7 +16,16 @@ function slotSummaries(){
       record: res.length ? `${w}-${dr}-${res.length - w - dr}` : "", journey: !!(d.journey && d.journey.active), link: partner ? partner.name : "", broken: !act && !readJSON(SLOT_PREFIX + meta.id)};
   }).sort((a,b)=>(b.active - a.active) || (b.updatedAt || 0) - (a.updatedAt || 0));
 }
-const smCrest = (x, cls) => `<span class="sm-crest ${cls || ""}" style="${x.colors ? `background:linear-gradient(180deg, ${x.colors[0]} 0 33.3%, ${x.colors[1]} 33.3% 66.6%, ${x.colors[2]} 66.6%)` : `background:${esc(x.accent)}`}">${esc(x.crest)}</span>`;
+/** 11.6: readable initials on any club colour – white or dark, whichever contrasts more */
+function crestText(hex){
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if(!m) return "#fff";
+  const ch = i => { const v = parseInt(m[1].substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const L = 0.2126 * ch(0) + 0.7152 * ch(2) + 0.0722 * ch(4);
+  return (1.05 / (L + 0.05)) >= ((L + 0.05) / 0.0555) ? "#fff" : "#0b0f18";
+}
+const smCrest = (x, cls) => x.colors
+  ? `<span class="sm-crest flag ${cls || ""}" style="background:linear-gradient(180deg, ${x.colors[0]} 0 33.3%, ${x.colors[1]} 33.3% 66.6%, ${x.colors[2]} 66.6%)"><b>${esc(x.crest)}</b></span>`
+  : `<span class="sm-crest ${cls || ""}" style="background:${esc(x.accent)};color:${crestText(x.accent)};${crestText(x.accent) === "#fff" ? "" : "text-shadow:none;"}">${esc(x.crest)}</span>`;
 const smDate = x => x.date ? fmtDate(x.date, {day:"2-digit", month:"2-digit", year:"numeric"}) : "—";
 const smBadges = x => `${x.mode === "national" ? '<span class="sm-badge nat">Nationalteam</span>' : ""}${x.link ? `<span class="sm-badge" title="verknüpft">⇄ ${esc(x.link)}</span>` : ""}${x.journey ? '<span class="sm-badge">🧭 Journey</span>' : ""}${x.broken ? '<span class="sm-badge neg">beschädigt</span>' : ""}`;
 function openSaveMenu(){

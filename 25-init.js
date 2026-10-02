@@ -12,6 +12,7 @@ function renderAll(){
   renderHeader();
   const r = VIEW_RENDERERS()[currentView];
   if(r) withRenderCache(r);
+  if(typeof hubView !== "undefined" && hubView) renderHub();      // 11.6: e.g. a save switched while the hub is open
 }
 /** Draws everything, visible or not (rarely needed – e.g. before printing). */
 function renderEverything(){ Object.values(VIEW_RENDERERS()).forEach(f=>withRenderCache(f)); }
