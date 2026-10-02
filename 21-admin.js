@@ -1,10 +1,12 @@
 /* ==========================================================================
    ADMIN AREA (UI)
    ========================================================================== */
-let adminTab = "overview";
+let adminTab = "home";
 const logFilter = {q:"", area:"", onlyRevertible:false, limit:100};
 let rawColl = "players";
-const ADMIN_TABS = {overview:"Übersicht", notes:"Notizen", log:"Protokoll", restore:"Wiederherstellung", health:"Datenprüfung", maintenance:"Wartung & Batch", lists:"Listen", fields:"Eigene Felder", raw:"Rohdaten", security:"Sicherheit", changelog:"Changelog"};
+const ADMIN_TABS = {home:"Zentrale", backup:"Sicherung", storage:"Speicher", hotkeys:"Tastenkürzel", errors:"Fehlerprotokoll", security:"Sicherheit", changelog:"Changelog",
+  overview:"Übersicht", notes:"Notizen", log:"Protokoll", restore:"Wiederherstellungspunkte", health:"Datenprüfung", maintenance:"Wartung & Batch", raw:"Rohdaten", lists:"Listen", fields:"Eigene Felder"};
+const ADMIN_GLOBAL_TABS = ["home","backup","storage","hotkeys","errors","security","changelog"];
 
 function relTime(ts){
   const m = Math.round((Date.now() - ts)/60000);
@@ -58,12 +60,12 @@ function renderAdmin(){
     return;
   }
   const cfg = adminCfg();
-  const sub = `Spielstand „${esc((activeSlotMeta()||{}).name || "")}“ · 🔓 entsperrt${cfg.autoLockMin ? ` · sperrt nach ${cfg.autoLockMin} Min. ohne Aktivität` : ""}`;
+  const sub = `${ADMIN_GLOBAL_TABS.includes(adminTab) ? "Gilt für alle Spielstände" : `Spielstand „${esc((activeSlotMeta()||{}).name || "")}“`} · 🔓 entsperrt${cfg.autoLockMin ? ` · sperrt nach ${cfg.autoLockMin} Min. ohne Aktivität` : ""}`;
     root.innerHTML = `
       <div class="adm2">
         <nav class="adm2-nav" id="adminTabs" role="tablist" aria-label="Admin-Bereiche">
           <div class="adm2-title">🛡 Admin</div>
-          ${ADMIN_GROUPS.map(g=>`<div class="adm2-group">${esc(g.label)}</div>${g.tabs.map(k=>`<button role="tab" data-atab="${k}" class="${k===adminTab?"active":""}"><span class="adm2-ico" aria-hidden="true">${ADMIN_ICONS[k] || "•"}</span>${esc(ADMIN_TABS[k])}${k === "labs" ? ' <span class="beta-pill">Beta</span>' : ""}</button>`).join("")}`).join("")}
+          ${ADMIN_GROUPS.map(g=>`<div class="adm2-group ${g.save ? "save" : ""}">${esc(g.save ? `Spielstand · ${(activeSlotMeta() || {}).name || state.club.name}` : g.label)}</div>${g.tabs.map(k=>`<button role="tab" data-atab="${k}" class="${k===adminTab?"active":""}"><span class="adm2-ico" aria-hidden="true">${ADMIN_ICONS[k] || "•"}</span>${esc(ADMIN_TABS[k])}${k === "labs" ? ' <span class="beta-pill">Beta</span>' : ""}</button>`).join("")}`).join("")}
         </nav>
         <section class="adm2-main">
           <div class="adm2-head"><div><h2>${ADMIN_ICONS[adminTab] || ""} ${esc(ADMIN_TABS[adminTab])}</h2><div class="muted small">${sub}</div></div>
@@ -71,11 +73,40 @@ function renderAdmin(){
           <div id="adminBody"></div>
         </section>
       </div>`;
-  if(adminTab === "health"){ adminHealth();
-    qs("#adminBody").insertAdjacentHTML("beforeend", errorLogHTML()); return; }
-  ({maintenance:adminMaintenance, fields:adminFields, notes:adminNotes, changelog:adminChangelog, overview:adminOverview2, log:adminLog, restore:adminRestore, health:adminHealth, lists:adminLists, raw:adminRaw, security:adminSecurity})[adminTab]();
+  if(!ADMIN_TABS[adminTab]) adminTab = "home";
+  ({home:adminHome, backup:adminBackup, storage:adminStorage, hotkeys:adminHotkeys, errors:()=>{ qs("#adminBody").innerHTML = errorLogHTML(); },
+    maintenance:adminMaintenance, fields:adminFields, notes:adminNotes, changelog:adminChangelog, overview:adminOverview2, log:adminLog, restore:adminRestore, health:adminHealth, lists:adminLists, raw:adminRaw, security:adminSecurity})[adminTab]();
 }
 
+/* ---------- 11.7 (Beta): Admin-Zentrale – pages for ALL saves ---------- */
+function adminHome(){
+  const rows = hubAdminRows(), sums = slotSummaries(), ents = storageEntries();
+  const sizeOf = id => ents.filter(e=>e.key.endsWith(id)).reduce((a,e)=>a + e.size, 0);
+  const metaOf = id => slotIndex.slots.find(m=>m.id === id) || {};
+  qs("#adminBody").innerHTML = `
+    <div class="adm-home-tiles">${rows.map(([k,v,st])=>`<div class="adm-home-tile"><span>${esc(k)}</span><strong class="${st}">${esc(v)}</strong></div>`).join("")}
+      <div class="adm-home-tile"><span>Spielstände</span><strong>${sums.length}</strong></div><div class="adm-home-tile"><span>Version</span><strong>${esc(APP_VERSION)}</strong></div></div>
+    <div class="card"><div class="card-head"><h2>Alle Spielstände</h2><button class="btn btn-sm" data-adm-saves>Spielstand wechseln <kbd>S</kbd></button></div>
+      <div class="table-wrap"><table class="data-table adm-saves"><thead><tr><th>Spielstand</th><th>Verein</th><th>Spieldatum</th><th>Zuletzt gespielt</th><th>Letzter Export</th><th class="num">Größe</th></tr></thead>
+      <tbody>${sums.map(x=>`<tr><td><span class="adm-save-name">${smCrest(x)}<strong>${esc(x.name)}</strong>${x.active ? ' <span class="sm-badge ok">aktiv</span>' : ""}</span></td><td>${esc(x.club)}${x.mode === "national" ? " · Nationalteam" : ""}</td>
+        <td>${smDate(x)}</td><td>${esc(hubWhen(metaOf(x.id).lastPlayedAt || x.updatedAt))}</td><td>${esc(hubWhen(metaOf(x.id).lastExport))}</td><td class="num">${fmtBytes(sizeOf(x.id))}</td></tr>`).join("")}</tbody></table></div></div>
+    <div class="card"><div class="card-head"><h2>Schnellzugriff</h2></div><div class="adm2-actions">
+      <button class="btn btn-sm btn-accent" data-adm-go="exportAll">Alles exportieren (Umzug)</button><button class="btn btn-sm" data-adm-go="importAll">Umzugsdatei / Sicherung laden …</button>
+      <button class="btn btn-sm" data-atab-go="backup">Ordner-Sicherung</button><button class="btn btn-sm" data-atab-go="storage">Speicher prüfen</button><button class="btn btn-sm" data-atab-go="errors">Fehlerprotokoll</button></div></div>`;
+}
+function adminBackup(){
+  qs("#adminBody").innerHTML = backupCardHTML() + `
+    <div class="card"><div class="card-head"><h2>Umzug &amp; Komplett-Sicherung</h2></div>
+      <p class="lead" style="margin-top:0">Eine Datei mit <strong>allen Spielständen</strong>, Hub, Einstellungen und Tastenkürzeln – für einen neuen PC, einen anderen Browser oder einfach als Sicherung.</p>
+      <div class="adm2-actions"><button class="btn btn-sm btn-accent" data-adm-go="exportAll">Alles exportieren</button><button class="btn btn-sm" data-adm-go="importAll">Datei laden …</button></div></div>`;
+  renderFolderBackupList();
+}
+function adminHotkeys(){
+  const map = hotkeyMap(), groups = {};
+  HOTKEY_ACTIONS().forEach(a=>{ (groups[a[3]] = groups[a[3]] || []).push(a); });
+  qs("#adminBody").innerHTML = `<div class="toolbar"><span class="muted">Gilt für alle Spielstände.</span><span class="spacer"></span><button class="btn btn-sm btn-accent" data-adm-go="hotkeys">Kürzel ändern …</button></div>
+    ${Object.entries(groups).map(([g, list])=>`<div class="tc-sub-head">${esc(g)}</div><table class="kbd-table">${list.map(([id, label])=>`<tr><td>${comboLabel(map[id])}</td><td>${esc(label)}</td></tr>`).join("")}</table>`).join("")}`;
+}
 function logRowHTML(e){
   return `<li class="log-row ${e.reverted ? "reverted" : ""}" data-log="${e.id}">
     <span class="log-time" title="${esc(tsText(e.ts))}">${relTime(e.ts)}</span>
@@ -113,7 +144,7 @@ function renderLogList(){
 
 function adminRestore(){
   const rps = readRestorePoints();
-  qs("#adminBody").innerHTML = backupCardHTML() + `
+  qs("#adminBody").innerHTML = `
     <div class="toolbar">
       <span class="muted">Automatisch vor Datumssprüngen (höchstens alle 7 Spieltage bzw. 30 Min.), Importen, Zurücksetzen und Saisonabschluss. Die letzten ${RP_MAX_AUTO} automatischen und ${RP_MAX_MANUAL} manuellen bleiben erhalten.</span>
       <span class="spacer"></span>
@@ -128,8 +159,7 @@ function adminRestore(){
         <td data-label=""><span class="row-actions"><button class="btn btn-sm" data-rp-restore>Wiederherstellen</button><button class="btn-icon-sm del" data-rp-del aria-label="Punkt löschen">✕</button></span></td>
       </tr>`).join("")}</tbody></table></div>`
       : `<p class="empty">Noch keine Wiederherstellungspunkte. Der erste entsteht beim nächsten Datumssprung – oder jetzt mit „+ Jetzt sichern“.</p>`}
-    <p class="hint">Wiederherstellungspunkte liegen im Browser-Speicher dieses Geräts. Für echte Sicherheit zusätzlich regelmäßig exportieren.</p>`;
-  renderFolderBackupList();
+    <p class="hint">Wiederherstellungspunkte liegen im Browser-Speicher dieses Geräts und gehören zu diesem Spielstand. Für echte Sicherheit: Allgemein → Sicherung.</p>`;
 }
 
 /* ---------- Data health check ---------- */
@@ -425,8 +455,11 @@ function initAdmin(){
     else if(t.closest("#btnUnlock")) tryUnlock();
     else if(t.closest("#btnForgotPin")) openForgotPin();
     else if(t.closest("#btnLockAdmin")){ lockAdmin(); toast("Admin-Bereich gesperrt"); }
-    else if(t.closest("[data-atab]")){ saveCurrentNote(); adminTab = t.closest("[data-atab]").dataset.atab; renderAdmin(); }
-    else if(t.closest("[data-atab-go]")){ adminTab = t.closest("[data-atab-go]").dataset.atabGo; renderAdmin(); }
+    else if(t.closest("[data-atab]")){ saveCurrentNote(); adminTab = t.closest("[data-atab]").dataset.atab; orphanSel = null; renderAdmin(); }
+    else if(t.closest("[data-atab-go]")){ adminTab = t.closest("[data-atab-go]").dataset.atabGo; orphanSel = null; renderAdmin(); }
+    else if(t.closest("[data-adm-saves]")) openSaveMenu();
+    else if(t.closest("[data-adm-go]")){ const g = t.closest("[data-adm-go]").dataset.admGo;
+      if(g === "exportAll"){ exportAll(); renderAdmin(); } else if(g === "importAll") qs("#btnImport").click(); else if(g === "hotkeys") openHotkeyModal(); }
     else if(t.closest("[data-admin-export]")) qs("#btnExport").click();
     else if(t.closest("[data-revert]")){
       if(revertLogEntry(t.closest("[data-revert]").dataset.revert)) toast("Änderung zurückgenommen");
@@ -453,7 +486,7 @@ function initAdmin(){
     }
     else if(t.closest("[data-fix]")){
       const f = adminHealth._list[num(t.closest("[data-fix]").dataset.fix)];
-      f.fix(); if(currentView !== "admin") return;
+      f.fix(); if(!adminVisible()) return;
       state = sanitizeState(state); saveState(); renderAll(); renderAdmin(); toast("Behoben");
     }
     else if(t.closest("#btnFixAll")){

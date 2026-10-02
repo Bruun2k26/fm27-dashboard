@@ -37,6 +37,11 @@ function hubUndo(label, fn){
 const hubGreeting = () => { const h = new Date().getHours(); return h < 5 ? "Gute Nacht" : h < 11 ? "Guten Morgen" : h < 17 ? "Hallo" : h < 22 ? "Guten Abend" : "Gute Nacht"; };
 /* ---------- 11.6 (Beta): start page – "Weiterspielen" hero, saves, admin, coming modules ---------- */
 let hubClockTimer = null;
+/* 11.7 (Beta): Admin-Zentrale – the admin element (#adminRoot) is hung into a hub page while it is open
+   and parked in its old place otherwise; all its buttons, PIN and auto-lock keep working unchanged. */
+const adminVisible = () => hubView === "admin" && !!qs("#hubRoot") && !qs("#hubRoot").hidden;
+function parkAdmin(){ const ar = qs("#adminRoot"), home = qs("#view-admin"); if(ar && home && ar.parentElement !== home) home.appendChild(ar); }
+function leaveAdmin(next){ if(hubView === "admin" && next !== "admin" && typeof adminCfg === "function" && adminCfg().lockOnLeave) adminUnlocked = false; }
 function markPlayed(){ const m = typeof activeSlotMeta === "function" && activeSlotMeta(); if(m){ m.lastPlayedAt = Date.now(); writeIndex(); } }
 function ensureHubRoot(){
   let root = qs("#hubRoot"); if(root) return root;
@@ -49,6 +54,8 @@ function ensureHubRoot(){
 }
 function showHub(view){
   if(!hub) loadHub();
+  leaveAdmin(view || "home");
+  if(view === "admin" && hubView !== "admin") adminTab = adminTab && ADMIN_GLOBAL_TABS.includes(adminTab) ? adminTab : (adminTab || "home");
   hubView = view || "home";
   ensureHubRoot().hidden = false;
   document.body.classList.add("hub-open");
@@ -59,6 +66,7 @@ function showHub(view){
   window.scrollTo && window.scrollTo(0, 0);
 }
 function hideHub(){
+  leaveAdmin(null); parkAdmin();
   const r = qs("#hubRoot"); if(r) r.hidden = true;
   hubView = null; document.body.classList.remove("hub-open"); clearInterval(hubClockTimer);
 }
@@ -70,7 +78,7 @@ function hubTick(){
 }
 function openPanel(id){
   if(id === "fm"){ markPlayed(); hideHub(); renderAll(); toast(`FM27 Dashboard · ${esc((activeSlotMeta() || {}).name || state.club.name)}`); return; }
-  if(id === "admin"){ markPlayed(); hideHub(); renderAll(); navigate("admin"); return; }
+  if(id === "admin") return showHub("admin");
   if(id === "saves") return openSaveMenu();
   if(id === "changelog") return openHubChangelog();
   toast(id === "career" ? "Der Karriere-Begleiter ist als Nächstes dran." : "Das Spiel-Tagebuch ist geplant.");
@@ -117,8 +125,21 @@ function hubAdminRows(){
   rows.push(["Fehlerprotokoll", errs ? `${errs} Einträge` : "keine Fehler", errs ? "warn" : "ok"]);
   return rows;
 }
+function renderAdminPage(root){
+  if(!qs("#hubAdminHost")){
+    parkAdmin();
+    root.innerHTML = `<main class="hub-main hub2 hub-admin-page">
+      <header class="hub2-head hub-admin-head"><div><button class="btn btn-sm" data-hub="home" title="Zurück zum Hub (Esc)">← Hub</button>
+        <h1>🛡 Admin-Zentrale <span class="beta-pill">Beta</span></h1><p class="muted">Allgemeines gilt für alle Spielstände – darunter alles zum aktiven Spielstand.</p></div></header>
+      <div id="hubAdminHost"></div></main>`;
+  }
+  const ar = qs("#adminRoot"); if(ar && ar.parentElement !== qs("#hubAdminHost")) qs("#hubAdminHost").appendChild(ar);
+  renderAdmin();
+}
 function renderHub(){
   const root = qs("#hubRoot"); if(!root || root.hidden) return;
+  if(hubView === "admin") return renderAdminPage(root);
+  parkAdmin();
   const sums = slotSummaries(), cur = sums.find(x=>x.active) || sums[0];
   const metaOf = id => slotIndex.slots.find(m=>m.id === id) || {};
   const recent = sums.slice().sort((a,b)=>(b.active - a.active) || ((metaOf(b.id).lastPlayedAt || b.updatedAt || 0) - (metaOf(a.id).lastPlayedAt || a.updatedAt || 0))).slice(0,4);
@@ -222,6 +243,11 @@ function hubClick(e){
     else if(k === "legacyDelete") hubUndo(`${hub.games.length} Spiele gelöscht`, ()=>{ hub.games = []; });
     return;
   }
+}
+/** keys inside the hub (returns true when handled) */
+function hubKey(e){
+  if(e.key === "Escape" && hubView === "admin" && !isTyping(e.target)){ e.preventDefault(); showHub("home"); return true; }
+  return false;
 }
 /** called once at the end of init() */
 function hubInit(firstStart){

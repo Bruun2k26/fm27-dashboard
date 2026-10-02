@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "11.6.1";
+window.FM27_BUILD = "11.7";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -474,7 +474,7 @@ function commitLists(msg){
   state.lists = sanitizeLists(state.lists);
   state = sanitizeState(state);
   saveState(); renderAll();
-  if(currentView === "admin") renderAdmin();
+  if(adminVisible()) renderAdmin();
   if(msg) toast(msg);
 }
 const ACCENTS = ["#4f8cff","#3ddc97","#ff5d6c","#ffb84d","#b57bff","#2ec5d3","#ff7ac6"];

@@ -1910,3 +1910,20 @@ body.hub-open{overflow:hidden;}
 .hub2-news-item p{margin:0;font-size:12.5px;color:var(--text-secondary);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .hub2-cl-modal{max-height:62vh;overflow-y:auto;}
 @media (prefers-reduced-motion: reduce){ .hub2-click{transition:none;} .hub2-click:hover{transform:none;} }
+
+/* ---------- 11.7 (Beta): Admin-Zentrale, hub button top left, crest in the top bar ---------- */
+.hub-btn-top{width:58px;height:58px;margin:4px auto 8px;justify-content:center;border-radius:14px;font-size:11px;}
+.hub-btn-top span:first-child{font-size:20px;}
+.crest.crest-top{width:42px;height:42px;font-size:12px;border-radius:12px;flex-shrink:0;}
+.crest.crest-top::after{width:14px;height:14px;font-size:8px;right:-5px;bottom:-5px;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.hub-admin-head h1{display:flex;align-items:center;gap:10px;}
+.hub-admin-page{max-width:1400px;}
+.adm2-group.save{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
+.adm-home-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px;}
+.adm-home-tile{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:var(--radius-m);background:var(--bg-800);border:1px solid var(--border);}
+.adm-home-tile span{font-size:11.5px;color:var(--text-secondary);}
+.adm-home-tile strong{font-size:15px;}
+.adm-home-tile strong.ok{color:var(--pos-text);} .adm-home-tile strong.warn{color:var(--warn-text, var(--text-primary));}
+.adm-save-name{display:inline-flex;align-items:center;gap:8px;}
+.hub-admin-page .adm2-title{display:none;}

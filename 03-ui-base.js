@@ -282,7 +282,8 @@ function navigate(view){
   if(typeof renderDeadlineBar === "function") renderDeadlineBar();       // never show a stale deadline bar
   if(!VIEWS.includes(view) && view !== "admin") return;
   if(isNat() && NAT_HIDDEN_VIEWS.includes(view)){ toast("Im Nationalteam-Modus ausgeblendet (Transfers, Finanzen, Entwicklung gehören zum Verein)."); return; }
-  if(currentView === "admin" && view !== "admin" && adminCfg().lockOnLeave) adminUnlocked = false;
+  if(view === "admin"){ showHub("admin"); return; }                // 11.7: the admin lives in the hub (Admin-Zentrale)
+  if(typeof hubView !== "undefined" && hubView && VIEWS.includes(view)) hideHub();   // going to a dashboard module leaves the hub (and locks the admin if set)
   currentView = view;
   qsa(".nav-btn").forEach(b=>{
     const on = b.dataset.view === view;

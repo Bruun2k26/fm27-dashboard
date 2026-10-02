@@ -186,7 +186,7 @@ function switchSlot(id){
   state = loadSlot(id);
   resetLogBase();                 // the log compares within one save only
   selectedSlot = null;
-  if(currentView === "admin") lockAdmin();
+  if(adminVisible()) lockAdmin();
   renderAll();
   if(pendingLoadNotice){ toast(pendingLoadNotice); pendingLoadNotice = null; }
 }
@@ -280,7 +280,7 @@ function checkPin(pin){
   return c.lockedUntil && Date.now() < c.lockedUntil ? "wait:30" : "wrong";
 }
 function lockAdmin(){
-  if(typeof saveCurrentNote === "function") saveCurrentNote(); adminUnlocked = false; if(currentView === "admin") renderAdmin(); }
+  if(typeof saveCurrentNote === "function") saveCurrentNote(); adminUnlocked = false; if(adminVisible()) renderAdmin(); }
 function adminAutoLockCheck(){
   const min = adminCfg().autoLockMin || 10;
   if(adminUnlocked && min > 0 && Date.now() - adminLastActivity > min*60000){ lockAdmin(); toast("Admin-Bereich automatisch gesperrt"); }

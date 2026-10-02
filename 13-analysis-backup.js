@@ -284,7 +284,7 @@ async function chooseBackupFolder(){
   const c = backupCfg(); c.enabled = true; c.dirName = h.name; c.keepDays = c.keepDays || 14; saveBackupCfg(c);
   const ok = await writeFolderBackup("Ordner verbunden");
   if(ok) toast(`Automatische Sicherung aktiv – Ordner „${h.name}“`);
-  if(currentView === "admin") renderAdmin();
+  if(adminVisible()) renderAdmin();
   return ok;
 }
 async function resumeFolderBackup(){
@@ -349,7 +349,7 @@ async function writeFolderBackup(reason, allSlots){
   }finally{
     backupBusy = false;
     renderBackupPill();
-    if(currentView === "admin" && adminTab === "restore") renderAdmin();
+    if(adminVisible() && ["backup","home"].includes(adminTab)) renderAdmin();
   }
 }
 async function pruneFolderBackups(base, keepDays){

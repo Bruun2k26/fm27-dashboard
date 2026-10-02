@@ -233,13 +233,12 @@ function initDeadline(){
 /* ==========================================================================
    LABOR (Beta) · new UIs to try out before they replace the old ones
    ========================================================================== */
+// 11.7: Admin-Zentrale – first what applies to ALL saves, then what belongs to the active save
 const ADMIN_GROUPS = [
-  {label:"Start",    tabs:["overview","notes"]},
-  {label:"Daten",    tabs:["log","restore","health","maintenance","raw"]},
-  {label:"Anpassen", tabs:["lists","fields"]},
-  {label:"System",   tabs:["security","changelog"]}
+  {label:"Allgemein · alle Spielstände", tabs:["home","backup","storage","hotkeys","errors","security","changelog"]},
+  {label:"Spielstand", save:true, tabs:["overview","notes","log","restore","health","maintenance","raw","lists","fields"]}
 ];
-const ADMIN_ICONS = {overview:"◎", notes:"✎", log:"☰", restore:"⟲", health:"✚", maintenance:"🧹", raw:"⌗", lists:"≡", fields:"✦", security:"🔒", changelog:"⧗", labs:"⚗"};
+const ADMIN_ICONS = {home:"🛡", backup:"🗄", storage:"💾", hotkeys:"⌨", errors:"⚠", overview:"◎", notes:"✎", log:"☰", restore:"⟲", health:"✚", maintenance:"🧹", raw:"⌗", lists:"≡", fields:"✦", security:"🔒", changelog:"⧗"};
 /* ---------- new admin overview: health score, activity, quick actions ---------- */
 function adminHealthScore(){
   const checks = runHealthChecks(), parts = [];

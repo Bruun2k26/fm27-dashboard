@@ -113,10 +113,16 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.6.1";
+const APP_VERSION = "11.7";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.7", beta:true, title:"Admin-Zentrale im Hub (Beta)", items:[
+    ["neu","Der Admin-Bereich ist jetzt die Admin-Zentrale im Hub: oben „Allgemein · alle Spielstände“ (Zentrale, Sicherung, Speicher, Tastenkürzel, Fehlerprotokoll, Sicherheit, Changelog), darunter alles zum aktiven Spielstand (Übersicht, Notizen, Protokoll, Wiederherstellungspunkte, Datenprüfung, Wartung & Batch, Rohdaten, Listen, Eigene Felder)."],
+    ["neu","Zentrale: Status auf einen Blick, alle Spielstände mit Größe, „zuletzt gespielt“ und letztem Export, dazu Schnellzugriff (Alles exportieren, Datei laden)."],
+    ["besser","Was vorher gemischt war, ist getrennt: Ordner-Sicherung und Umzug unter „Sicherung“, Speicherbelegung und Speicher-Altlasten unter „Speicher“, das Fehlerprotokoll als eigener Bereich."],
+    ["besser","Oben links in der Seitenleiste sitzt jetzt der Hub-Knopf; das Vereinswappen steht in der Kopfleiste neben dem Vereinsnamen (Klick = Spielstand wechseln)."],
+    ["besser","Esc führt aus der Admin-Zentrale zurück zum Hub; PIN-Schutz und automatische Sperre gelten wie bisher."]]},
   {v:"11.6.1", beta:true, title:"Hub: ganze Panels klickbar & Neuigkeiten", items:[
     ["besser","Im Hub öffnet ein Klick irgendwo auf ein Panel dieses Panel: „Weiterspielen“ das Dashboard, „Spielstände“ die Auswahl, „Admin & Sicherung“ den Admin-Bereich. Knöpfe darin tun weiterhin nur ihre eigene Aufgabe."],
     ["neu","Panel „Neuigkeiten“ mit den letzten drei Versionen – ein Klick öffnet den kompletten Changelog (ohne PIN)."],

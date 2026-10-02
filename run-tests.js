@@ -637,7 +637,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   ok(w.eval(`sha256hex("abc")`)==="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" && w.eval(`sha256hex("")`)==="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
      && w.eval(`sha256hex("a".repeat(1000))`)==="41edece42d63e8d9bf515a9ba6932e1c20cbc9f5a5d134645adb5db1b9737ea3", "SHA-256 stimmt mit offiziellen Prüfwerten überein");
   d.querySelector("#btnAdmin").click();
-  ok(d.querySelector("#view-admin").classList.contains("active") && d.querySelector("#adminRoot").textContent.includes("einrichten"), "Erster Aufruf: PIN einrichten");
+  ok(w.eval("adminVisible()") && d.querySelector("#adminRoot").textContent.includes("einrichten"), "Erster Aufruf: PIN einrichten");
   d.querySelector("#pinNew1").value="1234"; d.querySelector("#pinNew2").value="1235"; d.querySelector("#btnSetPin").click();
   ok(d.querySelector("#pinMsg").textContent.includes("stimmen nicht"), "Abweichende Wiederholung abgelehnt");
   d.querySelector("#pinNew1").value="12"; d.querySelector("#pinNew2").value="12"; d.querySelector("#btnSetPin").click();
@@ -1251,7 +1251,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ({w,d,errs,S} = await boot());
   const tick = (ms=20) => new Promise(r=>setTimeout(r,ms));
   // without the File System Access API (e.g. Firefox)
-  w.eval("setPin('1111'); adminUnlocked = true; adminTab = 'restore'; navigate('admin')");
+  w.eval("setPin('1111'); adminUnlocked = true; adminTab = 'backup'; navigate('admin')");
   ok(d.querySelector(".backup-card").textContent.includes("unterstützt das Schreiben in Ordner nicht") && d.querySelector("#backupPill").hidden, "Ohne Ordner-Schnittstelle: klare Erklärung, kein Symbol oben");
   // simulated Chromium folder
   w.eval(`
@@ -1294,7 +1294,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(files().includes("fremde_datei.txt"), "Fremde Dateien im Ordner werden nie angefasst");
   // all saves
   w.eval("openSlotsModal()"); d.querySelector('[data-slot-new="empty"]').click(); w.eval("closeModal()");
-  w.eval("adminUnlocked = true; adminTab = 'restore'; navigate('admin')");
+  w.eval("adminUnlocked = true; adminTab = 'backup'; navigate('admin')");
   await w.eval("writeFolderBackup('Alle', true)");
   ok(files().some(f=>f.startsWith("fm27_Karriere_2_aktuell")) && files().includes("fm27_Karriere_1_aktuell.json"), "'Alle Spielstände sichern' schreibt jeden Spielstand");
   // after a browser restart the permission is gone → visible pause, one click resumes
@@ -1310,7 +1310,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(!okW && pill.classList.contains("paused") && d.querySelector("#toastMsg").textContent.includes("fehlgeschlagen"), "Schreiben verweigert → Meldung + Pause statt stillem Fehler");
   w.eval(`window.__dir.perm = "granted"`); await w.eval("resumeFolderBackup()");
   // restore from the folder via the normal import path
-  w.eval("adminUnlocked = true; adminTab = 'restore'; navigate('admin')"); await tick(60);
+  w.eval("adminUnlocked = true; adminTab = 'backup'; navigate('admin')"); await tick(60);
   const loadBtn = d.querySelector('#folderBackupList [data-bk-load="fm27_Karriere_1_aktuell.json"]');
   ok(!!loadBtn, "Liste der Sicherungen mit 'Laden …'");
   const nSlots = w.eval("slotIndex.slots.length");
@@ -1375,7 +1375,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval("resetLayout()");
   ok(d.documentElement.getAttribute("data-theme")==="light", "'Layout zurücksetzen' lässt das Design in Ruhe");
   w.eval("navigate('admin')");
-  ok(d.querySelector("#btnMenu").classList.contains("active"), "Im Admin-Bereich ist der Menü-Knopf hervorgehoben");
+  ok(w.eval("adminVisible()") && !d.querySelector("#hubRoot").hidden, "Admin öffnet die Admin-Zentrale im Hub (11.7)");
   ({w,d,errs,S} = await boot(ls=>ls.setItem("fm27_layout", JSON.stringify({theme:"light"}))));
   ok(d.documentElement.getAttribute("data-theme")==="light", "Gespeichertes helles Design gilt nach dem Neuladen");
   const css = require("fs").readFileSync(DIR+"style.css","utf8");
@@ -1417,7 +1417,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   await new Promise(r=>setTimeout(r,2400));
   ok(d.querySelector("#toastMsg").textContent.startsWith("Update auf v") && d.querySelector("#toastUndoBtn").textContent==="Was ist neu?", "Nach einem Update: einmaliger Hinweis mit 'Was ist neu?'");
   d.querySelector("#toastUndoBtn").click();
-  ok(d.querySelector("#modal h3").textContent.includes("Changelog") && d.querySelector(`#modal details[data-cl-v="${w.eval("APP_VERSION")}"]`).open && !d.querySelector("#view-admin.active"), "'Was ist neu?' öffnet den Changelog direkt – ohne PIN (11.6.1)");
+  ok(d.querySelector("#modal h3").textContent.includes("Changelog") && d.querySelector(`#modal details[data-cl-v="${w.eval("APP_VERSION")}"]`).open && !w.eval("adminVisible()"), "'Was ist neu?' öffnet den Changelog direkt – ohne PIN (11.6.1)");
   ok(w.localStorage.getItem("fm27_seen_version") === w.eval("APP_VERSION"), "Version als gesehen gespeichert → kein zweites Mal");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
@@ -1694,18 +1694,24 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(ckM("expired").items[0].text==="Mats Böhringer" && !ckM("expired").safe && ckM("endedLoans").items[0].text==="Ben Achterberg" && !ckM("endedLoans").safe, "Abgelaufener Vertrag & beendete Leihe stehen 'zur Prüfung'");
   ok(!catsM.some(c=>c.key==="sample"), "Reine Demo-Karriere: Beispieldaten werden nicht als verwaist gemeldet");
   const boxM = k => d.querySelector(`[data-orphan="${k}"]`);
-  ok(boxM("players:dupL").checked && boxM("storage:fm27_log_deadsave").checked && !boxM(`players:${S().players.find(p=>p.name==="Mats Böhringer").id}`).checked, "Vorauswahl: sichere Fälle an, 'zur Prüfung' aus");
+  ok(boxM("players:dupL").checked && !boxM("storage:fm27_log_deadsave") && !boxM(`players:${S().players.find(p=>p.name==="Mats Böhringer").id}`).checked, "Vorauswahl: sichere Fälle an, 'zur Prüfung' aus – Speicher-Altlasten stehen jetzt unter Allgemein → Speicher (11.7)");
   const btnM = d.querySelector("#btnOrphanClean");
-  ok(btnM.textContent.includes("(6)"), "Knopf nennt die Anzahl: "+btnM.textContent.trim());
+  ok(btnM.textContent.includes("(5)"), "Knopf nennt die Anzahl: "+btnM.textContent.trim());
   const nPM = S().players.length, rpNM = w.eval("readRestorePoints().length");
   btnM.click();
   ok(S().players.length===nPM-1 && !S().players.some(p=>p.id==="dupL") && S().players.some(p=>p.name==="Jonas Lindqvist") && S().players.some(p=>p.name==="Mats Böhringer"),
      "Bereinigt: Kopie weg, Original und 'zur Prüfung'-Spieler bleiben");
-  ok(!S().scouting.some(t=>t.id==="sig1"||t.id==="ph1") && !S().prospects.some(t=>t.id==="prs1") && !S().results.some(r=>r.id==="dupR") && w.localStorage.getItem("fm27_log_deadsave")===null, "Ziele, Talent, Ergebnis und Speicherreste entfernt");
-  ok(w.eval("readRestorePoints().length")===rpNM+1 && w.eval("readRestorePoints()[0].reason").startsWith("Vor Wartung") && w.eval("readLog()").slice(-1)[0].text.includes("6 Einträge entfernt"), "Wiederherstellungspunkt + Protokoll");
+  ok(!S().scouting.some(t=>t.id==="sig1"||t.id==="ph1") && !S().prospects.some(t=>t.id==="prs1") && !S().results.some(r=>r.id==="dupR") && w.localStorage.getItem("fm27_log_deadsave")!==null, "Ziele, Talent, Ergebnis entfernt – der Speicher bleibt hier unberührt");
+  ok(w.eval("readRestorePoints().length")===rpNM+1 && w.eval("readRestorePoints()[0].reason").startsWith("Vor Wartung") && w.eval("readLog()").slice(-1)[0].text.includes("5 Einträge entfernt"), "Wiederherstellungspunkt + Protokoll");
   ok(d.querySelector("#adminBody").textContent.includes("Abgelaufene Verträge") && !d.querySelector("#adminBody").textContent.includes("Doppelte Spieler"), "Liste aktualisiert: nur noch die Prüf-Fälle");
   d.querySelector("#toastUndoBtn").click();
-  ok(S().players.some(p=>p.id==="dupL") && S().scouting.some(t=>t.id==="sig1") && w.localStorage.getItem("fm27_log_deadsave")!==null, "Rückgängig holt alles zurück – auch die Speicherreste");
+  ok(S().players.some(p=>p.id==="dupL") && S().scouting.some(t=>t.id==="sig1"), "Rückgängig holt alles zurück");
+  w.eval("adminTab = 'storage'; orphanSel = null; renderAdmin()");
+  ok(d.querySelector("#adminBody").textContent.includes("Speicherbelegung") && boxM("storage:fm27_log_deadsave") && boxM("storage:fm27_log_deadsave").checked && !boxM("players:dupL"), "Allgemein → Speicher: Belegung + Speicher-Altlasten (vorausgewählt), keine Kader-Funde");
+  d.querySelector("#btnOrphanClean").click();
+  ok(w.localStorage.getItem("fm27_log_deadsave")===null && w.localStorage.getItem("fm27_rp_deadsave")!==null, "Altlast entfernt, 'bitte prüfen' (Wiederherstellungspunkte) bleibt");
+  d.querySelector("#toastUndoBtn").click();
+  ok(w.localStorage.getItem("fm27_log_deadsave")!==null, "… rückgängig machbar");
   // money conversion
   w.eval("adminTab = 'maintenance'; navigate('admin')");
   const sumSalM = () => S().players.reduce((a,p)=>a+p.salary,0);
@@ -2001,7 +2007,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   // classic tabs still work side by side
   // admin design
   w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'overview'; navigate('admin')");
-  ok(d.querySelector(".adm2 nav#adminTabs") && d.querySelectorAll(".adm2-group").length===4 && d.querySelectorAll('#adminTabs [data-atab]').length===11 && !d.querySelector('#adminTabs [data-atab="labs"]'), "Admin-Design: Seitennavigation, 4 Gruppen, 11 Bereiche (Labor nach der 10.1-Beta wieder entfernt)");
+  ok(d.querySelector(".adm2 nav#adminTabs") && d.querySelectorAll(".adm2-group").length===2 && d.querySelectorAll('#adminTabs [data-atab]').length===16 && !d.querySelector('#adminTabs [data-atab="labs"]'), "Admin-Zentrale (11.7): Seitennavigation, 2 Gruppen (Allgemein / Spielstand), 16 Bereiche (Labor nach der 10.1-Beta wieder entfernt)");
   ok(d.querySelector(".adm2-version").textContent.includes("v"+w.eval("APP_VERSION")) && d.querySelector(".adm2-version").textContent.includes("Datenschema"), "Übersicht nennt Dashboard-Version und Datenschema");
   d.querySelector('#adminTabs [data-atab="overview"]').click();
   const scoreL = parseInt(d.querySelector(".adm2-score-num strong").textContent, 10);
@@ -2174,7 +2180,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(d.querySelector("#toastMsg").textContent.includes("Speicher aufgeräumt"), "Kurzer Hinweis: "+d.querySelector("#toastMsg").textContent);
   const kinds9 = Object.fromEntries(w.eval("storageEntries()").map(e=>[e.key, e.kind]));
   ok(kinds9["fm27_rp_geloescht"]==="orphanRp" && kinds9["fm27_dashboard_state_v1"]==="legacy" && kinds9["fm27_irgendwas"]==="unknown" && kinds9["fm27_layout"]!=="unknown", "Klassifizierung: verwaiste Punkte, alter Stand, unbekannt – bekannte Einstellungen nicht");
-  w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'maintenance'; navigate('admin')");
+  w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'storage'; navigate('admin')");
   const chk9 = w.eval("findOrphans()").find(c=>c.key==="storageCheck");
   ok(chk9 && !chk9.safe && chk9.items.length===3, "Wartung: 3 Einträge unter 'Speicher: bitte prüfen' (nicht vorausgewählt)");
   ok(d.querySelector("#adminBody .mem-list .mem-row") && d.querySelector("#adminBody").textContent.includes("Speicherbelegung"), "Wartung: Speicherbelegung mit den größten Einträgen");
@@ -2448,7 +2454,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(S().players.find(p=>p.name==="Leih Neun").note==="Leihe: 15 Spiele garantiert", "Ausleihen: Notiz landet beim Spieler");
   // --- show backup folder ---
   w.showDirectoryPicker = ()=>{};   // folder support like in Vivaldi/Chrome
-  w.eval(`backupDir = {name:"FM27-Backups"}; backupPerm = "granted"; adminCfg; setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'restore'; navigate('admin')`);
+  w.eval(`backupDir = {name:"FM27-Backups"}; backupPerm = "granted"; adminCfg; setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'backup'; navigate('admin')`);
   ok(d.querySelector('#adminBody [data-bk="open"]') && d.querySelector("#adminBody").textContent.includes("FM27-Backups"), "Wiederherstellung: '📂 Ordner anzeigen' + Ordnername");
   let pickerArgsQ = null;
   w.showOpenFilePicker = async (o)=>{ pickerArgsQ = o; return [{getFile: async ()=>({text: async ()=>JSON.stringify({kind:"journey", journey:{active:true, profile:{name:"Aus dem Ordner"}}})})}]; };
@@ -2537,7 +2543,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(w.eval("storageEntries()").find(e=>e.key===rk).kind==="legacy", "… und unter Wartung 'bitte prüfen' zu finden");
   ok((JSON.parse(w.localStorage.getItem("fm27_errors")) || []).some(e=>e.msg.includes("beschädigt")), "Im Fehlerprotokoll vermerkt");
   w.eval(`logError("Testfehler", "Stack")`);
-  w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'health'; navigate('admin')");
+  w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'errors'; navigate('admin')");
   ok(d.querySelector("#adminBody .err-card").textContent.includes("Testfehler"), "Admin → Datenprüfung: Fehlerprotokoll sichtbar");
   d.querySelector('#adminBody [data-err="clear"]').click();
   ok(!w.localStorage.getItem("fm27_errors") && d.querySelector("#adminBody .err-card").textContent.includes("Keine unerwarteten Fehler"), "Protokoll leeren");
@@ -2814,7 +2820,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval(`(()=>{ const store = new Map(${JSON.stringify(filesBB)}.map(f=>[f.name, f]));
     backupDir = {name:"Backups", async *entries(){ for(const [name, f] of store) yield [name, {kind:"file", getFile: async ()=>({size:f.size, lastModified:f.modified, text: async ()=>"{}"})}]; }, async removeEntry(n){ store.delete(n); }};
     window.__store = store; backupPerm = "granted"; const c = backupCfg(); c.enabled = true; saveBackupCfg(c);
-    setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'restore'; navigate('admin'); })()`);
+    setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'backup'; navigate('admin'); })()`);
   await new Promise(r=>setTimeout(r,60));
   ok(d.querySelectorAll("#folderBackupList .bk-card").length===3 && d.querySelector("#folderBackupList .bk-summary").textContent.includes("2 von 3"), "Ansicht: 3 Karten, '2 von 3 Spielständen gesichert'");
   ok(d.querySelector("#folderBackupList .bk-card.missing [data-bk='all']"), "Ungesicherter Spielstand: 'Jetzt alle sichern'");
@@ -3021,7 +3027,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   H7('[data-hub="exportAll"]').click(); w.eval("renderHub()");
   ok(d.querySelector("#hubRoot .hub2-admin-rows li:nth-child(2)").textContent.includes("gerade eben"), "'Alles exportieren' → 'Letzter Export: gerade eben'");
   H7('[data-hub="admin"]').click();
-  ok(hubR6().hidden && d.querySelector("#view-admin.active"), "'Admin öffnen' führt in den Admin-Bereich");
+  ok(!hubR6().hidden && w.eval("adminVisible()"), "'Admin öffnen' führt in die Admin-Zentrale (im Hub)");
   // coming modules + national variant
   w.eval("showHub('home')"); H7('[data-hub-open="career"]').click();
   ok(!hubR6().hidden && d.querySelector("#toastMsg").textContent.includes("Karriere-Begleiter"), "Karriere-Begleiter: Hinweis 'als Nächstes'");
@@ -3046,9 +3052,9 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(w.eval("slotIndex.active")===nap8 && hR8().hidden && (!d.querySelector("#saveMenu") || d.querySelector("#saveMenu").hidden), "Klick auf einen Spielstand darin wechselt genau dorthin (nicht die Auswahl)");
   w.eval("showHub('home')"); w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
   q8('.hub2-admin [data-hub="exportAll"]').click();
-  ok(!hR8().hidden && !d.querySelector("#view-admin.active"), "'Alles exportieren' im Admin-Panel exportiert nur – öffnet nicht den Admin");
+  ok(!hR8().hidden && !w.eval("adminVisible()"), "'Alles exportieren' im Admin-Panel exportiert nur – öffnet nicht den Admin");
   q8(".hub2-admin .hub2-admin-rows li:nth-child(3)").click();
-  ok(hR8().hidden && d.querySelector("#view-admin.active"), "Klick irgendwo sonst auf das Admin-Panel öffnet den Admin-Bereich");
+  ok(!hR8().hidden && w.eval("adminVisible()"), "Klick irgendwo sonst auf das Admin-Panel öffnet die Admin-Zentrale");
   w.eval("showHub('home')"); q8('.hub2-mod[data-hub-open="diary"] p').click();
   ok(!hR8().hidden && d.querySelector("#toastMsg").textContent.includes("Tagebuch"), "Auch die Modul-Kacheln reagieren auf Klicks überall");
   // news
@@ -3065,6 +3071,37 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(d.querySelector("#modalOverlay").classList.contains("active"), "Neuigkeiten auch per Tastatur (Enter)");
   w.eval("closeModal()");
   ok(/onUndo:\(\)=>openHubChangelog\(APP_VERSION\)/.test(js), "'Was ist neu?' nach einem Update öffnet den Changelog (ohne PIN)");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[65] Version 11.7: Admin-Zentrale im Hub, Hub-Knopf oben links");
+  ({w,d,errs,S} = await boot());
+  w.eval(`createSlot("Napoli", freshState("sample"))`);
+  ok(d.querySelector(".sidebar > #btnHub.hub-btn-top") && d.querySelector(".sidebar").firstElementChild.id === "btnHub" && d.querySelectorAll("#btnHub").length===1, "Oben links in der Seitenleiste: Hub-Knopf (nur einmal)");
+  ok(d.querySelector(".topbar-left #crestBox.crest-top") && !d.querySelector(".sidebar #crestBox"), "Vereinswappen steht in der Kopfleiste");
+  d.querySelector("#crestBox").click();
+  ok(!d.querySelector("#saveMenu").hidden, "Klick aufs Wappen öffnet weiterhin den Spielstand-Wechsel"); w.eval("closeSaveMenu()");
+  d.querySelector("#btnHub").click();
+  ok(!d.querySelector("#hubRoot").hidden && d.querySelector("#hubRoot .hub2-hero"), "Hub-Knopf öffnet den Hub");
+  w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'home'"); d.querySelector('#hubRoot [data-hub="admin"]').click();
+  ok(w.eval("adminVisible()") && d.querySelector("#hubRoot #hubAdminHost #adminRoot") && d.querySelector("#hubRoot h1").textContent.includes("Admin-Zentrale"), "'Admin öffnen': Admin-Zentrale als Hub-Seite");
+  const grp = [...d.querySelectorAll("#adminTabs .adm2-group")].map(g=>g.textContent);
+  ok(grp[0]==="Allgemein · alle Spielstände" && grp[1]===`Spielstand · ${w.eval("activeSlotMeta().name")}`, "Gruppen: Allgemein / Spielstand · Name");
+  ok(d.querySelector("#adminBody .adm-home-tiles") && d.querySelectorAll("#adminBody .adm-saves tbody tr").length===2 && d.querySelector("#adminBody").textContent.includes("Napoli"), "Zentrale: Status-Kacheln und alle Spielstände");
+  const tab = k => { d.querySelector(`#adminTabs [data-atab="${k}"]`).click(); return d.querySelector("#adminBody"); };
+  ok(tab("backup").querySelector(".backup-card") && d.querySelector("#adminBody").textContent.includes("Umzug") && !d.querySelector("#adminBody .data-table [data-rp-restore]"), "Sicherung: Ordner-Sicherung + Umzug, keine Wiederherstellungspunkte");
+  ok(!tab("restore").querySelector(".backup-card") && d.querySelector("#btnManualRp"), "Wiederherstellungspunkte: nur noch die Punkte des Spielstands");
+  ok(tab("errors").querySelector(".err-card") && !tab("health").querySelector(".err-card"), "Fehlerprotokoll eigener Bereich, Datenprüfung ohne Protokoll");
+  ok(tab("storage").textContent.includes("Speicherbelegung") && !tab("maintenance").textContent.includes("Speicherbelegung") && d.querySelector("#adminBody").textContent.includes("Beträge umrechnen"), "Speicher getrennt von Wartung & Batch");
+  ok(tab("hotkeys").querySelector(".kbd-table") && d.querySelector('#adminBody [data-adm-go="hotkeys"]'), "Tastenkürzel: Übersicht + Ändern");
+  d.querySelector('#adminBody [data-adm-go="hotkeys"]').click();
+  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel", "… öffnet den Kürzel-Manager"); w.eval("closeModal()");
+  // Esc → hub, admin element parked again, lock on leave
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  ok(!w.eval("adminVisible()") && d.querySelector("#hubRoot .hub2-hero") && d.querySelector("#view-admin > #adminRoot"), "Esc: zurück zum Hub, Admin wieder an seinem Platz");
+  w.eval("adminCfg(); const c = adminCfg(); c.lockOnLeave = true; saveAdminCfg ? saveAdminCfg(c) : null; adminUnlocked = true; showHub('admin')");
+  ok(w.eval("adminVisible()"), "Wieder in der Admin-Zentrale");
+  w.eval("navigate('squad')");
+  ok(d.querySelector("#hubRoot").hidden && d.querySelector("#view-squad.active") && d.querySelector("#view-admin > #adminRoot"), "Wechsel zu einem Dashboard-Modul verlässt den Hub");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

@@ -67,7 +67,7 @@ function initAdminNotes(){
       saveCurrentNote();
       const before = readNotes(), n = before.find(x=>x.id === noteSel);
       writeNotes(before.filter(x=>x.id !== noteSel)); noteSel = null; adminNotes();
-      toast(`Notiz „${n ? noteTitle(n) : ""}“ gelöscht`, {onUndo:()=>{ writeNotes(before); noteSel = n && n.id; if(currentView === "admin" && adminTab === "notes") adminNotes(); }});
+      toast(`Notiz „${n ? noteTitle(n) : ""}“ gelöscht`, {onUndo:()=>{ writeNotes(before); noteSel = n && n.id; if(adminVisible() && adminTab === "notes") adminNotes(); }});
     }
   });
   window.addEventListener("beforeunload", saveCurrentNote);
@@ -217,7 +217,7 @@ function keepScore(p, inXI){
   return (inXI.has(p.id) ? 1000 : 0) + (p.birthDate ? 50 : 0) + (p.valueMax ? 20 : 0) + Object.keys(p.custom || {}).length * 5 + (p.note ? 2 : 0);
 }
 /** Finds orphaned / leftover records. item = {coll, id | key, text, detail}; safe categories are preselected. */
-function findOrphans(){
+function findOrphans(scope){
   const cats = [], add = (key, label, why, items, safe) => { if(items.length) cats.push({key, label, why, items, safe}); };
   const inXI = lineupPlayerIds();
   const squadNames = new Set(state.players.map(p=>normName(p.name)));
@@ -268,6 +268,9 @@ function findOrphans(){
   const today = state.club.ingameDate;
   add("endedLoans", "Beendete Leihen", "Enddatum liegt zurück – zurückholen (Entwicklung → Leihen) oder entfernen",
     state.loans.filter(l=>{ const e = loanEndISO(l.until); return e && e < today; }).map(l=>({coll:"loans", id:l.id, text:l.name, detail:`bis ${l.until}${l.club ? " · " + l.club : ""}`})), false);
+  // 11.7: "save" = everything inside the save, "storage" = browser storage of all saves (Admin-Zentrale → Speicher)
+  if(scope === "save") return cats.filter(c=>!/^storage/.test(c.key));
+  if(scope === "storage") return cats.filter(c=>/^storage/.test(c.key));
   return cats;
 }
 function itemKey(it){ return it.coll === "storage" ? "storage:" + it.key : it.coll + ":" + it.id; }
@@ -283,8 +286,8 @@ function runBatch(label, fn, afterUndo){
   log.push({id:uid(), ts:Date.now(), gameDate:state.club.ingameDate, area:"Wartung", action:"info", entity:"Batch", text:`${label}: ${result}`, revertible:false});
   writeLog(log);
   renderAll();
-  if(currentView === "admin" && adminTab === "maintenance") adminMaintenance();
-  toast(`${label}: ${result}`, {onUndo:()=>{ if(afterUndo) afterUndo(); state = JSON.parse(snap); saveState(); renderAll(); if(currentView === "admin" && adminTab === "maintenance") adminMaintenance(); }, duration:9000});
+  if(adminVisible() && ["maintenance","storage"].includes(adminTab)) renderAdmin();
+  toast(`${label}: ${result}`, {onUndo:()=>{ if(afterUndo) afterUndo(); state = JSON.parse(snap); saveState(); renderAll(); if(adminVisible() && ["maintenance","storage"].includes(adminTab)) renderAdmin(); }, duration:9000});
 }
 let orphanSel = null;           // Set of selected item keys (null = defaults)
 function cleanOrphans(selectedKeys){
@@ -395,15 +398,10 @@ const BATCH_PRESETS = [
 ];
 
 let batchUI = {target:"salary", mode:"factor", value:"1", round:"0", role:"", setKey:"scouting.status", setRaw:"", setPos:""};
-function adminMaintenance(){
-  const cats = findOrphans();
-  if(!orphanSel){ orphanSel = new Set(); cats.forEach(c=>{ if(c.safe) c.items.forEach(it=>orphanSel.add(itemKey(it))); }); }
-  const nSel = cats.flatMap(c=>c.items).filter(it=>orphanSel.has(itemKey(it))).length;
-  const bf = batchFields(); if(!bf[batchUI.setKey]) batchUI.setKey = "scouting.status";
-  const vals = bf[batchUI.setKey].values(); if(!(batchUI.setRaw in vals)) batchUI.setRaw = Object.keys(vals)[0];
-  qs("#adminBody").innerHTML = `
-    <div class="card maint-card">
-      <div class="card-head"><h2>🧹 Verwaiste Einträge</h2><button class="btn btn-sm" id="btnOrphanScan">Neu prüfen</button></div>
+/* 11.7: pieces shared by "Spielstand · Wartung & Batch" and "Admin-Zentrale · Speicher" */
+function orphanCardHTML(cats, nSel, title){
+  return `    <div class="card maint-card">
+      <div class="card-head"><h2>${title}</h2><button class="btn btn-sm" id="btnOrphanScan">Neu prüfen</button></div>
       ${cats.length ? `
         <p class="lead" style="margin-top:0">Gefunden: ${cats.map(c=>`${c.items.length} × ${esc(c.label)}`).join(" · ")}. Vorausgewählt sind nur eindeutige Fälle – „zur Prüfung“ entscheidest du selbst.</p>
         ${cats.map(c=>`<details class="orphan-cat ${c.safe ? "" : "check"}" ${c.items.length <= 6 ? "open" : ""}>
@@ -414,12 +412,29 @@ function adminMaintenance(){
         <div class="maint-actions"><button class="btn btn-accent" id="btnOrphanClean" ${nSel ? "" : "disabled"}>Verwaiste Einträge sicher bereinigen (${nSel})</button>
           <span class="muted small">Vorher wird automatisch ein Wiederherstellungspunkt angelegt; direkt danach ist Rückgängig möglich.</span></div>`
         : `<div class="future-ok">✓ Keine verwaisten Einträge gefunden – deine Daten sind aufgeräumt.</div>`}
-    </div>
-
-    ${(()=>{ const ents = storageEntries(), total = ents.reduce((a,e)=>a+e.size,0), last = readJSON(STORAGE_CLEAN_KEY);
+    </div>`;
+}
+function storageCardHTML(){
+  return `    ${(()=>{ const ents = storageEntries(), total = ents.reduce((a,e)=>a+e.size,0), last = readJSON(STORAGE_CLEAN_KEY);
       return `<div class="card maint-card"><div class="card-head"><h2>💾 Speicherbelegung</h2><span class="muted small">${fmtBytes(total)} in ${ents.length} Einträgen${last ? ` · zuletzt automatisch aufgeräumt ${relTime(last.at)} (${last.count}, ${fmtBytes(last.freed)})` : ""}</span></div>
         <div class="mem-list">${ents.slice(0,8).map(e=>`<div class="mem-row mem-${e.kind}"><span class="mem-label">${esc(e.label)}</span><span class="mem-bar"><i style="width:${Math.max(2, Math.round(e.size / Math.max(1, ents[0].size) * 100))}%"></i></span><span class="mem-size">${fmtBytes(e.size)}</span></div>`).join("")}</div>
-        <p class="hint">Beim Start entfernt das Dashboard automatisch nur, was garantiert keine Daten enthält (Protokolle gelöschter Spielstände). Alles andere steht oben unter „bitte prüfen“.</p></div>`; })()}
+        <p class="hint">Beim Start entfernt das Dashboard automatisch nur, was garantiert keine Daten enthält (Protokolle gelöschter Spielstände). Alles andere steht unten unter „bitte prüfen“.</p></div>`; })()}`;
+}
+/** Admin-Zentrale → Speicher: usage of the whole browser storage + leftovers of deleted saves */
+function adminStorage(){
+  const cats = findOrphans("storage");
+  if(!orphanSel){ orphanSel = new Set(); cats.forEach(c=>{ if(c.safe) c.items.forEach(it=>orphanSel.add(itemKey(it))); }); }
+  const nSel = cats.flatMap(c=>c.items).filter(it=>orphanSel.has(itemKey(it))).length;
+  qs("#adminBody").innerHTML = storageCardHTML() + orphanCardHTML(cats, nSel, "🧹 Speicher-Altlasten");
+}
+function adminMaintenance(){
+  const cats = findOrphans("save");
+  if(!orphanSel){ orphanSel = new Set(); cats.forEach(c=>{ if(c.safe) c.items.forEach(it=>orphanSel.add(itemKey(it))); }); }
+  const nSel = cats.flatMap(c=>c.items).filter(it=>orphanSel.has(itemKey(it))).length;
+  const bf = batchFields(); if(!bf[batchUI.setKey]) batchUI.setKey = "scouting.status";
+  const vals = bf[batchUI.setKey].values(); if(!(batchUI.setRaw in vals)) batchUI.setRaw = Object.keys(vals)[0];
+  qs("#adminBody").innerHTML = `
+    ${orphanCardHTML(cats, nSel, "🧹 Verwaiste Einträge")}
     <div class="admin-grid maint-grid">
       <div class="card maint-card">
         <div class="card-head"><h2>💱 Beträge umrechnen</h2></div>
@@ -466,10 +481,10 @@ function initMaintenance(){
   const root = qs("#adminRoot");
   root.addEventListener("change", e=>{
     const t = e.target;
-    if(t.dataset.orphan !== undefined){ t.checked ? orphanSel.add(t.dataset.orphan) : orphanSel.delete(t.dataset.orphan); adminMaintenance(); return; }
+    if(t.dataset.orphan !== undefined){ t.checked ? orphanSel.add(t.dataset.orphan) : orphanSel.delete(t.dataset.orphan); renderAdmin(); return; }
     if(t.dataset.orphanCat !== undefined){
       const c = findOrphans().find(x=>x.key === t.dataset.orphanCat); if(!c) return;
-      c.items.forEach(it=>t.checked ? orphanSel.add(itemKey(it)) : orphanSel.delete(itemKey(it))); adminMaintenance(); return;
+      c.items.forEach(it=>t.checked ? orphanSel.add(itemKey(it)) : orphanSel.delete(itemKey(it))); renderAdmin(); return;
     }
     if(t.dataset.bu !== undefined){
       batchUI[t.dataset.bu] = t.value;
@@ -480,7 +495,7 @@ function initMaintenance(){
   root.addEventListener("input", e=>{ if(e.target.dataset.bu === "value"){ batchUI.value = e.target.value; renderBatchPreviews(); } });
   root.addEventListener("click", e=>{
     const t = e.target;
-    if(t.closest("#btnOrphanScan")){ orphanSel = null; adminMaintenance(); toast("Neu geprüft"); }
+    if(t.closest("#btnOrphanScan")){ orphanSel = null; renderAdmin(); toast("Neu geprüft"); }
     else if(t.closest("#btnOrphanClean")) cleanOrphans(new Set(orphanSel));
     else if(t.closest("#btnMoneyApply")){
       const plan = moneyBatchPlan({target:batchUI.target, mode:batchUI.mode, value:num(String(batchUI.value).replace(",", "."), NaN), round:batchUI.round, role:batchUI.role});
