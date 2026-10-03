@@ -3499,6 +3499,17 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(w.eval("crSeasonName('2025/26')")==="Saison 2025/26", "… und '2025/26' wird zu 'Saison 2025/26'");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
+  console.log("\n[75] 12.0 Vorschau 3: Hub mit Hauptbühne und Seitenleiste");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const main3 = d.querySelector("#hubRoot .hub3-main"), rail3 = d.querySelector("#hubRoot .hub3-rail");
+  ok(main3 && rail3, "Zwei Zonen: Hauptbühne und Seitenleiste");
+  ok(main3.querySelector(".hub2-hero") && main3.querySelectorAll(".hub2-mod").length===2 && main3.querySelector(".hub2-news"), "Hauptbühne: Weiterspielen, beide Module, Neuigkeiten");
+  ok(rail3.querySelector("#hubClockTime") && rail3.querySelector(".hub2-saves") && rail3.querySelector(".hub2-admin"), "Seitenleiste: Uhr, Spielstände, Admin & Sicherung");
+  ok(/\.hub3\{max-width:1680px;\}/.test(require("fs").readFileSync(DIR+"style.css","utf8")) && /max-width:1180px\)\{ \.hub3-layout\{grid-template-columns:1fr;\}/.test(require("fs").readFileSync(DIR+"style.css","utf8")), "Breiter auf großen Bildschirmen (1680 px), unter 1180 px eine Spalte");
+  rail3.querySelector(".hub2-admin .hub2-admin-rows").click();
+  ok(w.eval("adminVisible()"), "Panels bleiben ganz klickbar (Admin)"); w.eval("showHub('home')");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");

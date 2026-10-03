@@ -169,17 +169,15 @@ function renderHub(){
   const nat = cur.mode === "national", stripe = cur.colors ? `linear-gradient(90deg, ${cur.colors[0]} 0 33.3%, ${cur.colors[1]} 33.3% 66.6%, ${cur.colors[2]} 66.6%)` : "";
   const now = new Date();
   root.innerHTML = `
-    <main class="hub-main hub2">
-      <header class="hub2-head">
+    <main class="hub-main hub2 hub3">
+      <div class="hub3-layout">
+        <div class="hub3-main">
+      <header class="hub2-head hub3-head">
         <div><span class="hub2-brand"><img class="nexus-mark" src="nexus.svg" alt="" width="26" height="26"><strong>Nexus</strong><span class="muted">·</span>${esc(hub.name)} <span class="beta-pill">Beta</span></span>
           <h1>${hubGreeting()}!</h1><p class="muted">Dein Command Center ist bereit für die nächste Session.</p></div>
-        <div class="hub2-side">
-          <div class="hub2-clock" aria-label="Uhrzeit"><span class="hub2-clock-icon" aria-hidden="true">🕒</span><div><strong id="hubClockTime">${now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"})}</strong>
-            <span id="hubClockDate">${now.toLocaleDateString("de-DE", {weekday:"long", day:"numeric", month:"short", year:"numeric"})}</span></div></div>
-          <div class="hub2-tools"><button class="btn btn-sm" data-hub="settings">⚙ Einstellungen</button><button class="btn btn-sm" data-hub="theme">${layout.theme === "light" ? "🌙 Dunkel" : "☀ Hell"}</button></div>
-        </div>
+        
       </header>
-      <div class="hub2-grid">
+          <div class="hub2-grid hub3-grid">
         <section class="hub2-hero hub2-click" data-hub-open="fm" style="--hero-accent:${esc(cur.accent)}" aria-label="Weiterspielen – Klick öffnet den Spielstand">
           ${stripe ? `<div class="hub2-hero-stripe" style="background:${stripe}"></div>` : ""}
           <div class="hub2-hero-top">${smCrest(cur, "xl")}<span class="hub2-pill"><i aria-hidden="true"></i>Zuletzt gespielt</span></div>
@@ -191,6 +189,34 @@ function renderHub(){
             <button class="btn btn-accent hub2-go" data-hub-open="fm" data-hub-first>▶ Weiterspielen</button>
           </div>
         </section>
+            <div class="hub3-mods">
+        <article class="hub2-card hub2-mod hub2-click" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter öffnen">
+          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="beta-pill">Beta</span></h3>
+          <p class="muted">Liste, Saisonziele und Verlauf für Karrieren in anderen Spielen.</p><span class="hub2-mod-meta">${careerTileMeta()}</span>
+        </article>
+        <article class="hub2-card hub2-mod hub2-click" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch öffnen">
+          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="beta-pill">Beta</span></h3>
+          <p class="muted">Sessions, Challenges und deine Journey-Geschichten.</p><span class="hub2-mod-meta" id="hubDiaryMeta">${diaryTileMeta()}</span>
+        </article>
+            </div>
+          </div>
+        <section class="hub2-card hub2-news hub2-click" data-hub-open="changelog" role="button" tabindex="0" aria-label="Neuigkeiten – Klick öffnet den Changelog">
+          <div class="hub2-card-head"><h3><span aria-hidden="true">📰</span> Neuigkeiten</h3><span class="muted small">alle ansehen →</span></div>
+          <div class="hub2-news-list">${CHANGELOG.slice(0,3).map((r,i)=>`
+            <div class="hub2-news-item" data-hub-cl="${esc(r.v)}">
+              <div class="hub2-news-top"><span class="cl-ver">v${esc(r.v)}</span>${r.beta ? '<span class="beta-pill">Beta</span>' : ""}${i === 0 ? '<span class="sm-badge ok">aktuell</span>' : ""}</div>
+              <strong>${esc(r.title)}</strong>
+              <span class="cl-tags">${Object.keys(CL_TAG).map(t=>{ const n = r.items.filter(x=>x[0] === t).length; return n ? `<span class="cl-tag t-${t}">${n} ${CL_TAG[t]}</span>` : ""; }).join("")}</span>
+              <p>${esc((r.items[0] || ["",""])[1])}</p>
+            </div>`).join("")}</div>
+        </section>
+        </div>
+        <aside class="hub3-rail" aria-label="Seitenleiste">
+          <div class="hub3-clockcard"><div class="hub2-side hub3-side">
+          <div class="hub2-clock" aria-label="Uhrzeit"><span class="hub2-clock-icon" aria-hidden="true">🕒</span><div><strong id="hubClockTime">${now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"})}</strong>
+            <span id="hubClockDate">${now.toLocaleDateString("de-DE", {weekday:"long", day:"numeric", month:"short", year:"numeric"})}</span></div></div>
+          <div class="hub2-tools"><button class="btn btn-sm" data-hub="settings">⚙ Einstellungen</button><button class="btn btn-sm" data-hub="theme">${layout.theme === "light" ? "🌙 Dunkel" : "☀ Hell"}</button></div>
+        </div></div>
         <section class="hub2-card hub2-saves hub2-click" data-hub-open="saves" aria-label="Spielstände – Klick öffnet die Spielstand-Auswahl">
           <div class="hub2-card-head"><h3><span aria-hidden="true">🗂</span> Spielstände</h3><span class="muted small">${sums.length} gespeichert</span></div>
           <div class="hub2-save-list">${recent.map(x=>`
@@ -200,29 +226,13 @@ function renderHub(){
             </button>`).join("")}</div>
           <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="saves">Alle Spielstände <kbd>S</kbd></button></div>
         </section>
-        <article class="hub2-card hub2-mod hub2-click" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter öffnen">
-          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="beta-pill">Beta</span></h3>
-          <p class="muted">Liste, Saisonziele und Verlauf für Karrieren in anderen Spielen.</p><span class="hub2-mod-meta">${careerTileMeta()}</span>
-        </article>
-        <article class="hub2-card hub2-mod hub2-click" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch öffnen">
-          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="beta-pill">Beta</span></h3>
-          <p class="muted">Sessions, Challenges und deine Journey-Geschichten.</p><span class="hub2-mod-meta" id="hubDiaryMeta">${diaryTileMeta()}</span>
-        </article>
         <section class="hub2-card hub2-admin hub2-click" data-hub-open="admin" aria-label="Admin und Sicherung – Klick öffnet den Admin-Bereich">
           <div class="hub2-card-head"><h3><span aria-hidden="true">🛡</span> Admin &amp; Sicherung</h3></div>
           <ul class="hub2-admin-rows">${hubAdminRows().map(([k,v,st])=>`<li><span>${esc(k)}</span><strong class="${st}">${esc(v)}</strong></li>`).join("")}</ul>
           <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="admin">Admin öffnen</button><button class="btn btn-sm" data-hub="exportAll" title="Alle Spielstände, Einstellungen und Hub in eine Datei">Alles exportieren</button></div>
         </section>
-        <section class="hub2-card hub2-news hub2-click" data-hub-open="changelog" role="button" tabindex="0" aria-label="Neuigkeiten – Klick öffnet den Changelog">
-          <div class="hub2-card-head"><h3><span aria-hidden="true">📰</span> Neuigkeiten</h3><span class="muted small">Version ${esc(APP_VERSION)} · alle Versionen ansehen →</span></div>
-          <div class="hub2-news-list">${CHANGELOG.slice(0,3).map((r,i)=>`
-            <div class="hub2-news-item" data-hub-cl="${esc(r.v)}">
-              <div class="hub2-news-top"><span class="cl-ver">v${esc(r.v)}</span>${r.beta ? '<span class="beta-pill">Beta</span>' : ""}${i === 0 ? '<span class="sm-badge ok">aktuell</span>' : ""}</div>
-              <strong>${esc(r.title)}</strong>
-              <span class="cl-tags">${Object.keys(CL_TAG).map(t=>{ const n = r.items.filter(x=>x[0] === t).length; return n ? `<span class="cl-tag t-${t}">${n} ${CL_TAG[t]}</span>` : ""; }).join("")}</span>
-              <p>${esc((r.items[0] || ["",""])[1])}</p>
-            </div>`).join("")}</div>
-        </section>
+
+        </aside>
       </div>
       ${hub.games.length ? `<section class="card hub-legacy" role="note"><div class="card-head"><h2>Spielebibliothek entfernt</h2></div>
         <p class="lead" style="margin:0 0 10px">Die Beta der Spielebibliothek ist wieder raus (dafür gibt es ja Steam). Deine <strong>${hub.games.length} eingetragenen Spiele</strong> sind noch gespeichert – sichere sie als Datei oder lösche sie.</p>

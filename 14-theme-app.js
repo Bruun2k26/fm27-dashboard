@@ -113,10 +113,13 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.0.0-vorschau.2";
+const APP_VERSION = "12.0.0-vorschau.3";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.0.0-vorschau.3", beta:true, title:"Nexus · Vorschau 3: aufgeräumter Hub", items:[
+    ["besser","Hub neu aufgeteilt: links die Hauptbühne (Begrüßung, Weiterspielen, Module), rechts eine Seitenleiste mit Uhr, Spielständen, Admin & Sicherung und Neuigkeiten – breiter auf großen Bildschirmen, ruhiger in der Mitte."],
+    ["besser","Module als flache Kacheln, Admin-Status als kompakte Felder, Neuigkeiten als schlanke Liste (ein Klick öffnet den ganzen Changelog)."]]},
   {v:"12.0.0-vorschau.2", beta:true, title:"Nexus · Vorschau 2: Videos an Sessions & neuer Look", items:[
     ["neu","Videos an Sessions: im Session-Dialog direkt aus dem Medien-Ordner wählen (Vorschau-Kacheln zum Anhaken) oder Links einfügen – in der Zeitleiste als Kacheln, ein Klick spielt sie im eigenen Player."],
     ["neu","Neuer Name: Nexus Dashboard – mit dem Würfel als Logo und neuen App-Symbolen (für die kleinen Größen eine vereinfachte Fassung). Das FM-Modul heißt weiter FM27 Dashboard; deine Daten bleiben unverändert."],
