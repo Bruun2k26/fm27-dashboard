@@ -23,13 +23,21 @@ function aiPromptText(o){
   L.push(``, `## ${nat ? "Mein Nationalteam" : "Mein Verein"}`,
     `- ${nat ? "Nationalmannschaft" : "Verein"}: ${state.club.name}`, `- Saison: ${state.club.season || "–"} · Spieldatum: ${aiDate(state.club.ingameDate)}`);
   if(o.tactic){
-    const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f);
+    const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f), t = state.tactics[f], of = oopFormOf(t);
+    const oopCat = i => of && validOopMap(t.oopMap, defs.length) ? FORMATIONS[of][t.oopMap[i]].cat : defs[i].cat;
+    const rn = r => r ? (ROLE_INFO[r] ? `${r} (${ROLE_INFO[r].en})` : r) : "–";
+    const used = new Set();
     const row = phase => defs.map((d,i)=>{ const sl = slots[i], p = sl && playerById(sl.playerId);
-      const role = sl ? (phase === "out" ? sl.roleOut : sl.roleIn) : "";
-      return `| ${d.cat} | ${p ? p.name : "(unbesetzt)"} | ${role || "–"} |`; }).join("\n");
-    L.push(``, `## Meine Taktik: ${plan.name} – Formation ${f}`,
-      ``, `### Mit Ball (in Ballbesitz)`, `| Position | Spieler | Rolle |`, `|---|---|---|`, row("in"),
-      ``, `### Gegen den Ball`, `| Position | Spieler | Rolle |`, `|---|---|---|`, row("out"));
+      const role = sl ? (phase === "out" ? sl.roleOut : sl.roleIn) : ""; if(role) used.add(role);
+      return `| ${phase === "out" ? oopCat(i) : d.cat} | ${p ? p.name : "(unbesetzt)"} | ${rn(role)} |`; }).join("\n");
+    L.push(``, `## Meine Taktik: ${plan.name} – mit Ball ${f}${of ? `, gegen den Ball ${of}` : ` (gegen den Ball dieselbe Formation, kompakter)`}`,
+      ``, `### Mit Ball (in Ballbesitz) – ${f}`, `| Position | Spieler | Rolle |`, `|---|---|---|`, row("in"),
+      ``, `### Gegen den Ball – ${of || f}`, `| Position | Spieler | Rolle |`, `|---|---|---|`, row("out"));
+    const legend = [...used].filter(r=>ROLE_INFO[r]).map(r=>`- **${r}** (${ROLE_INFO[r].en}, ${({both:"mit & gegen Ball", in:"mit Ball", out:"gegen den Ball"})[ROLE_INFO[r].phase]}): ${ROLE_INFO[r].desc}`);
+    if(legend.length) L.push(``, `### Rollen-Legende`, legend.join("\n"));
+    const cats = [...new Set(defs.map(d=>d.cat).concat(defs.map((d,i)=>oopCat(i))))];
+    L.push(``, `### Verfügbare Rollen in Football Manager 26 (nur diese Namen verwenden)`,
+      cats.map(c=>`- ${c} – mit Ball: ${ROLES_IP[c].join(", ")} · gegen den Ball: ${ROLES_OOP[c].join(", ")}`).join("\n"));
   }
   if(o.squad){
     let squad = state.players.slice();
@@ -66,10 +74,10 @@ function aiPromptText(o){
   }
   L.push(``, `## So antwortest du bitte`,
     `1. Kurze Einschätzung (3–5 Sätze).`,
-    `2. Konkrete Änderungen: Formation, Rollen **mit Ball**, Rollen **gegen den Ball**, Mannschaftsanweisungen.`,
+    `2. Konkrete Änderungen: Formation mit Ball und gegen den Ball, Rollen **mit Ball**, Rollen **gegen den Ball**, Mannschaftsanweisungen.`,
     `3. Welche Spieler aus meinem Kader in welche Rolle passen – bitte nur Spieler aus meiner Liste.`,
     `4. Worauf ich im nächsten Spiel achten soll.`,
-    `Bitte verwende die Rollen- und Anweisungsnamen so, wie sie in Football Manager heißen, und antworte auf Deutsch.`);
+    `Verwende für Rollen ausschließlich die oben aufgeführten Namen aus Football Manager 26 (deutsch, gern mit englischem Namen in Klammern), und antworte auf Deutsch.`);
   return L.join("\n");
 }
 async function aiCopy(text){

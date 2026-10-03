@@ -2972,9 +2972,9 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const prev6 = () => d.querySelector("#aiPreview").value;
   ok(d.querySelector("#modal h3").textContent==="KI-Prompt kopieren" && d.querySelector("#modal").textContent.includes("nichts automatisch gesendet") && d.querySelector("#aiCopyBtn"), "Dialog mit Vorschau und 'Prompt kopieren'");
   const pr6 = prev6(), st6 = S(), f6 = st6.formationName;
-  ok(pr6.includes(`Formation ${f6}`) && pr6.includes("### Mit Ball") && pr6.includes("### Gegen den Ball") && pr6.includes("## Kader (") && pr6.includes("## Letzte Ergebnisse") && pr6.includes("## Nächstes Spiel") && pr6.includes("## So antwortest du bitte"), "Prompt enthält Taktik (beide Phasen), Kader, Ergebnisse, nächsten Gegner, Antwortformat");
+  ok(pr6.includes(`mit Ball ${f6}`) && pr6.includes("### Mit Ball") && pr6.includes("### Gegen den Ball") && pr6.includes("## Kader (") && pr6.includes("## Letzte Ergebnisse") && pr6.includes("## Nächstes Spiel") && pr6.includes("## So antwortest du bitte"), "Prompt enthält Taktik (beide Phasen), Kader, Ergebnisse, nächsten Gegner, Antwortformat");
   const xi6 = w.eval("Object.values(slotsFor(state, state.formationName)).filter(s=>s && s.playerId).map(s=>[playerById(s.playerId).name, s.roleIn, s.roleOut])");
-  ok(xi6.length && xi6.every(([n, ri, ro])=>pr6.includes(`| ${n} | ${ri} |`) && pr6.includes(`| ${n} | ${ro} |`)), `Alle ${xi6.length} Spieler der Startelf mit Rolle mit Ball und gegen den Ball`);
+  ok(xi6.length && xi6.every(([n, ri, ro])=>pr6.includes(`| ${n} | ${ri} (`) && pr6.includes(`| ${n} | ${ro} (`)), `Alle ${xi6.length} Spieler der Startelf mit Rolle mit Ball und gegen den Ball (mit englischem Namen)`);
   ok(st6.players.every(p=>pr6.includes(`| ${p.name} | ${p.pos} |`)), `Alle ${st6.players.length} Kaderspieler mit Position`);
   ok(pr6.includes(st6.nextMatch.opponent) && (!st6.nextMatch.keyThreat || pr6.includes(st6.nextMatch.keyThreat)), "Nächster Gegner mit Hauptgefahr");
   ok(/Plan A: \d+ Spiele · \d+ S, \d+ U, \d+ N · [\d,]+ Punkte pro Spiel/.test(pr6), "Bilanz der Taktik-Pläne (Punkte pro Spiel)");
@@ -3562,6 +3562,46 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(!d.querySelector(".rp-pop") && S().tactics[S().formationName].slots[1].roleIn===r3, "Enter übernimmt die Rolle: "+r3);
   d.querySelector("#se-out + .rp-btn").click(); d.querySelector(".rp-pop").dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
   ok(!d.querySelector(".rp-pop"), "Esc schließt das Menü");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[78] Nexus v12.6: eigene Formation gegen den Ball, Spielertausch, KI-Prompt");
+  ({w,d,errs,S} = await boot());
+  w.eval("navigate('tactics'); state.formationName = '4-2-3-1'; state.tactics['4-2-3-1'] = state.tactics['4-2-3-1'] || {slots:{}}; formationDefs('4-2-3-1').forEach((d,i)=>{ const sl = ensureSlot(i); sl.playerId = state.players[i].id; }); saveState(); renderTactics()");
+  const os12 = d.querySelector("#oopFormSelect");
+  ok(os12 && os12.value==="" && os12.options[0].textContent.includes("wie mit Ball"), "Auswahl 'gegen den Ball' – Standard: wie mit Ball (kompakt)");
+  os12.value = "4-3-3"; os12.dispatchEvent(new w.Event("change", {bubbles:true}));
+  const T12 = () => S().tactics["4-2-3-1"], defsIn_12 = w.eval("formationDefs('4-2-3-1')"), defsOut_12 = w.eval("FORMATIONS['4-3-3']");
+  ok(T12().oopForm==="4-3-3" && w.eval("validOopMap(state.tactics['4-2-3-1'].oopMap, 11)") && S().phase==="out", "4-2-3-1 mit Ball, 4-3-3 gegen den Ball – Zuordnung gültig, Ansicht wechselt auf 'Gegen den Ball'");
+  const gk_12 = defsIn_12.findIndex(x=>x.cat==="TW");
+  ok(defsOut_12[T12().oopMap[gk_12]].cat==="TW", "Torwart bleibt Torwart");
+  const cats_12 = [...d.querySelectorAll("#pitch .pitch-slot .cat")].map(e=>e.textContent).sort().join(",");
+  ok(cats_12===defsOut_12.map(x=>x.cat).sort().join(","), "Spielfeld zeigt die Positionen der 4-3-3 ("+cats_12+")");
+  ok(Object.entries(T12().slots).every(([i,sl])=>w.eval(`ROLES_OOP[${JSON.stringify(defsOut_12[T12().oopMap[i]].cat)}]`).includes(sl.roleOut)), "Rollen gegen den Ball passen zur neuen Position");
+  const om_12 = defsIn_12.findIndex(x=>x.cat==="OM");
+  w.eval(`selectedSlot = ${om_12}; renderTactics()`);
+  ok(d.querySelector('label[for="se-out"], #se-out').closest(".sp-field").textContent.includes(`als ${defsOut_12[T12().oopMap[om_12]].cat} im 4-3-3`), "Seitenleiste: 'Rolle gegen Ball · als … im 4-3-3'");
+  // survives save/load – the role is checked against the position WITHOUT the ball
+  const zmRole_12 = w.eval(`ROLES_OOP[${JSON.stringify(defsOut_12[T12().oopMap[om_12]].cat)}].slice(-1)[0]`);
+  w.eval(`state.tactics["4-2-3-1"].slots[${om_12}].roleOut = ${JSON.stringify(zmRole_12)}; saveState()`);
+  const rt12 = w.eval("JSON.stringify(sanitizeState(migrateState(JSON.parse(JSON.stringify(state)))))"), t12 = JSON.parse(rt12).tactics["4-2-3-1"];
+  ok(t12.oopForm==="4-3-3" && JSON.stringify(t12.oopMap)===JSON.stringify(T12().oopMap) && t12.slots[om_12].roleOut===zmRole_12, "Übersteht Speichern/Laden – Rolle '"+zmRole_12+"' bleibt (wird an der Position gegen den Ball geprüft)");
+  // swap without the ball only changes who stands where
+  const before12 = JSON.stringify(Object.fromEntries(Object.entries(T12().slots).map(([i,sl])=>[i, sl.playerId])));
+  const [a12, b12] = [om_12, defsIn_12.findIndex(x=>x.cat==="ST")], ma_12 = T12().oopMap[a12], mb_12 = T12().oopMap[b12];
+  w.eval(`swapOop(${a12}, ${b12}); saveState(); renderTactics()`);
+  ok(T12().oopMap[a12]===mb_12 && T12().oopMap[b12]===ma_12 && JSON.stringify(Object.fromEntries(Object.entries(T12().slots).map(([i,sl])=>[i, sl.playerId])))===before12, "Tausch gegen den Ball: nur die Positionen getauscht, Aufstellung mit Ball unverändert");
+  d.querySelector('.phase-btn[data-phase="in"]').click();
+  ok([...d.querySelectorAll("#pitch .pitch-slot .cat")].map(e=>e.textContent).sort().join(",")===defsIn_12.map(x=>x.cat).sort().join(","), "Mit Ball wieder 4-2-3-1");
+  // prompt
+  w.eval("navigate('tactics')"); d.querySelector("#btnAiPrompt").click();
+  const pr12 = d.querySelector("#aiPreview").value;
+  ok(pr12.includes("mit Ball 4-2-3-1, gegen den Ball 4-3-3") && pr12.includes("### Gegen den Ball – 4-3-3") && pr12.includes("### Rollen-Legende") && pr12.includes("### Verfügbare Rollen in Football Manager 26") && pr12.includes("(Attacking Midfielder)"), "KI-Prompt: beide Formationen, englische Rollennamen, Legende, erlaubte Rollen");
+  w.eval("closeModal()");
+  os12.value = ""; w.eval("navigate('tactics')"); const os12b = d.querySelector("#oopFormSelect"); os12b.value = ""; os12b.dispatchEvent(new w.Event("change", {bubbles:true}));
+  ok(!T12().oopForm && !T12().oopMap, "Zurück auf 'wie mit Ball (kompakt)'");
+  // drag fix: the dragged dot must not hide its target
+  ok(/drag\.src\.style\.pointerEvents = "none"/.test(js) && /snap zone/.test(js), "Spielertausch: gezogener Spieler verdeckt sein Ziel nicht mehr, Fangbereich um jeden Spieler");
+  ok(!require("fs").existsSync(DIR+"ANLEITUNG-App.md") && w.eval("APP_VERSION")==="12.6" && w.eval("CHANGELOG.slice(0,6).map(c=>c.v).join()")==="12.6,12.5,12.4,12.3,12.2,12.1" && w.eval("CHANGELOG[0].title").startsWith("Nexus v12.6 – "), "Versionen 12.1–12.6 im neuen Schema, Anleitung entfernt");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

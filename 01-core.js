@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "12.0.0-vorschau.5";
+window.FM27_BUILD = "12.6";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -236,6 +236,33 @@ const ROLE_RENAME = {
     "Mitlaufender Flügel":"Mitarbeitender Flügelspieler","Pressender Flügel":"Flügelspieler","Pressender Stürmer":"Mittelstürmer","Abschirmender Stürmer":"Mitarbeitender Mittelstürmer"},
   high:{OM:"Zentraler Umschaltzehner", LF:"Umschaltflügelspieler", RF:"Umschaltflügelspieler", ST:"Zentraler Umschaltstürmer"}
 };
+/* 12.6: an own formation WITHOUT the ball (e.g. 4-2-3-1 with the ball, 4-3-3 without).
+   tactics[f].oopForm = formation name ("" = same formation, compact) · tactics[f].oopMap = {ipSlot: oopSlot} */
+function oopFormOf(t){ return t && typeof t.oopForm === "string" && t.oopForm !== FREE && FORMATIONS[t.oopForm] ? t.oopForm : ""; }
+/** Hungarian algorithm (min-cost assignment) for an n×n cost matrix → row → column */
+function hungarian(cost){
+  const n = cost.length, INF = 1e18, u = Array(n + 1).fill(0), v = Array(n + 1).fill(0), p = Array(n + 1).fill(0), way = Array(n + 1).fill(0);
+  for(let i = 1; i <= n; i++){
+    p[0] = i; let j0 = 0; const minv = Array(n + 1).fill(INF), used = Array(n + 1).fill(false);
+    do{ used[j0] = true; const i0 = p[j0]; let delta = INF, j1 = 0;
+      for(let j = 1; j <= n; j++) if(!used[j]){ const cur = cost[i0 - 1][j - 1] - u[i0] - v[j]; if(cur < minv[j]){ minv[j] = cur; way[j] = j0; } if(minv[j] < delta){ delta = minv[j]; j1 = j; } }
+      for(let j = 0; j <= n; j++){ if(used[j]){ u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta; }
+      j0 = j1; } while(p[j0] !== 0);
+    do{ const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while(j0);
+  }
+  const ans = Array(n); for(let j = 1; j <= n; j++) if(p[j]) ans[p[j] - 1] = j - 1; return ans;
+}
+/** every player goes to the nearest position of the formation without the ball (shortest total way, keeper stays keeper) */
+function autoOopMap(ipDefs, oopDefs){
+  if(!ipDefs || !oopDefs || ipDefs.length !== oopDefs.length) return null;
+  const cost = ipDefs.map(a=>oopDefs.map(b=>((a.cat === "TW") !== (b.cat === "TW") ? 1e6 : Math.hypot((a.x - b.x) * 0.68, a.y - b.y))));
+  const ans = hungarian(cost), map = {}; ans.forEach((j,i)=>{ map[i] = j; }); return map;
+}
+function validOopMap(m, n){
+  if(!m || typeof m !== "object") return false;
+  const vals = []; for(let i = 0; i < n; i++){ const j = m[i]; if(!Number.isInteger(j) || j < 0 || j >= n) return false; vals.push(j); }
+  return new Set(vals).size === n;
+}
 /** an old role name → its FM26 counterpart in this position group (or "" if there is none in the list) */
 function mapOldRole(phase, cat, name, list){
   const to = name === "Hoch bleibend" ? ROLE_RENAME.high[cat] : ROLE_RENAME[phase === "out" ? "out" : "in"][name];
@@ -1168,20 +1195,22 @@ function sanitizeTacticBlock(b, ids){
   b.tactics = {};
   allFormationKeys(b).forEach(f=>{
     const src = (tactics[f] && tactics[f].slots) || {};
-    const slots = {};
-    formationDefs(f, b).forEach((def, i)=>{
+    const slots = {}, ipDefs = formationDefs(f, b);
+    const of = oopFormOf(tactics[f]) && FORMATIONS[oopFormOf(tactics[f])].length === ipDefs.length ? oopFormOf(tactics[f]) : "";
+    const oopMap = of ? (validOopMap(tactics[f].oopMap, ipDefs.length) ? Object.fromEntries(Object.entries(tactics[f].oopMap).map(([k,v])=>[k, v])) : autoOopMap(ipDefs, FORMATIONS[of])) : null;
+    ipDefs.forEach((def, i)=>{
       const o = src[i];
       if(!o || typeof o !== "object") return;
       slots[i] = {
         playerId: ids.has(o.playerId) ? o.playerId : null,
         roleIn: ROLES_IP[def.cat].includes(o.roleIn) ? o.roleIn : (mapOldRole("in", def.cat, o.roleIn, ROLES_IP[def.cat]) || ROLES_IP[def.cat][0]),
-        roleOut: ROLES_OOP[def.cat].includes(o.roleOut) ? o.roleOut : (mapOldRole("out", def.cat, o.roleOut, ROLES_OOP[def.cat]) || ROLES_OOP[def.cat][0])
+        roleOut: (oc => ROLES_OOP[oc].includes(o.roleOut) ? o.roleOut : (mapOldRole("out", oc, o.roleOut, ROLES_OOP[oc]) || ROLES_OOP[oc][0]))(of ? FORMATIONS[of][oopMap[i]].cat : def.cat)
       };
       if(o.oopPos && typeof o.oopPos === "object"){
         slots[i].oopPos = {x: clamp(num(o.oopPos.x, 50), 3, 97), y: clamp(num(o.oopPos.y, 50), 3, 97)};
       }
     });
-    b.tactics[f] = {slots};
+    b.tactics[f] = of ? {slots, oopForm:of, oopMap} : {slots};
   });
   return b;
 }

@@ -154,7 +154,7 @@ function mediaGalleryHTML(){
           ${list.length > 240 ? `<p class="muted small">Die ersten 240 von ${list.length} – Suche oder Ordner-Filter grenzen ein.</p>` : ""}`
         : `<p class="muted">${mediaScanning ? "Wird eingelesen …" : "Keine Videos gefunden (mp4, webm, mov, m4v, mkv)."}</p>`}`;
   }
-  return `<section class="hub2-card media-panel"><div class="hub2-card-head"><h3>🎬 Medien <span class="beta-pill">Vorschau</span></h3><button class="btn btn-sm" data-media="link">+ Link</button></div>${body}${linkCards}</section>`;
+  return `<section class="hub2-card media-panel"><div class="hub2-card-head"><h3>🎬 Medien <span class="beta-pill">Beta</span></h3><button class="btn btn-sm" data-media="link">+ Link</button></div>${body}${linkCards}</section>`;
 }
 /** after rendering: thumbnails only for cards that are (about to be) visible */
 function mediaAfterRender(root){

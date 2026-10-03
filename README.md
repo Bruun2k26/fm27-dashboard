@@ -7,7 +7,7 @@
 Dein persönliches Command Center für **Football Manager** – und für deine anderen Karrieren und Spielsessions.
 Läuft komplett im Browser, funktioniert offline, braucht kein Konto und keinen Server. **Alle Daten bleiben auf deinem Gerät.**
 
-![Version](https://img.shields.io/badge/Version-12.0_Vorschau_5-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.310_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
+![Version](https://img.shields.io/badge/Version-12.6-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.324_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
 
 > **Beta-Hinweis:** Gaming-Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt sind noch als **Beta** gekennzeichnet. Das FM27 Dashboard selbst ist stabil.
 
@@ -49,7 +49,7 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 ### ⚽ FM27 Dashboard
 - **Portal** mit frei anordenbaren Widgets: nächstes Spiel, Form & Bilanz, Kaderplan, Startelf, Ziele, offene Aufgaben
 - **Kader** als Tabelle mit verschiebbaren Spalten, eigenen Feldern, Filtern und Import aus FM
-- **Taktik** mit Spielfeld, Plan A/B, Standards und zwei Phasen: **mit Ball / gegen den Ball** – mit allen 68 Rollen aus FM26 und ihrer Kurzbeschreibung im Rollen-Menü – die Spieler laufen beim Umschalten sichtbar auf ihre Positionen
+- **Taktik** mit Spielfeld, Plan A/B, Standards und zwei Phasen: **mit Ball / gegen den Ball** – mit eigener Formation gegen den Ball (z. B. 4-2-3-1 mit Ball, 4-3-3 gegen den Ball) und allen 68 Rollen aus FM26 samt Kurzbeschreibung im Rollen-Menü – die Spieler laufen beim Umschalten sichtbar auf ihre Positionen
 - **🤖 KI-Prompt (Beta)**: stellt aus Kader, Taktik, Ergebnissen und nächstem Gegner eine fertige Anfrage zusammen – kopieren und bei Claude oder einer anderen KI einfügen. Es wird nichts automatisch gesendet.
 - **Spieltag**, Ergebnisse und Gegner-Datenbank
 - **Transfers** mit Transfer-Center, Leihen und Verkaufsliste
@@ -165,12 +165,11 @@ Die Testreihe läuft mit [jsdom](https://github.com/jsdom/jsdom) und [fake-index
 
 ## Roadmap
 
-**Version 12 (geplant)**
-- 🌍 **Mehrsprachigkeit:** Deutsch bleibt Hauptsprache, **Englisch** kommt als zweite Sprache dazu
-- ✅ **Raus aus der Beta:** Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt werden gemeinsam für stabil erklärt – vor der Übersetzung, damit die Texte feststehen
-
-**Später**
-- Import an das Exportformat von **FM27** anpassen, sobald das Spiel erscheint
+- **Nexus v12.7 – Schneller & leichter:** Performance (Start, große Listen, Bilder)
+- **Nexus v12.8 – Feinschliff & Wünsche:** gesammelte Wünsche und Lücken
+- **Nexus v12.9 – Raus aus Beta:** alle Beta-Bereiche werden stabil
+- **Nexus v13.0 – Deutsch & English:** Englisch als zweite Sprache
+- **Sobald FM27 erscheint:** Import an das neue Exportformat anpassen
 
 Den vollständigen Verlauf findest du im Dashboard unter **Hub → Neuigkeiten**.
 

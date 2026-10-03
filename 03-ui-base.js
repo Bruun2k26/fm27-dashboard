@@ -246,8 +246,9 @@ function assignToSlot(pid, toIdx, fromIdx){
 function unassign(idx){ const sl = currentSlots()[idx]; if(sl) sl.playerId = null; }
 
 // Out-of-possession shape: block drops and narrows; "Hoch bleibend" roles stay up.
-function slotCoords(def, slot, phase){
+function slotCoords(def, slot, phase, oopDef){
   if(phase === "out" && slot && slot.oopPos) return {x: slot.oopPos.x, y: slot.oopPos.y};   // manually placed
+  if(phase === "out" && oopDef) return {x: oopDef.x, y: oopDef.y};                             // 12.6: own formation without the ball
   let {x, y} = def;
   if(phase === "out" && def.cat !== "TW"){
     // compact mid-block: vertical span halved around y=60; "Hoch bleibend"/pressing roles stay up

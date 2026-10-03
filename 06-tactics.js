@@ -92,20 +92,29 @@ function animatePitchFrom(before){
   });
 }
 
+/** 12.6: the formation without the ball of the current formation (or null = same formation, compact) */
+function oopInfo(){
+  const t = state.tactics[state.formationName], of = oopFormOf(t);
+  return of && validOopMap(t.oopMap, formationDefs(state.formationName).length) ? {form:of, defs:FORMATIONS[of], map:t.oopMap} : null;
+}
+const oopDefAt = (oop, i) => oop ? oop.defs[oop.map[i]] : null;
 function pitchHTML({mini=false}={}){
   const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f);
-  const phase = mini ? "in" : state.phase;
-  const pos = defs.map((d,i)=>slotCoords(d, slots[i], phase));
+  const phase = mini ? "in" : state.phase, oop = phase === "out" ? oopInfo() : null;
+  const pos = defs.map((d,i)=>slotCoords(d, slots[i], phase, oopDefAt(oop, i)));
 
   let lines = "";
   if(!mini && state.ui.showLinks){
-    lines = formationLinks(f).filter(([a,b])=>slots[a]?.playerId && slots[b]?.playerId).map(([a,b])=>{
+    const inv = oop ? Object.fromEntries(Object.entries(oop.map).map(([i,j])=>[j, +i])) : null;
+    const linkPairs = oop ? formationLinks(oop.form).map(([a,b])=>[inv[a], inv[b]]) : formationLinks(f);
+    lines = linkPairs.filter(([a,b])=>slots[a]?.playerId && slots[b]?.playerId).map(([a,b])=>{
       const hi = selectedSlot === a || selectedSlot === b;
       return `<line class="${hi?"hi":""}" x1="${pos[a].x}" y1="${pos[a].y}" x2="${pos[b].x}" y2="${pos[b].y}"/>`;
     }).join("");
   }
 
-  const nodes = defs.map((d,i)=>{
+  const nodes = defs.map((dIn,i)=>{
+    const d = oopDefAt(oop, i) || dIn;                 // without the ball: position of the own formation
     const sl = slots[i], p = sl && playerById(sl.playerId);
     const cls = ["pitch-slot"];
     if(!p) cls.push("empty");
@@ -134,9 +143,39 @@ function pitchHTML({mini=false}={}){
   </div>`;
 }
 
+function renderOopFormSelect(){
+  const sel = qs("#oopFormSelect"); if(!sel) return;
+  const t = state.tactics[state.formationName], of = oopFormOf(t);
+  sel.innerHTML = `<option value="">wie mit Ball (kompakt)</option>` + Object.keys(FORMATIONS).map(k=>`<option value="${esc(k)}" ${k === of ? "selected" : ""}>${esc(k)}</option>`).join("");
+  sel.value = of;
+}
+/** choose the formation without the ball – players are assigned automatically, roles follow the new positions */
+function setOopForm(val){
+  const f = state.formationName, t = state.tactics[f] || (state.tactics[f] = {slots:{}});
+  const before = state.phase === "out" ? pitchPositions() : null;
+  if(!val || !FORMATIONS[val]){ delete t.oopForm; delete t.oopMap; }
+  else {
+    const map = autoOopMap(formationDefs(f), FORMATIONS[val]); if(!map){ toast("Diese Formation passt nicht zur Aufstellung."); return; }
+    t.oopForm = val; t.oopMap = map;
+  }
+  const oop = oopInfo();
+  Object.entries(t.slots || {}).forEach(([i, sl])=>{ delete sl.oopPos; const cat = (oopDefAt(oop, +i) || formationDefs(f)[i]).cat;
+    if(!ROLES_OOP[cat].includes(sl.roleOut)) sl.roleOut = ROLES_OOP[cat][0]; });
+  state.phase = "out"; saveState(); renderTactics(); if(before) animatePitchFrom(before);
+  toast(val ? `Gegen den Ball: ${val} – Spieler automatisch zugeordnet. Tauschen per Ziehen.` : "Gegen den Ball: wie mit Ball (kompakt)");
+}
+/** without the ball (own formation): swap WHO stands where – the line-up with the ball stays as it is */
+function swapOop(a, b){
+  const t = state.tactics[state.formationName]; if(!oopInfo() || a === b) return false;
+  [t.oopMap[a], t.oopMap[b]] = [t.oopMap[b], t.oopMap[a]];
+  const sa = ensureSlot(a), sb = ensureSlot(b);
+  [sa.roleOut, sb.roleOut] = [sb.roleOut, sa.roleOut];   // the role belongs to the position
+  const pa = sa.oopPos, pb = sb.oopPos; if(pb) sa.oopPos = pb; else delete sa.oopPos; if(pa) sb.oopPos = pa; else delete sb.oopPos;
+  return true;
+}
 function renderTactics(){
   if(!qs("#pitchHost")) return;
-  renderFormationOptions();
+  renderFormationOptions(); renderOopFormSelect();
   qsa(".phase-btn").forEach(b=>b.classList.toggle("active", b.dataset.phase === state.phase));
   qs("#toggleLinks").checked = state.ui.showLinks;
   renderPlanBar();
@@ -168,7 +207,7 @@ function renderSlotEditor(){
       ${d.cat !== "TW" ? `<select id="se-cat" class="se-cat" title="Positionskürzel manuell festlegen" aria-label="Positionskürzel">${options(POS_LIST.filter(x=>x!=="TW"), d.cat)}</select>` : ""}</div>
     <div class="sp-field"><label for="se-player">Spieler</label><select id="se-player">${playerOptions(sl.playerId)}</select></div>
     <div class="sp-field"><label for="se-in">Rolle mit Ball</label><select id="se-in">${options(ROLES_IP[d.cat], sl.roleIn)}</select></div>
-    <div class="sp-field"><label for="se-out">Rolle gegen Ball</label><select id="se-out">${options(ROLES_OOP[d.cat], sl.roleOut)}</select></div>
+    <div class="sp-field"><label for="se-out">Rolle gegen Ball${oopDefAt(oopInfo(), selectedSlot) ? ` <span class="muted small">· als ${oopDefAt(oopInfo(), selectedSlot).cat} im ${oopInfo().form}</span>` : ""}</label><select id="se-out">${options(ROLES_OOP[(oopDefAt(oopInfo(), selectedSlot) || d).cat], sl.roleOut)}</select></div>
     ${p && positionFit(p,d.cat) < 0.85 ? `<p class="hint" style="color:var(--warning)">${esc(p.name)} spielt hier nicht auf seiner Haupt- oder Nebenposition.</p>` : ""}
     ${p && UNAVAILABLE.includes(p.status) ? `<p class="hint" style="color:var(--neg-text)">${esc(p.name)}: ${STATUS[p.status]}</p>` : ""}`;
   qs("#se-player").onchange = e=>{
@@ -285,7 +324,8 @@ function toFreeFormation(){
   if(state.formationName === FREE) return null;
   const base = state.formationName;
   state.customFormation = {base, slots: FORMATIONS[base].map(d=>({cat:d.cat, x:d.x, y:d.y}))};
-  state.tactics[FREE] = {slots: JSON.parse(JSON.stringify(slotsFor(state, base)))};
+  state.tactics[FREE] = Object.assign({slots: JSON.parse(JSON.stringify(slotsFor(state, base)))},
+    oopFormOf(state.tactics[base]) ? {oopForm:state.tactics[base].oopForm, oopMap:Object.assign({}, state.tactics[base].oopMap)} : {});
   state.formationName = FREE;
   return base;
 }
@@ -349,9 +389,18 @@ function initDragDrop(){
     }
     e.preventDefault();
     drag.ghost.style.left = e.clientX+"px"; drag.ghost.style.top = e.clientY+"px";
+    // 12.6: the dragged dot moves with the pointer – look THROUGH it (it used to hide every target → no swap)
+    const prevPE = drag.src.style.pointerEvents; drag.src.style.pointerEvents = "none";
     const over = document.elementFromPoint(e.clientX, e.clientY);
+    drag.src.style.pointerEvents = prevPE;
     let target = over && (over.closest("#pitch .pitch-slot") || over.closest("#benchList"));
     if(target === drag.src) target = null;                                      // hovering over itself = open grass
+    if(!target && over && over.closest("#pitch") && (drag.pid || drag.fromSlot !== null)){   // snap zone: near another player = swap
+      let best = null, bestD = 34;
+      qsa("#pitch .pitch-slot").forEach(el=>{ if(el === drag.src) return; const r = el.querySelector(".dot").getBoundingClientRect();
+        const dd = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); if(dd < bestD){ bestD = dd; best = el; } });
+      if(best && (drag.pid || best.dataset.pid)) target = best;
+    }
     if(target && target.id === "benchList" && !drag.pid) target = null;        // empty slot can't go to the bench
     if(target && target.classList.contains("pitch-slot") && !drag.pid && drag.fromSlot === null) target = null;
     // Free positioning: a pitch position dragged onto open grass follows the pointer.
@@ -404,6 +453,9 @@ function initDragDrop(){
     }
     const to = num(target.dataset.slot);
     if(to === d.fromSlot) return;
+    if(state.phase === "out" && oopInfo() && d.fromSlot !== null){   // own formation without the ball: swap only who stands where
+      swapOop(d.fromSlot, to); selectedSlot = to; saveState(); renderTactics(); return;
+    }
     assignToSlot(d.pid, to, d.fromSlot);
     selectedSlot = to;
     saveState(); renderTactics();
@@ -428,7 +480,7 @@ function initDragDrop(){
     selectedSlot = idx;
     if(state.phase === "in") moveSlotTo(idx, def.x + arrows[e.key][0]*step, def.y + arrows[e.key][1]*step);
     else {
-      const cur = slotCoords(def, currentSlots()[idx], "out");
+      const cur = slotCoords(def, currentSlots()[idx], "out", oopDefAt(oopInfo(), idx));
       setOopPos(idx, cur.x + arrows[e.key][0]*step, cur.y + arrows[e.key][1]*step);
     }
     const again = qs(`#pitch [data-slot="${idx}"]`); if(again) again.focus();
@@ -463,6 +515,7 @@ function initTactics(){
     if(empty && state.players.length){ autoFillXI(state, state.formationName); toast("Neue Formation – beste Elf vorgeschlagen"); }
     saveState(); renderTactics(); renderHeader();
   });
+  { const os = qs("#oopFormSelect"); if(os) os.addEventListener("change", e=>setOopForm(e.target.value)); }
   qsa(".phase-btn").forEach(btn=> btn.addEventListener("click", ()=>{
     if(state.phase === btn.dataset.phase) return;
     const before = pitchPositions(); state.phase = btn.dataset.phase; saveState(); renderTactics(); animatePitchFrom(before);

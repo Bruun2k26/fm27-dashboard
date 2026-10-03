@@ -113,27 +113,33 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.0.0-vorschau.5";
+const APP_VERSION = "12.6";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
-  {v:"12.0.0-vorschau.5", beta:true, title:"Nexus · Vorschau 5: die echten FM26-Rollen", items:[
+  {v:"12.6", beta:true, title:"Nexus v12.6 – Gegen-Ball-Formation", items:[
+    ["neu","Taktik: eigene Formation gegen den Ball – z. B. mit Ball 4-2-3-1, gegen den Ball 4-3-3. Die Spieler werden automatisch der nächstgelegenen Position zugeordnet (der Torwart bleibt Torwart); Positionskürzel und Rollen gegen den Ball folgen der neuen Position. „wie mit Ball (kompakt)“ bleibt als Option."],
+    ["neu","In der Ansicht „Gegen den Ball“ tauscht Ziehen nur, wer gegen den Ball wo steht – die Aufstellung mit Ball bleibt unverändert."],
+    ["fix","Spielertausch per Ziehen klappte oft nicht: der gezogene Spieler verdeckte sein Ziel, aus dem Tausch wurde eine Positionsverschiebung (z. B. OM → ZM). Jetzt wird zuverlässig getauscht – mit Fangbereich rund um jeden Spieler."],
+    ["besser","KI-Prompt: beide Formationen, Rollen mit englischem Namen, eine Rollen-Legende mit Kurzbeschreibungen und die Liste der FM26-Rollen je Position – die KI schlägt nur Rollen vor, die es im Spiel gibt."],
+    ["besser","Neue Versionsnamen: die Vorschauen heißen jetzt 12.1 bis 12.5 („Nexus v12.x – …“). Die Datei ANLEITUNG-App.md entfällt – alles steht in der README."]]},
+  {v:"12.5", beta:true, title:"Nexus v12.5 – FM26-Rollen", items:[
     ["neu","Taktik: alle 68 Rollen aus Football Manager 26 mit den offiziellen deutschen Namen – mit Ball (Offensive + Def./Off.) und gegen den Ball (Defensive + Def./Off.), passend zur Position (AV/FV auf LV/RV, Außenspieler auf LF/RF, Halbraumverteidiger bei IV …)."],
     ["neu","Neues Rollen-Menü: beim Überfahren oder mit ↑/↓ erscheinen englischer Name, Phase und Kurzbeschreibung der Rolle; Enter wählt, Buchstaben springen."],
     ["besser","Bestehende Aufstellungen werden automatisch umgestellt (z. B. Mezzala → Weiter Achter, Inside Forward → Inverser Außenstürmer, „Hoch bleibend“ → Umschaltstürmer/-zehner/-flügelspieler); selbst angelegte Rollen bleiben erhalten. Die Umschalt-Rollen bleiben gegen den Ball vorne."],
     ["besser","Der KI-Prompt nutzt damit automatisch die echten FM-Rollennamen."]]},
-  {v:"12.0.0-vorschau.4", beta:true, title:"Nexus · Vorschau 4: Session & Woche im Hub", items:[
+  {v:"12.4", beta:true, title:"Nexus v12.4 – Session & Woche", items:[
     ["neu","Hub → Seitenleiste „Session & Woche“: Session direkt im Hub starten (mit Vorhaben) und beenden, laufende Uhr, Spielzeit und Sessions dieser Woche, 🔥 Serie und deine aktiven Challenges mit Fortschritt. Klick auf die Karte öffnet das Tagebuch."]]},
-  {v:"12.0.0-vorschau.3", beta:true, title:"Nexus · Vorschau 3: aufgeräumter Hub", items:[
+  {v:"12.3", beta:true, title:"Nexus v12.3 – Hub aufgeräumt", items:[
     ["besser","Hub neu aufgeteilt: links die Hauptbühne (Begrüßung, Weiterspielen, Module), rechts eine Seitenleiste mit Uhr, Spielständen, Admin & Sicherung und Neuigkeiten – breiter auf großen Bildschirmen, ruhiger in der Mitte."],
     ["besser","Module als flache Kacheln, Admin-Status als kompakte Felder, Neuigkeiten als schlanke Liste (ein Klick öffnet den ganzen Changelog)."]]},
-  {v:"12.0.0-vorschau.2", beta:true, title:"Nexus · Vorschau 2: Videos an Sessions & neuer Look", items:[
+  {v:"12.2", beta:true, title:"Nexus v12.2 – Videos & Nexus-Look", items:[
     ["neu","Videos an Sessions: im Session-Dialog direkt aus dem Medien-Ordner wählen (Vorschau-Kacheln zum Anhaken) oder Links einfügen – in der Zeitleiste als Kacheln, ein Klick spielt sie im eigenen Player."],
     ["neu","Neuer Name: Nexus Dashboard – mit dem Würfel als Logo und neuen App-Symbolen (für die kleinen Größen eine vereinfachte Fassung). Das FM-Modul heißt weiter FM27 Dashboard; deine Daten bleiben unverändert."],
     ["neu","Farben folgen dem aktiven Profil: im Karriere-Begleiter die Farbe der Karriere, im Tagebuch die der laufenden Session – zurück im Dashboard wieder die des Vereins."],
     ["besser","Der große Play-Knopf im Player ist jetzt rund."],
     ["fix","Karriere-Begleiter: aus „Saison 1“ wurde „Saison Saison 1“."]]},
-  {v:"12.0.0-vorschau.1", beta:true, title:"Nexus · Vorschau 1: Medien", items:[
+  {v:"12.1", beta:true, title:"Nexus v12.1 – Medien & Videoplayer", items:[
     ["neu","Spiel-Tagebuch → 🎬 Medien: verbinde deinen Aufnahme-Ordner (z. B. Videos\\Captures) – das Dashboard zeigt alle Videos mit Vorschaubild, Länge und Datum, durchsuchbar und nach Unterordnern filterbar. Der Ordner wird nur gelesen, nichts wird kopiert."],
     ["neu","Eigener Videoplayer: Zeitleiste mit Vorschau-Zeit, ±10 s, Bild für Bild, Geschwindigkeit 0,25–2×, Lautstärke, Wiederholen, Bild im Bild, Vollbild – plus Tastenkürzel (Leertaste, J/L, ←/→, ↑/↓, M, F, , und ., [ und ], 0–9, Esc)."],
     ["neu","Video-Links: YouTube und Twitch-Clips eingebettet, direkte Videodateien (.mp4, .webm) im eigenen Player."]]},
@@ -453,7 +459,7 @@ function installApp(){
     title:"Als App installieren",
     body: isHttp()
       ? `<p class="lead">Dein Browser bietet das Installieren gerade nicht direkt an. In Chromium-Browsern geht es über das Browser-Menü („App installieren“ bzw. „Installieren“) oder das Installieren-Symbol in der Adressleiste. In Vivaldi außerdem per Rechtsklick auf den Tab.</p>`
-      : `<p class="lead">Browser installieren Apps nur von einer Webadresse (https), nicht von einer lokal geöffneten Datei. Die Anleitung <strong>ANLEITUNG-App.md</strong> im Dashboard-Ordner zeigt, wie du das Dashboard kostenlos über GitHub Pages bereitstellst – deine Daten bleiben dabei lokal auf deinem Gerät.</p>
+      : `<p class="lead">Browser installieren Apps nur von einer Webadresse (https), nicht von einer lokal geöffneten Datei. Die README (Abschnitt <strong>„Eigene Kopie auf GitHub Pages“</strong>) zeigt, wie du das Dashboard kostenlos über GitHub Pages bereitstellst – deine Daten bleiben dabei lokal auf deinem Gerät.</p>
          <p class="lead">Vor dem Wechsel hier im Menü <strong>„Alles exportieren (Umzug)“</strong> wählen – die Datei lädst du dann in der App.</p>`
   });
 }

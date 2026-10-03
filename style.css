@@ -2217,3 +2217,8 @@ td.num .cr-cell{text-align:right;}
 #pitch .p-role{white-space:normal;max-width:112px;line-height:1.15;text-align:center;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip;}
 #pitch{overflow:visible;} .pitch-wrap, .pitch-card{overflow:visible;} #pitch .pitch-slot{z-index:2;}
+
+/* ---------- 12.6: formation without the ball ---------- */
+.oop-form{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);white-space:nowrap;}
+.oop-form select{background:var(--bg-800);border:1px solid var(--border);border-radius:var(--radius-m);padding:5px 8px;color:var(--text-primary);font:inherit;font-size:12.5px;}
+.oop-form select:focus{outline:none;border-color:var(--accent);}
