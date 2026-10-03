@@ -1,7 +1,7 @@
 /* FM27 Manager Dashboard – Service Worker
    Network first: online you always get the newest files; offline the app starts from the cache.
    Change CACHE on every release so the browser notices the new version. */
-const CACHE = "fm27-app-11.9";
+const CACHE = "fm27-app-11.9.1";
 const SHELL = ["./", "./index.html", "./js/01-core.js", "./js/02-storage.js", "./js/03-ui-base.js", "./js/04-portal.js", "./js/05-squad.js", "./js/06-tactics.js", "./js/07-transfers.js", "./js/08-finance.js", "./js/09-development.js", "./js/10-matchday-notes.js", "./js/11-settings-io.js", "./js/12-fm-import.js", "./js/13-analysis-backup.js", "./js/14-theme-app.js", "./js/15-admin-tools.js", "./js/16-transfer-center.js", "./js/17-storage-care.js", "./js/18-journey.js", "./js/19-national.js", "./js/20-saves-hotkeys.js", "./js/21-admin.js", "./js/22-layout-columns.js", "./js/23-hub.js", "./js/24-ai-prompt.js", "./js/24-career.js", "./js/24-diary.js", "./js/25-init.js", "./01-core.js", "./02-storage.js", "./03-ui-base.js", "./04-portal.js", "./05-squad.js", "./06-tactics.js", "./07-transfers.js", "./08-finance.js", "./09-development.js", "./10-matchday-notes.js", "./11-settings-io.js", "./12-fm-import.js", "./13-analysis-backup.js", "./14-theme-app.js", "./15-admin-tools.js", "./16-transfer-center.js", "./17-storage-care.js", "./18-journey.js", "./19-national.js", "./20-saves-hotkeys.js", "./21-admin.js", "./22-layout-columns.js", "./23-hub.js", "./24-ai-prompt.js", "./24-career.js", "./24-diary.js", "./25-init.js", "./style.css", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png"];
 
 self.addEventListener("install", e => {

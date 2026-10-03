@@ -113,10 +113,12 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.9";
+const APP_VERSION = "11.9.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.9.1", title:"Tippen im Hub repariert", items:[
+    ["fix","In Textfeldern im Hub (Admin-Zentrale, Karriere-Begleiter) öffnete ein „s“ das Spielstand-Menü – und andere Ein-Tasten-Kürzel lösten ebenfalls aus. Jetzt gilt wie im Dashboard: beim Tippen keine Kürzel, nur Strg + K (Befehlspalette) funktioniert überall."]]},
   {v:"11.9", beta:true, title:"Karriere-Begleiter (Beta)", items:[
     ["neu","Hub → Karriere-Begleiter: Karrieren aus anderen Spielen (EA FC, F1 Manager …) mit eigenem Wappen, Spiel, Team und Saison."],
     ["neu","Liste mit frei wählbaren Spalten (Vorlagen für Fußball und Motorsport), direkt bearbeitbar und sortierbar; Saisonziele mit Status; Saisonverlauf mit Platz, Bilanz und Titeln – „Saison abschließen“ nimmt die Liste mit."],

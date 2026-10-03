@@ -374,7 +374,9 @@ function initShortcuts(){
     if(hubView && !qs("#modalOverlay").classList.contains("active") && !qs("#cmdOverlay").classList.contains("active")){   // 11.4: the hub has its own keys
       if(typeof hubKey === "function" && hubKey(e)) return;
       const c = comboFromEvent(e), m = hotkeyMap(), a = c ? Object.keys(m).find(id=>m[id] === c) : null;
-      if(["palette","saves","help","theme","session","diary","career"].includes(a)){ e.preventDefault(); runHotkey(a, e); }
+      if(a === "palette"){ e.preventDefault(); runHotkey(a, e); return; }      // the palette works everywhere – as in the dashboard
+      if(isTyping(e.target) || smOpen) return;                                  // 11.9.1: typing in the hub (admin notes, career list …) never triggers shortcuts
+      if(["saves","help","theme","session","diary","career"].includes(a)){ e.preventDefault(); runHotkey(a, e); }
       return;
     }
     const combo = comboFromEvent(e), map = hotkeyMap();

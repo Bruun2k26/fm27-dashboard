@@ -3379,6 +3379,30 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   d.querySelector("#toastUndoBtn").click(); ok(CR_K().careers.length===1, "… rückgängig");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
+  console.log("\n[72] Version 11.9.1: Tippen im Hub löst keine Kürzel aus");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const smHidden = () => !d.querySelector("#saveMenu") || d.querySelector("#saveMenu").hidden;
+  const typeIn = (el, key) => { el.focus(); el.dispatchEvent(new w.KeyboardEvent("keydown", {key, bubbles:true, cancelable:true})); };
+  let ta = null, taTab = "";
+  for(const t of ["notes","lists","raw","fields","log","security"]){
+    w.eval(`setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = '${t}'; showHub('admin')`);
+    ta = d.querySelector("#adminBody textarea, #adminBody input[type=text], #adminBody input[type=search], #adminBody input:not([type])"); if(ta){ taTab = t; break; } }
+  ok(ta, "Admin-Zentrale: Textfeld vorhanden (Bereich "+taTab+")");
+  typeIn(ta, "s"); typeIn(ta, "S"); typeIn(ta, "?");
+  ok(smHidden() && !d.querySelector("#modalOverlay").classList.contains("active"), "Tippen von s / S / ? in der Admin-Zentrale öffnet weder Spielstand-Menü noch Hilfe (Fehler seit 11.7)");
+  w.eval(`career.careers.push(sanitizeCareer({careers:[{id:"kx", name:"Test", columns:[{id:"c1", name:"Name"}], rows:[{id:"r1", cells:{}}]}]}).careers[0]); saveCareer(); crView = {id:"kx", tab:"list", sort:null}; showHub("career")`);
+  typeIn(d.querySelector("#hubRoot [data-cr-cell]"), "s");
+  ok(smHidden(), "Tippen in einer Tabellenzelle des Karriere-Begleiters: kein Spielstand-Menü (Fehler seit 11.9)");
+  w.eval(`crView.tab = "goals"; renderHub()`); typeIn(d.querySelector("#crNewGoal"), "s");
+  ok(smHidden(), "… auch nicht im Ziel-Feld");
+  typeIn(d.querySelector("#crNewGoal"), "k"); d.querySelector("#crNewGoal").dispatchEvent(new w.KeyboardEvent("keydown", {key:"k", ctrlKey:true, bubbles:true, cancelable:true}));
+  ok(d.querySelector("#cmdOverlay").classList.contains("active"), "Strg + K öffnet die Befehlspalette auch beim Tippen");
+  w.eval("closeCmd ? closeCmd() : document.querySelector('#cmdOverlay').classList.remove('active')");
+  d.activeElement && d.activeElement.blur && d.activeElement.blur();
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key:"s", bubbles:true, cancelable:true}));
+  ok(!smHidden(), "Außerhalb von Textfeldern öffnet S im Hub weiterhin die Spielstände");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");
