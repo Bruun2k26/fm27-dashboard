@@ -1437,7 +1437,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(shell.every(f=>f==="./" || fsx.existsSync(DIR+f.replace("./","")) || (partOf(f) && fsx.existsSync(DIR+"js/"+partOf(f)))), "Jede Datei der Offline-Liste existiert – Programmteile in js/ oder im Hauptverzeichnis ("+shell.length+")");
   ok(/fm27-app-/.test(sw) && sw.includes('"SKIP_WAITING"') && !/self\.skipWaiting\(\);\s*\}\);\s*self\.addEventListener\("activate"/.test(sw), "Service Worker: Versions-Cache, Update erst nach Zustimmung");
   const idxHtml = fsx.readFileSync(DIR+"index.html","utf8");
-  ok(idxHtml.includes('rel="manifest"') && idxHtml.includes("apple-touch-icon") && idxHtml.includes("favicon-32.png"), "index.html verweist auf Manifest und Symbole");
+  ok(idxHtml.includes('rel="manifest"') && idxHtml.includes("apple-touch-icon") && idxHtml.includes("nexus-32.png") && idxHtml.includes("nexus.svg"), "index.html verweist auf Manifest und Symbole (Nexus, im Hauptverzeichnis)");
   ({w,d,errs,S} = await boot());
   const inst = d.querySelector("#btnInstall");
   ok(!inst.hidden && d.querySelector("#installLabel").textContent==="App installieren …", "Menü: 'App installieren …' (Browser hat noch nichts angeboten)");
@@ -3449,6 +3449,54 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   key_M("Escape");
   ok(!d.querySelector(".vp-root") && !w.__vpOpen && w.eval("hubView")==="diary", "Esc schließt nur den Player");
   ok(JSON.parse(w.localStorage.getItem("fm27_player")).rate===0.75, "Tempo/Lautstärke werden gemerkt");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[74] 12.0 Vorschau 2: Nexus-Name & Symbole, Videos an Sessions, Profilfarben");
+  { const man = JSON.parse(require("fs").readFileSync(DIR+"manifest.webmanifest","utf8"));
+    ok(man.name==="Nexus Dashboard" && man.short_name==="Nexus" && man.icons.every(i=>!i.src.includes("/") && require("fs").existsSync(DIR+i.src)) && man.icons.some(i=>i.purpose==="maskable"), "Manifest: Nexus Dashboard, Symbole im Hauptverzeichnis (gehen auch beim Upload ohne Ordner)");
+    ok(/<title>Nexus Dashboard<\/title>/.test(htmlRaw) && ["nexus.svg","nexus-32.png","nexus-180.png","nexus-logo.jpg"].every(f=>require("fs").existsSync(DIR+f)), "Titel und Dateien vorhanden");
+    ok(js.includes('app:"FM27 Manager Dashboard", kind:"full"'), "Exportdateien behalten ihre interne Kennung (alte Sicherungen bleiben lesbar)"); }
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  ok(d.querySelector("#hubRoot .hub2-brand .nexus-mark") && d.querySelector("#hubRoot .hub2-brand").textContent.includes("Nexus") && d.title==="Nexus Dashboard", "Hub: Nexus-Würfel im Kopf, Tab-Titel 'Nexus Dashboard'");
+  w.eval("openPanel('fm')"); ok(d.title.endsWith("– Nexus Dashboard"), "Im Dashboard: '<Verein> – Nexus Dashboard'");
+  // profile colours
+  const acc = () => w.document.documentElement.style.getPropertyValue("--accent").trim().toLowerCase();
+  const clubAcc = S().club.accent.toLowerCase();
+  w.eval(`career.careers.push(sanitizeCareer({careers:[{id:"cy", name:"Gelb", accent:"#ffee00", columns:[{id:"c1", name:"Name"}]}]}).careers[0]); saveCareer(); crView = {id:"cy", tab:"list", sort:null}; showHub("career")`);
+  ok(acc()==="#ffee00", "Karriere geöffnet → Akzent = Karrierefarbe");
+  ok(w.document.documentElement.style.getPropertyValue("--on-accent").trim().toLowerCase()!=="#ffffff" || w.document.documentElement.style.getPropertyValue("--accent-fill").trim().toLowerCase()!=="#ffee00", "Sehr helle Karrierefarbe: Kontrastvarianten greifen (keine weiße Schrift auf Gelb)");
+  w.eval(`crView.id = ""; renderHub()`); ok(acc()===clubAcc, "Übersicht der Karrieren → wieder die Vereinsfarbe");
+  w.eval(`diary.running = {start:Date.now(), careerId:"cy", slotId:"", game:"", plan:""}; saveDiary(); showHub("diary")`);
+  ok(acc()==="#ffee00", "Tagebuch mit laufender Session dieser Karriere → deren Farbe");
+  w.eval(`diary.running = {start:Date.now(), careerId:"", slotId:"", game:"EA SPORTS FC 26", plan:""}; renderHub()`);
+  ok(/^#[0-9a-f]{6}$/.test(acc()) && acc()!==clubAcc, "Session mit anderem Spiel → dessen Farbe ("+acc()+")");
+  w.eval(`diary.running = null; saveDiary(); hideHub()`); ok(acc()===clubAcc, "Zurück im Dashboard → Vereinsfarbe");
+  // videos on sessions
+  w.showDirectoryPicker = ()=>{};
+  w.eval(`(()=>{ const mk = (n, t) => ({kind:"file", name:n, getFile: async ()=>({name:n, size:4096000, lastModified:t}) });
+    mediaDir = {name:"Captures", async *entries(){ yield ["tor.mp4", mk("tor.mp4", 1800000000000)]; yield ["parade.webm", mk("parade.webm", 1700000000000)]; }}; mediaPerm = "granted"; })()`);
+  await w.eval("scanMedia()"); w.eval("dTab = 'timeline'; showHub('diary')");
+  d.querySelector('#hubRoot [data-d="addSession"]').click();
+  ok(d.querySelector("#dVids") && d.querySelector('#modal [data-dv="pick"]'), "Session-Dialog: Bereich Videos");
+  d.querySelector('#modal [data-dv="pick"]').click();
+  ok(d.querySelectorAll("#dVidPicker .d-vid-pick").length===2, "'Aus Ordner …' zeigt die Videos als Kacheln – im selben Dialog");
+  d.querySelector('#dVidPicker [data-dv-pick="tor.mp4"]').click();
+  ok(d.querySelector('#dVidPicker [data-dv-pick="tor.mp4"]').classList.contains("on") && d.querySelector("#dVids").textContent.includes("tor"), "Angehakt: erscheint oben in der Liste");
+  d.querySelector("#dVidUrl").value = "https://youtu.be/dQw4w9WgXcQ"; d.querySelector('#modal [data-dv="addLink"]').click();
+  d.querySelector('#modal [data-f="title"]').value = "Pokalabend"; d.querySelector("[data-modal-save]").click();
+  const sv = JSON.parse(w.localStorage.getItem("fm27_diary")).sessions.find(x=>x.title==="Pokalabend");
+  ok(sv && sv.videos.length===2 && sv.videos[0].kind==="file" && sv.videos[0].path==="tor.mp4" && sv.videos[1].kind==="link", "Gespeichert: 1 Datei + 1 Link (nur der Verweis – keine Kopie)");
+  ok(d.querySelectorAll("#hubRoot .diary-vid").length===2 && d.querySelector("#hubRoot .diary-vid-kind").textContent==="YouTube", "Zeitleiste: zwei Video-Kacheln (Link als YouTube gekennzeichnet)");
+  w.HTMLMediaElement.prototype.play = function(){ return Promise.resolve(); }; w.HTMLMediaElement.prototype.load = function(){};
+  w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
+  d.querySelector('#hubRoot [data-d-vid$=":0"]').click(); await new Promise(r=>setTimeout(r,20));
+  ok(d.querySelector(".vp-root") && d.querySelector(".vp-title").textContent.includes("tor"), "Klick spielt das Video im eigenen Player"); w.eval("closeVideoPlayer()");
+  w.eval("mediaFiles = []");
+  d.querySelector('#hubRoot [data-d-vid$=":0"]').click();
+  ok(d.querySelector("#toastMsg").textContent.includes("nicht mehr im Ordner"), "Datei verschoben/gelöscht → klare Meldung statt Fehler");
+  w.eval(`crView = {id:"cy", tab:"list", sort:null}; showHub("career")`);
+  ok(!d.querySelector("#hubRoot").textContent.includes("Saison Saison") && d.querySelector("#hubRoot .cr-title").textContent.includes("Saison 1"), "Karriere: 'Saison 1' statt 'Saison Saison 1'");
+  ok(w.eval("crSeasonName('2025/26')")==="Saison 2025/26", "… und '2025/26' wird zu 'Saison 2025/26'");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

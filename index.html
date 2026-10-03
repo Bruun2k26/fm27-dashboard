@@ -6,12 +6,13 @@
 <meta name="theme-color" content="#0f1117">
 <meta name="description" content="Begleit-Tool zu Football Manager – alle Daten bleiben lokal auf deinem Gerät.">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/favicon-32.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="FM27 Dashboard">
-<title>FM27 Manager Dashboard</title>
+<meta name="apple-mobile-web-app-title" content="Nexus">
+<title>Nexus Dashboard</title>
+<link rel="icon" href="nexus.svg" type="image/svg+xml">
+<link rel="icon" href="nexus-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="nexus-180.png">
 <link rel="stylesheet" href="style.css">
 <script>try{var t=localStorage.getItem("fm27_theme_hint");if(!t){var L=JSON.parse(localStorage.getItem("fm27_layout")||"{}");t=L.theme;}if(t==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}
 /* 11.8.1: start in the hub without first painting the dashboard (safety: show the app after 8 s at the latest) */
@@ -622,7 +623,7 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
 
 <div id="printArea" aria-hidden="true"></div>
 
-<script id="appParts" type="application/json">{"build": "12.0.0-vorschau.1", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-ai-prompt.js", "24-career.js", "24-diary.js", "24-media.js", "25-init.js"]}</script>
+<script id="appParts" type="application/json">{"build": "12.0.0-vorschau.2", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-ai-prompt.js", "24-career.js", "24-diary.js", "24-media.js", "25-init.js"]}</script>
 <script id="appLoader">
 /* Loads the program parts. 11.4.1: the parts may lie in js/ AND/OR (uploaded without folders) in the main folder –
    possibly from different versions. The loader takes the copy whose build stamp matches this index.html.

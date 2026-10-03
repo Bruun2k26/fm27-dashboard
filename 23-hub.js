@@ -68,9 +68,11 @@ function showHub(view){
   clearInterval(diaryTimer); diaryTimer = hubView === "diary" ? setInterval(diaryTick, 1000) : null;
   const f = qs("#hubRoot [data-hub-first]"); if(f) f.focus({preventScroll:true});
   window.scrollTo && window.scrollTo(0, 0);
+  document.title = "Nexus Dashboard";
 }
 function hideHub(){
   leaveAdmin(null); parkAdmin();
+  if(state) setAccentVars(isNat() ? state.national.accent : state.club.accent);
   const r = qs("#hubRoot"); if(r) r.hidden = true;
   hubView = null; document.body.classList.remove("hub-open"); clearInterval(hubClockTimer); clearInterval(diaryTimer);
 }
@@ -142,8 +144,21 @@ function renderAdminPage(root){
   const ar = qs("#adminRoot"); if(ar && ar.parentElement !== qs("#hubAdminHost")) qs("#hubAdminHost").appendChild(ar);
   renderAdmin();
 }
+/** 12.0: the accent follows the active profile – career colour, colour of the running session, otherwise the club */
+function hexOfCss(c){ const el = document.createElement("span"); el.style.color = c; document.body.appendChild(el); const m = getComputedStyle(el).color.match(/\d+/g); el.remove();
+  return m ? "#" + m.slice(0,3).map(x=>(+x).toString(16).padStart(2,"0")).join("") : ""; }
+function profileAccent(){
+  if(hubView === "career" && typeof crView !== "undefined" && crView.id){ const c = crById(crView.id); if(c) return c.accent; }
+  if(hubView === "diary" && typeof diary !== "undefined" && diary && diary.running){ const r = diary.running;
+    if(r.careerId){ const c = crById(r.careerId); if(c) return c.accent; }
+    if(r.slotId){ const s = slotSummaries().find(x=>x.id === r.slotId); if(s && /^#[0-9a-f]{6}$/i.test(s.accent)) return s.accent; }
+    if(r.game){ const x = dTarget(r); const m = /background:(hsl\([^)]*\))/.exec(x.crest); if(m){ const hx = hexOfCss(m[1]); if(hx) return hx; } } }
+  return isNat() ? state.national.accent : state.club.accent;
+}
+function applyProfileAccent(){ if(state) setAccentVars(profileAccent()); }
 function renderHub(){
   const root = qs("#hubRoot"); if(!root || root.hidden) return;
+  applyProfileAccent();
   if(hubView === "admin") return renderAdminPage(root);
   parkAdmin();
   if(hubView === "diary") return renderDiary(root);
@@ -156,7 +171,7 @@ function renderHub(){
   root.innerHTML = `
     <main class="hub-main hub2">
       <header class="hub2-head">
-        <div><span class="hub2-brand"><span class="hub-logo sm" aria-hidden="true">◆</span>${esc(hub.name)} <span class="beta-pill">Beta</span></span>
+        <div><span class="hub2-brand"><img class="nexus-mark" src="nexus.svg" alt="" width="26" height="26"><strong>Nexus</strong><span class="muted">·</span>${esc(hub.name)} <span class="beta-pill">Beta</span></span>
           <h1>${hubGreeting()}!</h1><p class="muted">Dein Command Center ist bereit für die nächste Session.</p></div>
         <div class="hub2-side">
           <div class="hub2-clock" aria-label="Uhrzeit"><span class="hub2-clock-icon" aria-hidden="true">🕒</span><div><strong id="hubClockTime">${now.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"})}</strong>

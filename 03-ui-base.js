@@ -331,7 +331,7 @@ function renderHeader(){
   qs("#crestInitials").textContent = state.club.crest;
   setAccentVars(state.club.accent);
   applyModeLook();
-  document.title = `${state.club.name} – FM27 Dashboard`;
+  document.title = `${state.club.name} – Nexus Dashboard`;
 }
 
 /* ==========================================================================

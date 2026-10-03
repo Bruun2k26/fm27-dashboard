@@ -5,7 +5,21 @@
    Sessions use REAL time; journey entries use the in-game date – so they are shown separately.
    ========================================================================== */
 const DIARY_KEY = "fm27_diary", IMG_PREFIX = "fm27_img_", DIARY_MAX_IMGS = 6;
-let dFilter = "", dPending = null, dTab = "timeline";     // 12.0: tab "timeline" | "media"     // timeline filter · images of the open session dialog
+let dFilter = "", dPending = null, dTab = "timeline", dVidPending = null;
+/* 12.0: videos of the open session dialog – picked inline (a second dialog would replace this one) */
+function dAddVid(v){ if(!dVidPending) return false; if(dVidPending.length >= 6){ toast("Höchstens 6 Videos pro Session."); return false; } dVidPending.push(v); dRenderVids(); return true; }
+function dVidLabel(v){ return v.kind === "file" ? v.name.replace(MEDIA_EXT, "") : (v.title || v.url.replace(/^https?:\/\//, "").slice(0,40)); }
+function dRenderVids(){ const box = qs("#dVids"); if(!box || !dVidPending) return;
+  box.innerHTML = dVidPending.map((v,i)=>`<span class="d-vid-chip"><span aria-hidden="true">${v.kind === "file" ? "🎬" : "🔗"}</span>${esc(dVidLabel(v))}<button type="button" data-dv-del="${i}" aria-label="Video entfernen">✕</button></span>`).join("") || '<span class="muted small">Noch keine Videos.</span>'; }
+function dTogglePicker(){ const p = qs("#dVidPicker"); if(!p) return; p.hidden = !p.hidden; if(!p.hidden) dRenderPicker(); }
+function dRenderPicker(){
+  const p = qs("#dVidPicker"); if(!p || p.hidden) return;
+  if(!fsSupported() || !mediaDir || mediaPerm !== "granted" || !mediaFiles.length){ p.innerHTML = `<p class="muted small">${!fsSupported() ? "Dein Browser kann keine Ordner lesen – Links gehen trotzdem." : !mediaDir ? "Noch kein Medien-Ordner verbunden: Tagebuch → Reiter 🎬 Medien → Ordner wählen." : mediaPerm !== "granted" ? "Medien-Ordner erst wieder verbinden: Tagebuch → 🎬 Medien." : "Keine Videos im Ordner."}</p>`; return; }
+  const chosen = new Set(dVidPending.filter(v=>v.kind === "file").map(v=>v.path));
+  p.innerHTML = `<div class="d-vid-grid">${mediaFiles.slice(0, 60).map(f=>`<button type="button" class="d-vid-pick ${chosen.has(f.path) ? "on" : ""}" data-dv-pick="${esc(f.path)}" aria-pressed="${chosen.has(f.path)}" data-vchip="${esc(f.path)}">
+    <span class="media-thumb"><span class="media-dur"></span></span><span class="d-vid-name">${esc(f.name.replace(MEDIA_EXT, ""))}</span></button>`).join("")}</div>`;
+  mediaFiles.slice(0, 60).forEach(f=>{ queueThumb(f); paintVchips(f); });
+}     // 12.0: tab "timeline" | "media"     // timeline filter · images of the open session dialog
 const CH_KIND = {simple:"Einfaches Ziel", count:"Mit Zähler", steps:"Mit Teilschritten"};
 let diary = null, diaryTimer = null;
 function sanitizeDiary(raw){
@@ -14,7 +28,10 @@ function sanitizeDiary(raw){
   const sessions = A(r.sessions).filter(x=>x && typeof x === "object").map(x=>({id:S(x.id) || uid(), start:num(x.start), end:num(x.end), minutes:Math.max(0, Math.round(num(x.minutes))),
     slotId:S(x.slotId), game:S(x.game).slice(0,60), label:S(x.label).slice(0,80), title:S(x.title).slice(0,120), text:S(x.text).slice(0,4000), mood:moods[x.mood] ? x.mood : "good",
     careerId:S(x.careerId), journeyId:S(x.journeyId), plan:S(x.plan).slice(0,120), planDone:!!x.planDone,
-    images:A(x.images).filter(i=>typeof i === "string" && i).slice(0, DIARY_MAX_IMGS)})).filter(x=>x.start).sort((a,b)=>b.start - a.start).slice(0,2000);
+    images:A(x.images).filter(i=>typeof i === "string" && i).slice(0, DIARY_MAX_IMGS),
+    videos:A(x.videos).filter(v=>v && (v.kind === "file" ? S(v.path) : /^https?:\/\//.test(S(v.url)))).map(v=>v.kind === "file"
+      ? {kind:"file", path:S(v.path).slice(0,400), name:S(v.name).slice(0,160), size:num(v.size), mtime:num(v.mtime)}
+      : {kind:"link", url:S(v.url).slice(0,500), title:S(v.title).slice(0,100)}).slice(0,6)})).filter(x=>x.start).sort((a,b)=>b.start - a.start).slice(0,2000);
   const challenges = A(r.challenges).filter(x=>x && typeof x === "object" && S(x.title).trim()).map(x=>({id:S(x.id) || uid(), title:S(x.title).trim().slice(0,120), desc:S(x.desc).slice(0,1000),
     slotId:S(x.slotId), careerId:S(x.careerId), game:S(x.game).slice(0,60), label:S(x.label).slice(0,80), kind:CH_KIND[x.kind] ? x.kind : "simple", target:Math.max(1, Math.round(num(x.target) || 1)),
     current:Math.max(0, Math.round(num(x.current))), steps:A(x.steps).filter(st=>st && S(st.text).trim()).map(st=>({id:S(st.id) || uid(), text:S(st.text).trim().slice(0,120), done:!!st.done})).slice(0,30),
@@ -143,6 +160,10 @@ function sessionModal(s, fromRun){
     ${s.plan ? `<label class="check-label d-plan-check"><input type="checkbox" data-f="planDone" ${s.planDone || fromRun ? "checked" : ""}> 🎯 Vorhaben geschafft: <strong>${esc(s.plan)}</strong></label>` : ""}
     <div class="field"><label>Was ist passiert?</label><input data-f="title" maxlength="120" value="${esc(s.title || (fromRun && s.plan) || "")}" placeholder="z. B. Pokal-Aus gegen Bayern, Winter-Transfers fix"></div>
     <div class="field"><label>Notizen (optional)</label><textarea data-f="text" rows="4">${esc(s.text || "")}</textarea></div>
+    <div class="field"><label>Videos <span class="muted small">(bis zu 6 · aus deinem Medien-Ordner oder als Link)</span></label>
+      <div class="d-vids" id="dVids"></div>
+      <div class="d-vid-actions"><button type="button" class="btn btn-sm" data-dv="pick">🎬 Aus Ordner …</button><input id="dVidUrl" placeholder="oder Link einfügen (YouTube, Twitch, .mp4)" aria-label="Video-Link"><button type="button" class="btn btn-sm" data-dv="addLink">+ Link</button></div>
+      <div class="d-vid-picker" id="dVidPicker" hidden></div></div>
     <div class="field"><label>Bilder <span class="muted small">(bis zu ${DIARY_MAX_IMGS} · auch mit Strg + V einfügen, z. B. ein Screenshot aus FM)</span></label><div class="d-imgs" id="dImgs"></div></div>
     <label class="check-label" id="dJourneyWrap" hidden><input type="checkbox" data-f="toJourney"> Auch ins Journey-Tagebuch dieses Spielstands übernehmen (mit dem Spieldatum)</label>`,
     leftButtons: fromRun ? `<button class="btn btn-danger-outline" data-d-discard>Verwerfen</button>` : isNew ? "" : `<button class="btn btn-danger-outline" data-d-del>Löschen</button>`,
@@ -152,6 +173,14 @@ function sessionModal(s, fromRun){
         const j = v.startsWith("slot:") && !s.journeyId && dJourneyOf(v.slice(5)); qs("#dJourneyWrap", m).hidden = !j; };
       qs('[data-f="target"]', m).addEventListener("change", upd); upd();
       dPending = (s.images || []).map(id=>({id, url:dImg(id)})); dRenderPending();
+      dVidPending = (s.videos || []).map(v=>Object.assign({}, v)); dRenderVids();
+      m.addEventListener("click", e=>{
+        const b = e.target.closest("[data-dv]"); if(b){ const k = b.dataset.dv;
+          if(k === "pick") dTogglePicker(); else if(k === "addLink"){ const inp = qs("#dVidUrl", m), p = parseVideoLink(inp.value); if(!p){ toast("Bitte einen gültigen Link einfügen (https://…)."); return; } dAddVid({kind:"link", url:p.url, title:""}); inp.value = ""; } return; }
+        const del = e.target.closest("[data-dv-del]"); if(del){ dVidPending.splice(num(del.dataset.dvDel), 1); dRenderVids(); dRenderPicker(); return; }
+        const pk = e.target.closest("[data-dv-pick]"); if(pk){ const f = mediaFiles.find(x=>x.path === pk.dataset.dvPick); if(!f) return;
+          const i = dVidPending.findIndex(v=>v.kind === "file" && v.path === f.path); if(i >= 0) dVidPending.splice(i, 1); else dAddVid({kind:"file", path:f.path, name:f.name, size:f.size, mtime:f.mtime}); dRenderVids(); dRenderPicker(); }
+      });
       m.addEventListener("change", async e=>{ if(e.target.id !== "dImgFile") return;
         for(const f of [...e.target.files]){ try{ if(!dModalAddImage(await readDiaryImage(f))) break; }catch(err){ toast("Ein Bild konnte nicht gelesen werden."); } } });
       m.addEventListener("click", e=>{ const x = e.target.closest("[data-d-imgdel]"); if(x){ dPending.splice(num(x.dataset.dImgdel), 1); dRenderPending(); } });
@@ -162,7 +191,7 @@ function sessionModal(s, fromRun){
       const dis = qs("[data-d-discard]", m); if(dis) dis.onclick = ()=>{ closeModal(); diaryUndo("Session verworfen", ()=>{ diary.running = null; }); };
       const del = qs("[data-d-del]", m); if(del) del.onclick = ()=>{ closeModal(); diaryUndo("Session gelöscht", ()=>{ diary.sessions = diary.sessions.filter(x=>x.id !== s.id); }); };
     },
-    onClose: ()=>{ dPending = null; },
+    onClose: ()=>{ dPending = null; dVidPending = null; },
     onSave: get=>{
       const t = dReadTarget(qs("#modal")); if(!t.slotId && !t.game){ toast("Bitte ein Spiel angeben."); return false; }
       const st = new Date(get("start")).getTime() || s.start, mins = Math.max(1, Math.round(num(get("minutes")))), data = Object.assign({start:st, end:st + mins * 60000, minutes:mins,
@@ -170,6 +199,7 @@ function sessionModal(s, fromRun){
       // images: new ones become own store entries; removed ones are cleaned up at the next start (so undo still works)
       (dPending || []).filter(p=>p.isNew).forEach(p=>{ try{ store.setItem(IMG_PREFIX + p.id, p.url); }catch(e){ toast("Speicher voll – Bild nicht gespeichert."); } });
       data.images = (dPending || []).map(p=>p.id); dPending = null;
+      data.videos = (dVidPending || []).slice(0,6); dVidPending = null;
       const toJ = get("toJourney") && t.slotId && dJourneyOf(t.slotId);
       diaryUndo(fromRun ? `Session gespeichert · ${dMin(mins)}` : "Session gespeichert", ()=>{
         if(t.game && !t.careerId && !diary.games.includes(t.game)) diary.games.unshift(t.game);
@@ -263,6 +293,7 @@ function renderDiary(root){
           ${d.list.map(ev=>ev.s ? (()=>{ const s = ev.s, t = dTarget(s); return `<div class="diary-entry" data-d-session="${s.id}" role="button" tabindex="0" aria-label="Session ${esc(s.title || "")} bearbeiten">
               <span class="diary-time">${new Date(s.start).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}<em>${dMin(s.minutes)}</em></span>
               ${t.crest}<span class="diary-entry-main"><strong>${esc(s.title || "Session")}</strong><span class="muted small">${esc(t.name)}${s.journeyId ? " · 📓 auch in der Journey" : ""}</span>${s.plan ? `<span class="diary-plan ${s.planDone ? "ok" : "no"}">🎯 ${esc(s.plan)} · ${s.planDone ? "geschafft" : "nicht geschafft"}</span>` : ""}${s.text ? `<span class="diary-text">${esc(s.text.slice(0,160))}${s.text.length > 160 ? " …" : ""}</span>` : ""}
+              ${(s.videos || []).length ? `<span class="diary-vids">${s.videos.map((v,i)=>`<button type="button" class="diary-vid" data-d-vid="${s.id}:${i}" ${v.kind === "file" ? `data-vchip="${esc(v.path)}"` : ""} aria-label="Video ${esc(dVidLabel(v))} abspielen"><span class="media-thumb ${v.kind === "link" ? "link" : ""}"><span class="media-play" aria-hidden="true">▶</span>${v.kind === "link" ? `<span class="diary-vid-kind">${{youtube:"YouTube", twitch:"Twitch", file:"Video", other:"Link"}[(parseVideoLink(v.url) || {}).kind] || "Link"}</span>` : '<span class="media-dur"></span>'}</span><span class="diary-vid-name">${esc(dVidLabel(v))}</span></button>`).join("")}</span>` : ""}
               ${(s.images || []).length ? `<span class="diary-thumbs">${s.images.slice(0,4).map((id,i)=>`<button type="button" class="diary-thumb" data-d-img="${s.id}:${i}" aria-label="Bild ${i + 1} ansehen"><img src="${dImg(id)}" alt=""></button>`).join("")}${s.images.length > 4 ? `<span class="diary-thumb more">+${s.images.length - 4}</span>` : ""}</span>` : ""}</span>
               <span class="diary-mood" title="Stimmung">${J_MOODS[s.mood] || ""}</span></div>`; })()
             : `<div class="diary-entry win"><span class="diary-time">🏆</span><span class="diary-entry-main"><strong>Challenge geschafft: ${esc(ev.c.title)}</strong><span class="muted small">${esc(dTarget(ev.c).name)}</span></span>
@@ -292,11 +323,13 @@ function renderDiary(root){
       </aside>
     </div></main>`;
   if(dTab === "media") mediaAfterRender(root);
+  else { const byPath = new Map(mediaFiles.map(f=>[f.path, f])); qsa("[data-vchip]", root).forEach(el=>{ const f = byPath.get(el.dataset.vchip); if(f){ queueThumb(f); paintVchips(f); } }); }
 }
 function diaryClick(e){
   const t = e.target, g = sel => t.closest(sel);
   const tb = g("[data-d-tab]"); if(tb){ dTab = tb.dataset.dTab; renderHub(); return true; }
   if(dTab === "media" && mediaClick(e)) return true;
+  const dv = g("[data-d-vid]"); if(dv){ const [sid, i] = dv.dataset.dVid.split(":"); playSessionVideo(diary.sessions.find(x=>x.id === sid).videos[num(i)]); return true; }
   const im = g("[data-d-img]"); if(im){ const [sid, i] = im.dataset.dImg.split(":"); dLightbox(sid, num(i)); return true; }
   const ro = g("[data-d-reopen]"); if(ro){ const c = diary.challenges.find(x=>x.id === ro.dataset.dReopen);
     diaryUndo(`„${c.title}“ wieder aktiv`, ()=>{ c.status = "active"; c.doneAt = 0; if(c.kind === "count" && c.current >= c.target) c.current = c.target - 1; if(c.kind === "steps" && c.steps.length && c.steps.every(x=>x.done)) c.steps[c.steps.length - 1].done = false; }); return true; }

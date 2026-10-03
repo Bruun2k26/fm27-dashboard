@@ -62,6 +62,7 @@ async function pumpThumbs(){
     mediaThumbs.set(k, t || "fail");
   }catch(e){ mediaThumbs.set(k, "fail"); }
   const card = qs(`[data-media-card="${CSS.escape(f.path)}"]`); if(card) paintThumb(card, f);
+  paintVchips(f);
   thumbBusy = false; pumpThumbs();
 }
 function makeThumb(file){
@@ -174,6 +175,17 @@ function mediaClick(e){
   const lk = g("[data-media-link]"); if(lk){ openLink(diary.links.find(l=>l.id === lk.dataset.mediaLink)); return true; }
   const c = g("[data-media-card]"); if(c){ const f = mediaFiles.find(x=>x.path === c.dataset.mediaCard); if(f) playMediaFile(f); return true; }
   return false;
+}
+/** session tiles and picker tiles share the thumbnail cache */
+function paintVchips(f){ qsa(`[data-vchip="${CSS.escape(f.path)}"]`).forEach(el=>paintThumb(el, f)); }
+function playSessionVideo(v){
+  if(!v) return;
+  if(v.kind === "link") return openLink({url:v.url, title:v.title});
+  const f = mediaFiles.find(x=>x.path === v.path) || mediaFiles.find(x=>x.name === v.name && x.size === v.size);
+  if(f) return playMediaFile(f);
+  if(!mediaDir) return toast("Für dieses Video zuerst den Medien-Ordner verbinden: Tagebuch → 🎬 Medien.");
+  if(mediaPerm !== "granted") return toast("Medien-Ordner wieder verbinden: Tagebuch → 🎬 Medien.");
+  toast(`„${v.name}“ ist nicht mehr im Ordner – verschoben oder gelöscht?`);
 }
 async function playMediaFile(f){
   try{ const file = await f.handle.getFile(), url = URL.createObjectURL(file);

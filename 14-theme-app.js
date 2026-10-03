@@ -113,10 +113,16 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.0.0-vorschau.1";
+const APP_VERSION = "12.0.0-vorschau.2";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.0.0-vorschau.2", beta:true, title:"Nexus · Vorschau 2: Videos an Sessions & neuer Look", items:[
+    ["neu","Videos an Sessions: im Session-Dialog direkt aus dem Medien-Ordner wählen (Vorschau-Kacheln zum Anhaken) oder Links einfügen – in der Zeitleiste als Kacheln, ein Klick spielt sie im eigenen Player."],
+    ["neu","Neuer Name: Nexus Dashboard – mit dem Würfel als Logo und neuen App-Symbolen (für die kleinen Größen eine vereinfachte Fassung). Das FM-Modul heißt weiter FM27 Dashboard; deine Daten bleiben unverändert."],
+    ["neu","Farben folgen dem aktiven Profil: im Karriere-Begleiter die Farbe der Karriere, im Tagebuch die der laufenden Session – zurück im Dashboard wieder die des Vereins."],
+    ["besser","Der große Play-Knopf im Player ist jetzt rund."],
+    ["fix","Karriere-Begleiter: aus „Saison 1“ wurde „Saison Saison 1“."]]},
   {v:"12.0.0-vorschau.1", beta:true, title:"Nexus · Vorschau 1: Medien", items:[
     ["neu","Spiel-Tagebuch → 🎬 Medien: verbinde deinen Aufnahme-Ordner (z. B. Videos\\Captures) – das Dashboard zeigt alle Videos mit Vorschaubild, Länge und Datum, durchsuchbar und nach Unterordnern filterbar. Der Ordner wird nur gelesen, nichts wird kopiert."],
     ["neu","Eigener Videoplayer: Zeitleiste mit Vorschau-Zeit, ±10 s, Bild für Bild, Geschwindigkeit 0,25–2×, Lautstärke, Wiederholen, Bild im Bild, Vollbild – plus Tastenkürzel (Leertaste, J/L, ←/→, ↑/↓, M, F, , und ., [ und ], 0–9, Esc)."],

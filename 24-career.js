@@ -38,6 +38,8 @@ function careerUndo(label, fn, keepFocus){
 }
 const crById = id => career && career.careers.find(c=>c.id === id);
 const crCurSeason = c => c.seasons[c.seasons.length - 1];
+/** "2025/26" → "Saison 2025/26", but "Saison 1" stays "Saison 1" (was shown as "Saison Saison 1") */
+const crSeasonName = label => /^saison\b/i.test(String(label).trim()) ? String(label).trim() : `Saison ${label}`;
 const crCrest = (c, cls) => `<span class="sm-crest ${cls || ""}" style="background:${esc(c.accent)};color:${crestText(c.accent)};${crestText(c.accent) === "#fff" ? "" : "text-shadow:none;"}">${esc(c.crest)}</span>`;
 /** used by the diary: target "career:<id>" */
 function careerTarget(id){ const c = crById(id); return c ? {name:c.name, sub:`${c.game || "Karriere"}${c.team ? " · " + c.team : ""}`, crest:crCrest(c, "xs")} : null; }
@@ -80,7 +82,7 @@ function crColumnsModal(c){
     }});
 }
 function crSeasonModal(c, s){
-  openModal({title:`Saison ${esc(s.label)}`, body:`
+  openModal({title:esc(crSeasonName(s.label)), body:`
     <div class="field-row"><div class="field"><label>Saison</label><input data-f="label" maxlength="20" value="${esc(s.label)}"></div><div class="field"><label>Platz / Ergebnis</label><input data-f="place" maxlength="20" value="${esc(s.place)}" placeholder="z. B. 3. Platz"></div></div>
     <div class="field-row"><div class="field"><label>Siege</label><input type="number" min="0" data-f="w" value="${s.w}"></div><div class="field"><label>Unentschieden</label><input type="number" min="0" data-f="d" value="${s.d}"></div><div class="field"><label>Niederlagen</label><input type="number" min="0" data-f="l" value="${s.l}"></div></div>
     <div class="field"><label>Titel / Höhepunkte</label><input data-f="titles" maxlength="200" value="${esc(s.titles)}" placeholder="z. B. FA Cup, Aufstieg"></div>
@@ -111,7 +113,7 @@ function renderCareer(root){
   const gCount = k => s.goals.filter(g=>g.status === k).length;
   root.innerHTML = `<main class="hub-main hub2 career-page" style="--hero-accent:${esc(c.accent)}">
     <header class="hub2-head"><div><button class="btn btn-sm" data-cr="back" title="Zur Übersicht (Esc)">← Karrieren</button>
-      <div class="cr-title">${crCrest(c, "xl")}<div><h1>${esc(c.name)} <span class="beta-pill">Beta</span></h1><p class="muted">${esc([c.game, c.team, `Saison ${s.label}`].filter(Boolean).join(" · "))}</p></div></div></div>
+      <div class="cr-title">${crCrest(c, "xl")}<div><h1>${esc(c.name)} <span class="beta-pill">Beta</span></h1><p class="muted">${esc([c.game, c.team, crSeasonName(s.label)].filter(Boolean).join(" · "))}</p></div></div></div>
       <div class="diary-actions"><button class="btn btn-accent" data-cr="session">▶ Session starten</button><button class="btn" data-cr="edit">Bearbeiten</button></div></header>
     <div class="seg cr-tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${crView.tab === k}" class="${crView.tab === k ? "active" : ""}" data-cr-tab="${k}">${l}</button>`).join("")}</div>
     <div class="diary-grid">
@@ -130,7 +132,7 @@ function renderCareer(root){
           <div class="cr-add"><button class="btn btn-sm btn-accent" data-cr="addRow">+ Zeile</button><span class="muted small">Änderungen werden sofort gespeichert.</span></div>`}
       </section>
       <aside class="diary-side">
-        <section class="hub2-card"><div class="hub2-card-head"><h3>Saison ${esc(s.label)}</h3></div>
+        <section class="hub2-card"><div class="hub2-card-head"><h3>${esc(crSeasonName(s.label))}</h3></div>
           <div class="diary-week"><div><span>Bilanz</span><strong>${s.w}-${s.d}-${s.l}</strong></div><div><span>Ziele erreicht</span><strong>${gCount("done")} / ${s.goals.length}</strong></div></div>
           <button class="btn btn-sm" data-cr-season="${s.id}">Saison bearbeiten</button></section>
         <section class="hub2-card"><div class="hub2-card-head"><h3>Letzte Sessions</h3><span class="muted small">aus dem Tagebuch</span></div>
