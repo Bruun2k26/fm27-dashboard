@@ -62,14 +62,14 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   ok(slots()[5].playerId===bench.id, "Bankspieler auf Position gesetzt");
   w.eval("selectedSlot = 9; renderTactics()");
   const se = d.querySelector("#se-out");
-  se.value = "Hoch bleibend"; se.dispatchEvent(new w.Event("change",{bubbles:true}));
-  ok(slots()[9].roleOut==="Hoch bleibend", "Rolle gegen Ball gesetzt");
+  const HB = w.eval("ROLE_RENAME.high[formationDefs(state.formationName)[9].cat]"); se.value = HB; se.dispatchEvent(new w.Event("change",{bubbles:true}));
+  ok(slots()[9].roleOut===HB && w.eval(`STAY_HIGH.has(${JSON.stringify(HB)})`), "Rolle gegen Ball gesetzt (FM26-Umschaltrolle, bleibt vorne)");
   const Y = i=>parseFloat(d.querySelector(`#pitch [data-slot="${i}"]`).style.top);
   const midIn = Y(6), spanIn = Y(2)-Y(8);
   d.querySelector('.phase-btn[data-phase="out"]').click();
   const midOut = Y(6), spanOut = Y(2)-Y(8);
   ok(midOut>midIn && spanOut<spanIn, `Gegen den Ball: Mittelfeld fällt zurück (${midIn}→${midOut}), Block kompakter (${spanIn}→${spanOut.toFixed(1)})`);
-  ok(d.querySelector('#pitch [data-slot="9"] .p-role').textContent==="Hoch bleibend", "Karte zeigt Rolle der aktiven Phase");
+  ok(d.querySelector('#pitch [data-slot="9"] .p-role').textContent.replace(/\u00AD/g,"")===HB, "Karte zeigt Rolle der aktiven Phase");
   const fs2 = d.querySelector("#formationSelect"); fs2.value="3-5-2"; fs2.dispatchEvent(new w.Event("change"));
   ok(Object.values(slots()).filter(s=>s.playerId).length===11 && d.querySelector("#formationChip").textContent==="Plan A · 3-5-2", "Neue Formation: automatisch beste Elf vorgeschlagen");
   d.querySelector("#btnClearXI").click();
@@ -224,7 +224,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   const pidAt2 = S().tactics["4-3-3"].slots[2].playerId;
   w.eval("moveSlotTo(2, 50, 60)");     // IV nach vorne ins defensive Mittelfeld
   ok(S().formationName==="Frei" && S().customFormation.base==="4-3-3", "Verschieben wechselt auf Freie Formation (Basis 4-3-3)");
-  ok(S().customFormation.slots[2].cat==="DM" && S().tactics["Frei"].slots[2].roleIn==="Sechser", "IV → DM umbenannt, Rolle angepasst");
+  ok(S().customFormation.slots[2].cat==="DM" && S().tactics["Frei"].slots[2].roleIn==="Defensiver Mittelfeldspieler", "IV → DM umbenannt, Rolle angepasst");
   ok(S().tactics["Frei"].slots[2].playerId===pidAt2, "Spieler bleibt auf der verschobenen Position");
   ok(d.querySelector("#formationSelect").value==="Frei" && d.querySelector("#formationSelect").selectedOptions[0].textContent.startsWith("Frei · "), "Dropdown zeigt: "+d.querySelector("#formationSelect").selectedOptions[0].textContent);
   ok(d.querySelector("#formationChip").textContent==="Plan A · "+d.querySelector("#formationSelect").selectedOptions[0].textContent, "Header-Chip zeigt Plan + freie Formation");
@@ -240,7 +240,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   fsel.value="Frei"; fsel.dispatchEvent(new w.Event("change"));
   ok(S().formationName==="Frei" && S().customFormation.slots[2].cat==="DM", "Freie Formation wieder auswählbar");
   const round = w.eval("migrateState(JSON.parse(JSON.stringify(state)))");
-  ok(round.formationName==="Frei" && round.customFormation.slots.length===11 && round.tactics["Frei"].slots[2].roleIn==="Sechser", "Freie Formation übersteht Speichern/Import (sanitize)");
+  ok(round.formationName==="Frei" && round.customFormation.slots.length===11 && round.tactics["Frei"].slots[2].roleIn==="Defensiver Mittelfeldspieler", "Freie Formation übersteht Speichern/Import (sanitize)");
   ok(w.eval(`validateImportedState({club:{name:"X"}, players:[], formationName:"Frei"})`).valid, "Import mit 'Frei' ist gültig");
   const broken = w.eval(`migrateState({version:3, club:{name:"X"}, players:[], formationName:"Frei", customFormation:{slots:[1,2]}})`);
   ok(broken.formationName==="4-3-3" && broken.customFormation===null, "Kaputte freie Formation → sicherer Rückfall auf 4-3-3");
@@ -1024,16 +1024,16 @@ Neuer Stürmer;ST (Z);20;BRA;450Tsd. €/J.;Unverkäuflich;30.6.2029;Perspektivs
   const rc9 = d.querySelector("#roleCat"); rc9.value = "ST"; rc9.dispatchEvent(new w.Event("change",{bubbles:true}));
   const iMS9 = w.eval(`state.lists.rolesIP.ST.indexOf("Mittelstürmer")`);
   const before9 = w.eval(`roleSlots("ST").filter(sl=>sl.roleIn==="Mittelstürmer").length`);
-  lbl9(iMS9).value = "Knipser"; lbl9(iMS9).dispatchEvent(new w.Event("change",{bubbles:true}));
-  ok(before9>=2 && w.eval(`roleSlots("ST").filter(sl=>sl.roleIn==="Knipser").length`)===before9 && w.eval(`ROLES_IP.ST.includes("Knipser")`), `Taktik-Rolle umbenannt – ${before9} Aufstellungen in allen Plänen aktualisiert`);
-  ok(w.eval("planBlock(state.plans[1].id)").tactics["4-2-3-1"].slots[10].roleIn==="Knipser", "Auch im nicht aktiven Plan B");
+  lbl9(iMS9).value = "Klassischer Neuner"; lbl9(iMS9).dispatchEvent(new w.Event("change",{bubbles:true}));
+  ok(before9>=2 && w.eval(`roleSlots("ST").filter(sl=>sl.roleIn==="Klassischer Neuner").length`)===before9 && w.eval(`ROLES_IP.ST.includes("Klassischer Neuner")`), `Taktik-Rolle umbenannt – ${before9} Aufstellungen in allen Plänen aktualisiert`);
+  ok(w.eval("planBlock(state.plans[1].id)").tactics["4-2-3-1"].slots[10].roleIn==="Klassischer Neuner", "Auch im nicht aktiven Plan B");
   // stay high
   d.querySelector('[data-list="rolesOOP"]').click();
   const rc29 = d.querySelector("#roleCat"); rc29.value = "ST"; rc29.dispatchEvent(new w.Event("change",{bubbles:true}));
-  const iPS9 = w.eval(`state.lists.rolesOOP.ST.indexOf("Pressender Stürmer")`);
-  ok(d.querySelector(`#adminBody [data-le-high="${iPS9}"]`).checked, "'Pressender Stürmer' ist als 'bleibt vorne' markiert");
+  const iPS9 = w.eval(`state.lists.rolesOOP.ST.indexOf("Zentraler Umschaltstürmer")`);
+  ok(d.querySelector(`#adminBody [data-le-high="${iPS9}"]`).checked, "'Zentraler Umschaltstürmer' ist als 'bleibt vorne' markiert");
   lbl9(iPS9).value = "Erster Verteidiger"; lbl9(iPS9).dispatchEvent(new w.Event("change",{bubbles:true}));
-  ok(w.eval(`STAY_HIGH.has("Erster Verteidiger")`) && !w.eval(`STAY_HIGH.has("Pressender Stürmer")`), "Umbenennen behält 'bleibt vorne'");
+  ok(w.eval(`STAY_HIGH.has("Erster Verteidiger")`) && !w.eval(`STAY_HIGH.has("Zentraler Umschaltstürmer")`), "Umbenennen behält 'bleibt vorne'");
   const hi9 = d.querySelector(`#adminBody [data-le-high="${iPS9}"]`); hi9.checked = false; hi9.dispatchEvent(new w.Event("change",{bubbles:true}));
   ok(!w.eval(`STAY_HIGH.has("Erster Verteidiger")`), "'Bleibt vorne' abschaltbar");
   // reset keyed list maps custom entries to their base
@@ -1049,7 +1049,7 @@ Neuer Stürmer;ST (Z);20;BRA;450Tsd. €/J.;Unverkäuflich;30.6.2029;Perspektivs
   const rt9 = w.eval("migrateState(JSON.parse(JSON.stringify(state)))");
   ok(rt9.lists.keyed.status.some(e=>e.label==="Afrika-Cup") && rt9.lists.labels.grades[0]==="Weltklasse", "Listen überstehen Speichern/Import");
   const junk9 = w.eval(`sanitizeLists({keyed:{squadRoles:[{key:"c_x", label:"Eigene", base:"gibtsnicht"},{key:"sell", label:""}]}, labels:{grades:[]}, rolesIP:{ST:"kaputt"}})`);
-  ok(junk9.keyed.squadRoles.length===7 && junk9.keyed.squadRoles.find(e=>e.key==="c_x").base==="key" && junk9.keyed.squadRoles.find(e=>e.key==="sell").label==="Abgabe" && junk9.labels.grades.length===5 && junk9.rolesIP.ST.length===5,
+  ok(junk9.keyed.squadRoles.length===7 && junk9.keyed.squadRoles.find(e=>e.key==="c_x").base==="key" && junk9.keyed.squadRoles.find(e=>e.key==="sell").label==="Abgabe" && junk9.labels.grades.length===5 && junk9.rolesIP.ST.length===w.eval("BUILTIN_LISTS.rolesIP.ST.length"),
      "Kaputte Listen: eingebaute Einträge ergänzt, ungültige Basis korrigiert, leere Listen auf Standard");
   w.eval("renderAll()"); await new Promise(r=>setTimeout(r,20));
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
@@ -3524,6 +3524,44 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(scS().querySelectorAll(".hub3-ch-item").length===2 && scS().querySelector(".hub3-ch-bar i").style.width==="25%" && scS().textContent.includes("1/4") && scS().textContent.includes("offen"), "Aktive Challenges mit Fortschritt (1/4 = 25 %, einfache: offen)");
   scS().querySelector(".hub3-week").click();
   ok(w.eval("hubView")==="diary", "Klick auf die Karte öffnet das Tagebuch");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[77] 12.0 Vorschau 5: FM26-Rollen, Umstellung alter Aufstellungen, Rollen-Menü");
+  ok(w.eval("ROLE_DB.length")===68 && w.eval("new Set(ROLE_DB.map(r=>r.de)).size")===68 && w.eval("ROLE_DB.every(r=>r.en && r.desc && ['both','in','out'].includes(r.phase))"), "68 FM26-Rollen mit englischem Namen, Phase und Kurzbeschreibung");
+  ok(w.eval("POS_LIST.every(c=>BUILTIN_LISTS.rolesIP[c].every(n=>ROLE_INFO[n] && ROLE_INFO[n].phase!=='out') && BUILTIN_LISTS.rolesOOP[c].every(n=>ROLE_INFO[n] && ROLE_INFO[n].phase!=='in'))"), "Mit Ball nur Offensive + Def./Off., gegen Ball nur Defensive + Def./Off.");
+  ok(w.eval("BUILTIN_LISTS.rolesIP.LV.includes('Vorgeschobener Flügelverteidiger') && BUILTIN_LISTS.rolesOOP.LF.includes('Umschaltflügelspieler') && BUILTIN_LISTS.rolesIP.IV.includes('Hinterlaufender Halbraumverteidiger') && BUILTIN_LISTS.rolesIP.ZM.includes('Vorgeschobener Spielmacher') && BUILTIN_LISTS.rolesIP.OM.includes('Vorgeschobener Spielmacher')"), "Positionen zugeordnet (FV→LV/RV, OMR/L→LF/RF, RIV/LIV→IV, ZM+OM)");
+  // an old save: old default lists + old role names
+  { const old = w.eval(`(()=>{ const f = JSON.parse(JSON.stringify(state)); f.lists.rolesIP = JSON.parse(JSON.stringify(ROLES_IP_OLD)); f.lists.rolesOOP = JSON.parse(JSON.stringify(ROLES_OOP_OLD));
+      f.lists.rolesIP.ZM.push("Eigene Achter-Rolle"); f.lists.stayHigh = ["Hoch bleibend","Pressender Stürmer","Pressender OM"];
+      const t = f.tactics[f.formationName], defs = formationDefs(f.formationName);
+      defs.forEach((d,i)=>{ if(!t.slots[i]) return; if(d.cat==="ST"){ t.slots[i].roleIn = "Tiefer Stürmer"; t.slots[i].roleOut = "Hoch bleibend"; } if(d.cat==="ZM"){ t.slots[i].roleIn = "Mezzala"; } if(d.cat==="TW"){ t.slots[i].roleOut = "Hoch stehender Torwart"; } });
+      return JSON.stringify(sanitizeState(migrateState(f))); })()`);
+    const o = JSON.parse(old), defsO = w.eval("formationDefs(state.formationName)"), tO = o.tactics[o.formationName];
+    const at = cat => defsO.map((d,i)=>[d.cat, tO.slots[i]]).filter(([c,sl])=>c===cat && sl).map(([c,sl])=>sl);
+    ok(at("ST").every(sl=>sl.roleIn==="Hängende Spitze" && sl.roleOut==="Zentraler Umschaltstürmer"), "Alter Spielstand: Tiefer Stürmer → Hängende Spitze, Hoch bleibend (ST) → Zentraler Umschaltstürmer");
+    ok(at("ZM").every(sl=>sl.roleIn==="Weiter Achter") && at("TW").every(sl=>sl.roleOut==="Libero-Torhüter"), "Mezzala → Weiter Achter, Hoch stehender Torwart → Libero-Torhüter");
+    ok(o.lists.rolesIP.ZM[0]==="Zentraler Mittelfeldspieler" && o.lists.rolesIP.ZM.includes("Eigene Achter-Rolle") && !o.lists.rolesIP.ZM.includes("Mezzala"), "Alte Standardliste ersetzt – eigene Rolle bleibt erhalten");
+    ok(o.lists.stayHigh.includes("Zentraler Umschaltstürmer") && !o.lists.stayHigh.includes("Hoch bleibend"), "'Bleibt vorne' gilt für die FM26-Umschaltrollen"); }
+  // picker
+  w.eval("navigate('tactics'); selectedSlot = 1; renderTactics()");
+  const rpb = d.querySelector("#se-in + .rp-btn");
+  ok(rpb && d.querySelector("#se-in").classList.contains("rp-native") && rpb.getAttribute("aria-haspopup")==="listbox", "Rollen-Menü statt einfacher Auswahlliste (die Liste bleibt im Hintergrund)");
+  rpb.click();
+  const pop = d.querySelector(".rp-pop"), items = () => [...d.querySelectorAll(".rp-pop li")];
+  ok(pop && items().length===w.eval("ROLES_IP[formationDefs(state.formationName)[1].cat].length") && pop.querySelector(".rp-info").textContent.includes(w.eval(`ROLE_INFO[state.tactics[state.formationName].slots[1].roleIn].desc`)), "Menü offen: alle Rollen der Position, Beschreibung der aktuellen Rolle");
+  items()[2].dispatchEvent(new w.MouseEvent("mousemove", {bubbles:true}));
+  const r2 = w.eval(`ROLE_INFO[ROLES_IP[formationDefs(state.formationName)[1].cat][2]]`);
+  ok(pop.querySelector(".rp-info").textContent.includes(r2.desc) && pop.querySelector(".rp-info").textContent.includes(r2.en), "Überfahren zeigt englischen Namen und Kurzbeschreibung: "+r2.de);
+  pop.dispatchEvent(new w.KeyboardEvent("keydown", {key:"ArrowDown", bubbles:true}));
+  const r3 = w.eval(`ROLES_IP[formationDefs(state.formationName)[1].cat][3]`);
+  ok(pop.querySelector(".rp-info").textContent.includes(r3), "↓ blättert weiter (mit Beschreibung)");
+  const dateBefore = S().club.ingameDate;
+  pop.dispatchEvent(new w.KeyboardEvent("keydown", {key:"t", bubbles:true}));
+  ok(S().club.ingameDate===dateBefore, "Tasten im Menü lösen keine Dashboard-Kürzel aus");
+  pop.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Enter", bubbles:true}));
+  ok(!d.querySelector(".rp-pop") && S().tactics[S().formationName].slots[1].roleIn===r3, "Enter übernimmt die Rolle: "+r3);
+  d.querySelector("#se-out + .rp-btn").click(); d.querySelector(".rp-pop").dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  ok(!d.querySelector(".rp-pop"), "Esc schließt das Menü");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

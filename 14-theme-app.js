@@ -113,10 +113,15 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.0.0-vorschau.4";
+const APP_VERSION = "12.0.0-vorschau.5";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.0.0-vorschau.5", beta:true, title:"Nexus · Vorschau 5: die echten FM26-Rollen", items:[
+    ["neu","Taktik: alle 68 Rollen aus Football Manager 26 mit den offiziellen deutschen Namen – mit Ball (Offensive + Def./Off.) und gegen den Ball (Defensive + Def./Off.), passend zur Position (AV/FV auf LV/RV, Außenspieler auf LF/RF, Halbraumverteidiger bei IV …)."],
+    ["neu","Neues Rollen-Menü: beim Überfahren oder mit ↑/↓ erscheinen englischer Name, Phase und Kurzbeschreibung der Rolle; Enter wählt, Buchstaben springen."],
+    ["besser","Bestehende Aufstellungen werden automatisch umgestellt (z. B. Mezzala → Weiter Achter, Inside Forward → Inverser Außenstürmer, „Hoch bleibend“ → Umschaltstürmer/-zehner/-flügelspieler); selbst angelegte Rollen bleiben erhalten. Die Umschalt-Rollen bleiben gegen den Ball vorne."],
+    ["besser","Der KI-Prompt nutzt damit automatisch die echten FM-Rollennamen."]]},
   {v:"12.0.0-vorschau.4", beta:true, title:"Nexus · Vorschau 4: Session & Woche im Hub", items:[
     ["neu","Hub → Seitenleiste „Session & Woche“: Session direkt im Hub starten (mit Vorhaben) und beenden, laufende Uhr, Spielzeit und Sessions dieser Woche, 🔥 Serie und deine aktiven Challenges mit Fortschritt. Klick auf die Karte öffnet das Tagebuch."]]},
   {v:"12.0.0-vorschau.3", beta:true, title:"Nexus · Vorschau 3: aufgeräumter Hub", items:[

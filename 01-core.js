@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "12.0.0-vorschau.4";
+window.FM27_BUILD = "12.0.0-vorschau.5";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -141,32 +141,106 @@ const RELATED = {
   LF:["RF","OM","ST","LV"], RF:["LF","OM","ST","RV"], ST:["OM","LF","RF"]
 };
 
-// FM-style split roles: in possession / out of possession.
-const ROLES_IP = {
-  TW:["Torwart","Ballspielender Torwart","Mitspielender Torwart"],
-  IV:["Innenverteidiger","Ballspielender IV","Breiter IV","Aufrückender IV"],
-  LV:["Außenverteidiger","Wingback","Inverser AV","Offensiver Wingback"],
-  RV:["Außenverteidiger","Wingback","Inverser AV","Offensiver Wingback"],
-  DM:["Sechser","Tiefer Spielmacher","Abkippender Sechser","Halbverteidiger"],
-  ZM:["Box-to-Box","Achter","Mezzala","Zentraler Spielmacher"],
-  OM:["Zehner","Schattenstürmer","Freirolle"],
-  LF:["Flügelspieler","Inverser Flügel","Inside Forward","Breiter Spielmacher"],
-  RF:["Flügelspieler","Inverser Flügel","Inside Forward","Breiter Spielmacher"],
-  ST:["Mittelstürmer","Zielspieler","Falsche Neun","Tiefer Stürmer","Konterstürmer"]
+// 12.0: the official Football Manager 26 roles (DE/EN, position, phase, short description).
+// phase: "both" = Def. / Off. (in AND out of possession), "in" = Offensive (with the ball), "out" = Defensive (without)
+const ROLE_DB = [{"de": "Torwart", "en": "Goalkeeper", "pos": "TW", "phase": "both", "desc": "Ausgewogene Standard-Rolle"},
+  {"de": "Linientorhüter", "en": "Line-Holding Keeper", "pos": "TW", "phase": "out", "desc": "Bleibt in seinem Kasten"},
+  {"de": "Libero-Torhüter", "en": "Sweeper Keeper", "pos": "TW", "phase": "out", "desc": "Sichert große Bereiche vor seinem Tor"},
+  {"de": "Kompromissloser Torhüter", "en": "No-Nonsense Goalkeeper", "pos": "TW", "phase": "in", "desc": "„Lang und weit bringt Sicherheit“"},
+  {"de": "Ballspielender Torhüter", "en": "Ball Playing Goalkeeper", "pos": "TW", "phase": "in", "desc": "Nimmt aktiv am Aufbauspiel teil"},
+  {"de": "Innenverteidiger", "en": "Centre-Back", "pos": "IV", "phase": "both", "desc": "Ausgewogene Standard-Rolle"},
+  {"de": "Stoppender Innenverteidiger", "en": "Stopping Centre-Back", "pos": "IV", "phase": "out", "desc": "Verteidigt aggressiver nach vorne"},
+  {"de": "Absichernder Innenverteidiger", "en": "Covering Centre-Back", "pos": "IV", "phase": "out", "desc": "Verteidigt vorsichtiger und hält die Linie"},
+  {"de": "Ballspielender Innenverteidiger", "en": "Ball Playing Centre-Back", "pos": "IV", "phase": "in", "desc": "Lizenz zum Spielmachen und Ballschleppen"},
+  {"de": "Kompromissloser Innenverteidiger", "en": "No-Nonsense Centre-Back", "pos": "IV", "phase": "in", "desc": "Safety first, Eleganz second"},
+  {"de": "Aufrückender Innenverteidiger", "en": "Advanced Centre-Back", "pos": "IV", "phase": "in", "desc": "Der frühere Libero; rückt ins Mittelfeld vor"},
+  {"de": "Halbraumverteidiger", "en": "Wide Centre-Back", "pos": "RIV/LIV", "phase": "both", "desc": "Innenverteidiger, der in Ballbesitz Breite anbietet"},
+  {"de": "Stoppender Halbraumverteidiger", "en": "Stopping Wide Centre-Back", "pos": "RIV/LIV", "phase": "out", "desc": "Verteidigt aggressiver nach vorne"},
+  {"de": "Absichernder Halbraumverteidiger", "en": "Covering Wide Centre-Back", "pos": "RIV/LIV", "phase": "out", "desc": "Verteidigt vorsichtiger und hält die Linie"},
+  {"de": "Hinterlaufender Halbraumverteidiger", "en": "Overlapping Centre-Back", "pos": "RIV/LIV", "phase": "in", "desc": "Wird in Ballbesitz zum Flügelverteidiger"},
+  {"de": "Außenverteidiger", "en": "Full-Back", "pos": "AV", "phase": "both", "desc": "Ausgewogene Standard-Rolle"},
+  {"de": "Flügelverteidiger", "en": "Wing-Back", "pos": "AV, FV", "phase": "both", "desc": "Ausgewogene Standard-Rolle, tiefer Flügelspieler"},
+  {"de": "Abwartender Außenverteidiger", "en": "Holding Full-Back", "pos": "AV", "phase": "out", "desc": "Absicherung auf Außen"},
+  {"de": "Pressender Außenverteidiger", "en": "Pressing Full-Back", "pos": "AV", "phase": "out", "desc": "Verteidigt aggressiv nach vorne"},
+  {"de": "Inverser Außenverteidiger", "en": "Inverted Full-Back", "pos": "AV", "phase": "in", "desc": "Zusätzlicher Innenverteidiger in Ballbesitz"},
+  {"de": "Abwartender Flügelverteidiger", "en": "Holding Wing-Back", "pos": "FV", "phase": "out", "desc": "Absicherung auf Außen"},
+  {"de": "Pressender Flügelverteidiger", "en": "Pressing Wing-Back", "pos": "FV", "phase": "out", "desc": "Verteidigt aggressiv nach vorne"},
+  {"de": "Inverser Flügelverteidiger", "en": "Inverted Wing-Back", "pos": "AV, FV", "phase": "in", "desc": "Verkappter Sechser / Achter in Ballbesitz"},
+  {"de": "Spielmachender Flügelverteidiger", "en": "Playmaking Wing-Back", "pos": "AV, FV", "phase": "in", "desc": "Verkappter Sechser / Achter mit Spielmacher-Lizenz"},
+  {"de": "Vorgeschobener Flügelverteidiger", "en": "Advanced Wing-Back", "pos": "FV", "phase": "in", "desc": "Der frühere Komplette Flügelverteidiger; sehr offensiv"},
+  {"de": "Defensiver Mittelfeldspieler", "en": "Defensive Midfielder", "pos": "DM", "phase": "both", "desc": "Ausgewogene Standard-Rolle"},
+  {"de": "Halbverteidiger", "en": "Dropping Defensive Midfielder", "pos": "DM", "phase": "out", "desc": "Zusätzlicher Innenverteidiger im letzten Drittel"},
+  {"de": "Abschirmender Sechser", "en": "Screening Defensive Midfielder", "pos": "DM", "phase": "out", "desc": "„Holding Six“"},
+  {"de": "Pressender Sechser", "en": "Pressing Defensive Midfielder", "pos": "DM", "phase": "out", "desc": "Verteidigt aggressiv nach vorne"},
+  {"de": "Flügelsichernder Sechser", "en": "Wide Covering Defensive Midfielder", "pos": "DMR/L", "phase": "out", "desc": "Unterstützt die Außenverteidiger beim Doppeln"},
+  {"de": "Tiefer Spielmacher", "en": "Deep-Lying Playmaker", "pos": "DM", "phase": "in", "desc": "Aufbauspieler"},
+  {"de": "Abkippender Sechser", "en": "Half-Back", "pos": "DM", "phase": "in", "desc": "Begibt sich zum Spielaufbau in die Defensivlinie"},
+  {"de": "Box-to-Box-Spieler", "en": "Box-to-Box Midfielder", "pos": "DM", "phase": "in", "desc": "„Segundo Volante“, vertikaler Dauerrenner"},
+  {"de": "Box-to-Box-Spielmacher", "en": "Box-to-Box Playmaker", "pos": "DM", "phase": "in", "desc": "„Vertikaler Spielmacher“, kreativer B2B-Spieler"},
+  {"de": "Zentraler Mittelfeldspieler", "en": "Central Midfielder", "pos": "DM, ZM", "phase": "both", "desc": "Ausgewogene Standard-Rolle"},
+  {"de": "Abschirmender Achter", "en": "Screening Central Midfielder", "pos": "ZM", "phase": "out", "desc": "Hält Position und stellt Passwege zu"},
+  {"de": "Pressender Achter", "en": "Pressing Central Midfielder", "pos": "ZM", "phase": "out", "desc": "Verteidigt aggressiv nach vorne"},
+  {"de": "Flügelsichernder Achter", "en": "Wide Covering Central Midfielder", "pos": "ZMR/L", "phase": "out", "desc": "Unterstützt die Außenverteidiger beim Doppeln"},
+  {"de": "Spielmacher", "en": "Midfield Playmaker", "pos": "ZM", "phase": "in", "desc": "Kreativer Verbindungsspieler"},
+  {"de": "Weiter Achter", "en": "Wide Central Midfielder", "pos": "ZMR/L", "phase": "in", "desc": "„Carrilero“, breiter Verbindungsspieler"},
+  {"de": "Vorgeschobener Spielmacher", "en": "Advanced Playmaker", "pos": "ZM, OM", "phase": "in", "desc": "Klassischer Spielmacher und Chancenkreierer"},
+  {"de": "Offensiver Mittelfeldspieler", "en": "Attacking Midfielder", "pos": "ZM, OM", "phase": "both", "desc": "Ausgewogene Standard-Rolle"},
+  {"de": "Mitarbeitender Zehner", "en": "Tracking Attacking Midfielder", "pos": "OM", "phase": "out", "desc": "Arbeitet nach hinten, um die Defensive zu unterstützen"},
+  {"de": "Zentraler Umschaltzehner", "en": "Central Outlet Attacking Midfielder", "pos": "OM", "phase": "out", "desc": "Anspielstation für den Umschaltmoment"},
+  {"de": "Ausweichender Umschaltzehner", "en": "Splitting Outlet Attacking Midfielder", "pos": "OM", "phase": "out", "desc": "Wartet in den Halbräumen auf den Umschaltmoment"},
+  {"de": "Freigeist/Freirolle", "en": "Free Role", "pos": "OM", "phase": "in", "desc": "„Trequartista“; besitzt offensiv alle Freiheiten"},
+  {"de": "Halbraumspieler", "en": "Channel Midfielder", "pos": "OM", "phase": "in", "desc": "Attackiert die gegnerischen Schnittstellen / Halbräume"},
+  {"de": "Zweiter Stürmer", "en": "Second Striker", "pos": "OM", "phase": "in", "desc": "„Schattenstürmer“; attackiert den Strafraum"},
+  {"de": "Äußerer Mittelfeldspieler", "en": "Wide Midfielder", "pos": "RM/LM", "phase": "both", "desc": "Ausgewogene Standard-Rolle, „ZM für Außen“"},
+  {"de": "Flügelspieler", "en": "Winger", "pos": "RM/LM, OMR/L", "phase": "both", "desc": "Dribbeln und Flanken sind sein Metier"},
+  {"de": "Mitarbeitender Außenspieler", "en": "Tracking Wide Midfielder", "pos": "RM/LM", "phase": "out", "desc": "Arbeitet nach hinten, um die Defensive zu unterstützen"},
+  {"de": "Mitarbeitender Flügelspieler", "en": "Tracking Winger", "pos": "OMR/L", "phase": "out", "desc": "Arbeitet nach hinten, um die Defensive zu unterstützen"},
+  {"de": "Äußerer Umschaltspieler", "en": "Wide Outlet Wide Midfielder", "pos": "RM/LM", "phase": "out", "desc": "Anspielstation auf den Außen für den Umschaltmoment"},
+  {"de": "Umschaltflügelspieler", "en": "Wide Outlet Winger", "pos": "OMR/L", "phase": "out", "desc": "Anspielstation auf den Außen für den Umschaltmoment"},
+  {"de": "Inverser Umschaltflügelspieler", "en": "Inverting Outlet Winger", "pos": "OMR/L", "phase": "out", "desc": "Sucht die Halbräume für den Umschaltmoment"},
+  {"de": "Halbraumflügel", "en": "Half-Space Winger", "pos": "RM/LM, OMR/L", "phase": "in", "desc": "„Inverser Flügelspieler“; zieht nach innen"},
+  {"de": "Äußerer Spielmacher", "en": "Wide Playmaker", "pos": "RM/LM, OMR/L", "phase": "in", "desc": "Spielmacher mit weiter Startposition; zieht ins Zentrum"},
+  {"de": "Inverser Außenstürmer", "en": "Half-Space Forward", "pos": "OMR/L", "phase": "in", "desc": "„Inverser Außenstürmer“; Torgefahr von Außen"},
+  {"de": "Außenstürmer", "en": "Wide Forward", "pos": "OMR/L", "phase": "in", "desc": "„Raumdeuter“; gibt Breite und taucht dann in der Box auf"},
+  {"de": "Mittelstürmer", "en": "Centre Forward", "pos": "ST", "phase": "both", "desc": "Ausgewogene Standard-Rolle, klassische Nummer 9"},
+  {"de": "Mitarbeitender Mittelstürmer", "en": "Tracking Centre Forward", "pos": "ST", "phase": "out", "desc": "Arbeitet nach hinten, um die Defensive zu unterstützen"},
+  {"de": "Zentraler Umschaltstürmer", "en": "Central Outlet Centre Forward", "pos": "ST", "phase": "out", "desc": "Zentrale Anspielstation für den Umschaltmoment"},
+  {"de": "Ausweichender Umschaltstürmer", "en": "Splitting Outlet Centre Forward", "pos": "ST", "phase": "out", "desc": "Sucht die Halbräume / Außen für den Umschaltmoment"},
+  {"de": "Hängende Spitze", "en": "Deep-Lying Forward", "pos": "ST", "phase": "in", "desc": "Verbindungsspieler und Ballverteiler"},
+  {"de": "Falsche Neun", "en": "False Nine", "pos": "ST", "phase": "in", "desc": "Verkappter Zehner"},
+  {"de": "Zielspieler", "en": "Target Forward", "pos": "ST", "phase": "in", "desc": "Langer Kerl mit Muskeln"},
+  {"de": "Knipser", "en": "Poacher", "pos": "ST", "phase": "in", "desc": "Tore schießen, sonst nix"},
+  {"de": "Halbraumstürmer", "en": "Channel Forward", "pos": "ST", "phase": "in", "desc": "Attackiert die Halbräume, um hinter die Linie zu kommen"}];
+const ROLE_INFO = Object.fromEntries(ROLE_DB.map(r=>[r.de, r]));
+const ROLES_IP = {"TW": ["Torwart", "Kompromissloser Torhüter", "Ballspielender Torhüter"], "IV": ["Innenverteidiger", "Ballspielender Innenverteidiger", "Kompromissloser Innenverteidiger", "Aufrückender Innenverteidiger", "Halbraumverteidiger", "Hinterlaufender Halbraumverteidiger"], "LV": ["Außenverteidiger", "Flügelverteidiger", "Inverser Außenverteidiger", "Inverser Flügelverteidiger", "Spielmachender Flügelverteidiger", "Vorgeschobener Flügelverteidiger"], "RV": ["Außenverteidiger", "Flügelverteidiger", "Inverser Außenverteidiger", "Inverser Flügelverteidiger", "Spielmachender Flügelverteidiger", "Vorgeschobener Flügelverteidiger"], "DM": ["Defensiver Mittelfeldspieler", "Tiefer Spielmacher", "Abkippender Sechser", "Box-to-Box-Spieler", "Box-to-Box-Spielmacher", "Zentraler Mittelfeldspieler"], "ZM": ["Zentraler Mittelfeldspieler", "Spielmacher", "Weiter Achter", "Vorgeschobener Spielmacher", "Offensiver Mittelfeldspieler"], "OM": ["Offensiver Mittelfeldspieler", "Vorgeschobener Spielmacher", "Freigeist/Freirolle", "Halbraumspieler", "Zweiter Stürmer"], "LF": ["Flügelspieler", "Äußerer Mittelfeldspieler", "Halbraumflügel", "Äußerer Spielmacher", "Inverser Außenstürmer", "Außenstürmer"], "RF": ["Flügelspieler", "Äußerer Mittelfeldspieler", "Halbraumflügel", "Äußerer Spielmacher", "Inverser Außenstürmer", "Außenstürmer"], "ST": ["Mittelstürmer", "Hängende Spitze", "Falsche Neun", "Zielspieler", "Knipser", "Halbraumstürmer"]};
+const ROLES_OOP = {"TW": ["Torwart", "Linientorhüter", "Libero-Torhüter"], "IV": ["Innenverteidiger", "Stoppender Innenverteidiger", "Absichernder Innenverteidiger", "Halbraumverteidiger", "Stoppender Halbraumverteidiger", "Absichernder Halbraumverteidiger"], "LV": ["Außenverteidiger", "Flügelverteidiger", "Abwartender Außenverteidiger", "Pressender Außenverteidiger", "Abwartender Flügelverteidiger", "Pressender Flügelverteidiger"], "RV": ["Außenverteidiger", "Flügelverteidiger", "Abwartender Außenverteidiger", "Pressender Außenverteidiger", "Abwartender Flügelverteidiger", "Pressender Flügelverteidiger"], "DM": ["Defensiver Mittelfeldspieler", "Halbverteidiger", "Abschirmender Sechser", "Pressender Sechser", "Flügelsichernder Sechser", "Zentraler Mittelfeldspieler"], "ZM": ["Zentraler Mittelfeldspieler", "Abschirmender Achter", "Pressender Achter", "Flügelsichernder Achter", "Offensiver Mittelfeldspieler"], "OM": ["Offensiver Mittelfeldspieler", "Mitarbeitender Zehner", "Zentraler Umschaltzehner", "Ausweichender Umschaltzehner"], "LF": ["Flügelspieler", "Äußerer Mittelfeldspieler", "Mitarbeitender Außenspieler", "Mitarbeitender Flügelspieler", "Äußerer Umschaltspieler", "Umschaltflügelspieler", "Inverser Umschaltflügelspieler"], "RF": ["Flügelspieler", "Äußerer Mittelfeldspieler", "Mitarbeitender Außenspieler", "Mitarbeitender Flügelspieler", "Äußerer Umschaltspieler", "Umschaltflügelspieler", "Inverser Umschaltflügelspieler"], "ST": ["Mittelstürmer", "Mitarbeitender Mittelstürmer", "Zentraler Umschaltstürmer", "Ausweichender Umschaltstürmer"]};
+/* the dashboard's own role names before 12.0 – unchanged lists are replaced, assigned roles are carried over */
+const ROLES_IP_OLD = {TW:["Torwart","Ballspielender Torwart","Mitspielender Torwart"], IV:["Innenverteidiger","Ballspielender IV","Breiter IV","Aufrückender IV"],
+  LV:["Außenverteidiger","Wingback","Inverser AV","Offensiver Wingback"], RV:["Außenverteidiger","Wingback","Inverser AV","Offensiver Wingback"],
+  DM:["Sechser","Tiefer Spielmacher","Abkippender Sechser","Halbverteidiger"], ZM:["Box-to-Box","Achter","Mezzala","Zentraler Spielmacher"], OM:["Zehner","Schattenstürmer","Freirolle"],
+  LF:["Flügelspieler","Inverser Flügel","Inside Forward","Breiter Spielmacher"], RF:["Flügelspieler","Inverser Flügel","Inside Forward","Breiter Spielmacher"],
+  ST:["Mittelstürmer","Zielspieler","Falsche Neun","Tiefer Stürmer","Konterstürmer"]};
+const ROLES_OOP_OLD = {TW:["Torwart","Hoch stehender Torwart"], IV:["Innenverteidiger","Herausrückender IV","Absichernder IV"], LV:["Außenverteidiger","Pressender AV","Absichernder AV"],
+  RV:["Außenverteidiger","Pressender AV","Absichernder AV"], DM:["Abschirmender Sechser","Zerstörer","Zurückfallender Sechser"], ZM:["Zentraler MF","Pressender ZM","Abschirmender ZM"],
+  OM:["Pressender OM","Abschirmender OM","Hoch bleibend"], LF:["Mitlaufender Flügel","Pressender Flügel","Hoch bleibend"], RF:["Mitlaufender Flügel","Pressender Flügel","Hoch bleibend"],
+  ST:["Pressender Stürmer","Abschirmender Stürmer","Hoch bleibend"]};
+const ROLE_RENAME = {
+  in:{"Ballspielender Torwart":"Ballspielender Torhüter","Mitspielender Torwart":"Ballspielender Torhüter","Ballspielender IV":"Ballspielender Innenverteidiger","Breiter IV":"Halbraumverteidiger",
+    "Aufrückender IV":"Aufrückender Innenverteidiger","Wingback":"Flügelverteidiger","Inverser AV":"Inverser Außenverteidiger","Offensiver Wingback":"Vorgeschobener Flügelverteidiger",
+    "Sechser":"Defensiver Mittelfeldspieler","Halbverteidiger":"Abkippender Sechser","Box-to-Box":"Box-to-Box-Spieler","Achter":"Zentraler Mittelfeldspieler","Mezzala":"Weiter Achter",
+    "Zentraler Spielmacher":"Spielmacher","Zehner":"Offensiver Mittelfeldspieler","Schattenstürmer":"Zweiter Stürmer","Freirolle":"Freigeist/Freirolle","Inverser Flügel":"Halbraumflügel",
+    "Inside Forward":"Inverser Außenstürmer","Breiter Spielmacher":"Äußerer Spielmacher","Tiefer Stürmer":"Hängende Spitze","Konterstürmer":"Halbraumstürmer"},
+  out:{"Hoch stehender Torwart":"Libero-Torhüter","Herausrückender IV":"Stoppender Innenverteidiger","Absichernder IV":"Absichernder Innenverteidiger","Pressender AV":"Pressender Außenverteidiger",
+    "Absichernder AV":"Abwartender Außenverteidiger","Zerstörer":"Pressender Sechser","Zurückfallender Sechser":"Halbverteidiger","Zentraler MF":"Zentraler Mittelfeldspieler",
+    "Pressender ZM":"Pressender Achter","Abschirmender ZM":"Abschirmender Achter","Pressender OM":"Offensiver Mittelfeldspieler","Abschirmender OM":"Mitarbeitender Zehner",
+    "Mitlaufender Flügel":"Mitarbeitender Flügelspieler","Pressender Flügel":"Flügelspieler","Pressender Stürmer":"Mittelstürmer","Abschirmender Stürmer":"Mitarbeitender Mittelstürmer"},
+  high:{OM:"Zentraler Umschaltzehner", LF:"Umschaltflügelspieler", RF:"Umschaltflügelspieler", ST:"Zentraler Umschaltstürmer"}
 };
-const ROLES_OOP = {
-  TW:["Torwart","Hoch stehender Torwart"],
-  IV:["Innenverteidiger","Herausrückender IV","Absichernder IV"],
-  LV:["Außenverteidiger","Pressender AV","Absichernder AV"],
-  RV:["Außenverteidiger","Pressender AV","Absichernder AV"],
-  DM:["Abschirmender Sechser","Zerstörer","Zurückfallender Sechser"],
-  ZM:["Zentraler MF","Pressender ZM","Abschirmender ZM"],
-  OM:["Pressender OM","Abschirmender OM","Hoch bleibend"],
-  LF:["Mitlaufender Flügel","Pressender Flügel","Hoch bleibend"],
-  RF:["Mitlaufender Flügel","Pressender Flügel","Hoch bleibend"],
-  ST:["Pressender Stürmer","Abschirmender Stürmer","Hoch bleibend"]
-};
-
+/** an old role name → its FM26 counterpart in this position group (or "" if there is none in the list) */
+function mapOldRole(phase, cat, name, list){
+  const to = name === "Hoch bleibend" ? ROLE_RENAME.high[cat] : ROLE_RENAME[phase === "out" ? "out" : "in"][name];
+  return to && list.includes(to) ? to : "";
+}
 const SQUAD_ROLES = {
   key:"Schlüsselspieler", first:"Stammspieler", rotation:"Rotation",
   backup:"Backup", prospect:"Perspektive", sell:"Abgabe"
@@ -347,7 +421,9 @@ const BASE_HINT = {
   loanClauses:{buy:"Rückkehr unsicher", obligation:"kehrt nicht zurück"},
   playtime:{good:"Leihe läuft gut", ok:"beobachten", bad:"rot markiert · Auto-Notiz · „Rückruf prüfen“"}
 };
-const DEFAULT_STAY_HIGH = ["Hoch bleibend","Pressender Stürmer","Pressender OM"];
+// 12.0: the FM26 "outlet" roles stay high without the ball (counter-attack options)
+const DEFAULT_STAY_HIGH = ["Zentraler Umschaltzehner","Ausweichender Umschaltzehner","Umschaltflügelspieler","Inverser Umschaltflügelspieler","Äußerer Umschaltspieler","Zentraler Umschaltstürmer","Ausweichender Umschaltstürmer"];
+const DEFAULT_STAY_HIGH_OLD = ["Hoch bleibend","Pressender Stürmer","Pressender OM"];
 const LIST_BASE = {};                     // listName → {key: baseKey}
 const STAY_HIGH = new Set(DEFAULT_STAY_HIGH);
 const BUILTIN_LISTS = JSON.parse(JSON.stringify({
@@ -393,12 +469,20 @@ function sanitizeLists(raw){
   ["rolesIP","rolesOOP"].forEach(k=>{
     POS_LIST.forEach(cat=>{
       const src = r[k] && Array.isArray(r[k][cat]) ? r[k][cat] : [];
-      const list = [...new Set(src.map(x=>String(x == null ? "" : x).trim().slice(0,40)).filter(Boolean))];
+      let list = [...new Set(src.map(x=>String(x == null ? "" : x).trim().slice(0,40)).filter(Boolean))];
+      // 12.0: the pre-FM26 default names are replaced by the FM26 list; own additions stay (appended)
+      const oldDef = (k === "rolesIP" ? ROLES_IP_OLD : ROLES_OOP_OLD)[cat];
+      if(list.length && list.some(x=>oldDef.includes(x)) && !list.some(x=>BUILTIN_LISTS[k][cat].includes(x) && !oldDef.includes(x))){
+        const own = list.filter(x=>!oldDef.includes(x) && !BUILTIN_LISTS[k][cat].includes(x));
+        list = BUILTIN_LISTS[k][cat].concat(own);
+      }
       out[k][cat] = list.length ? list : BUILTIN_LISTS[k][cat].slice();
     });
   });
   const allOOP = new Set(Object.values(out.rolesOOP).flat());
-  out.stayHigh = (Array.isArray(r.stayHigh) ? r.stayHigh : BUILTIN_LISTS.stayHigh).filter(x=>allOOP.has(x));
+  let sh = Array.isArray(r.stayHigh) ? r.stayHigh : BUILTIN_LISTS.stayHigh;
+  if(sh.some(x=>DEFAULT_STAY_HIGH_OLD.includes(x))) sh = BUILTIN_LISTS.stayHigh.concat(sh.filter(x=>!DEFAULT_STAY_HIGH_OLD.includes(x)));   // 12.0
+  out.stayHigh = [...new Set(sh)].filter(x=>allOOP.has(x));
   return out;
 }
 /** Writes the lists into the shared constants (in place, so existing references stay valid). */
@@ -1090,8 +1174,8 @@ function sanitizeTacticBlock(b, ids){
       if(!o || typeof o !== "object") return;
       slots[i] = {
         playerId: ids.has(o.playerId) ? o.playerId : null,
-        roleIn: ROLES_IP[def.cat].includes(o.roleIn) ? o.roleIn : ROLES_IP[def.cat][0],
-        roleOut: ROLES_OOP[def.cat].includes(o.roleOut) ? o.roleOut : ROLES_OOP[def.cat][0]
+        roleIn: ROLES_IP[def.cat].includes(o.roleIn) ? o.roleIn : (mapOldRole("in", def.cat, o.roleIn, ROLES_IP[def.cat]) || ROLES_IP[def.cat][0]),
+        roleOut: ROLES_OOP[def.cat].includes(o.roleOut) ? o.roleOut : (mapOldRole("out", def.cat, o.roleOut, ROLES_OOP[def.cat]) || ROLES_OOP[def.cat][0])
       };
       if(o.oopPos && typeof o.oopPos === "object"){
         slots[i].oopPos = {x: clamp(num(o.oopPos.x, 50), 3, 97), y: clamp(num(o.oopPos.y, 50), 3, 97)};

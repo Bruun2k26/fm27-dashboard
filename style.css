@@ -2196,3 +2196,24 @@ td.num .cr-cell{text-align:right;}
   .hub3-grid .hub2-hero{flex:1;}
   .hub3-rail{position:static;}
 }
+
+/* ---------- 12.0 Vorschau 5: role picker ---------- */
+.rp-native{position:absolute !important;width:1px !important;height:1px !important;opacity:0 !important;pointer-events:none !important;overflow:hidden;}
+.rp-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:7px 10px;border-radius:var(--radius-m);border:1px solid var(--border);background:var(--bg-800);color:var(--text-primary);font:inherit;text-align:left;cursor:pointer;}
+.rp-btn:hover, .rp-btn:focus-visible, .rp-btn[aria-expanded="true"]{border-color:var(--accent);outline:none;}
+.rp-cur{display:flex;flex-direction:column;min-width:0;} .rp-cur strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .rp-cur small{font-size:11px;color:var(--text-secondary);}
+.rp-pop{position:fixed;z-index:130;display:flex;flex-direction:column;border-radius:var(--radius-l);border:1px solid var(--border-strong);background:var(--bg-850);box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;outline:none;}
+.rp-head{padding:9px 12px;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);color:var(--text-secondary);}
+.rp-list{list-style:none;margin:0;padding:4px;overflow-y:auto;flex:1;min-height:0;}
+.rp-list li{display:flex;flex-direction:column;padding:6px 9px;border-radius:8px;cursor:pointer;}
+.rp-list li.act{background:var(--bg-750);} .rp-list li.sel .rp-name::after{content:" ✓";color:var(--accent-text);}
+.rp-name{font-size:13px;font-weight:600;} .rp-en{font-size:11px;color:var(--text-secondary);}
+.rp-info{padding:10px 12px 12px;border-top:1px solid var(--border);background:var(--bg-800);min-height:74px;}
+.rp-info-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rp-info strong{font-size:13px;} .rp-info p{margin:4px 0 0;font-size:12.5px;color:var(--text-primary);}
+.rp-phase{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;border:1px solid var(--border);white-space:nowrap;}
+.rp-phase.p-in{color:var(--pos-text);} .rp-phase.p-out{color:var(--warn-text, var(--text-primary));} .rp-phase.p-both{color:var(--accent-text);}
+/* FM26 role names are long: two lines with German hyphenation instead of "Spielmachend…" */
+#pitch .p-role{white-space:normal;max-width:112px;line-height:1.15;text-align:center;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip;}
+#pitch{overflow:visible;} .pitch-wrap, .pitch-card{overflow:visible;} #pitch .pitch-slot{z-index:2;}

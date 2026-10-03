@@ -2,6 +2,76 @@
    TACTICS — PITCH
    ========================================================================== */
 let selectedSlot = null;
+/** soft hyphens at the joints of German compounds (works without a hyphenation dictionary) */
+const roleHy = name => String(name).replace(/(\p{L}{3,}?)(verteidiger|spieler|stürmer|macher|zehner|flügel|torhüter|sechser)/giu, "$1\u00AD$2");
+/* ---------- 12.0: role picker – shows the FM26 short description while hovering or arrowing through ---------- */
+const RP_PHASE = {both:"Mit & gegen Ball", in:"Mit Ball", out:"Gegen den Ball"};
+let rpOpen = null;
+function rpInfoHTML(name){
+  const r = ROLE_INFO[name];
+  if(!r) return `<strong>${esc(name)}</strong><p>Eigene Rolle – angelegt unter Admin → Listen.</p>`;
+  return `<div class="rp-info-top"><strong>${esc(r.de)}</strong><span class="rp-phase p-${r.phase}">${RP_PHASE[r.phase]}</span></div>
+    <span class="rp-en">${esc(r.en)} · ${esc(r.pos)}</span><p>${esc(r.desc)}</p>`;
+}
+function enhanceRolePicker(sel, phase){
+  if(!sel || sel.dataset.rp) return;
+  sel.dataset.rp = "1"; sel.classList.add("rp-native"); sel.tabIndex = -1; sel.setAttribute("aria-hidden", "true");
+  [...sel.options].forEach(o=>{ const r = ROLE_INFO[o.value]; if(r) o.title = `${r.en} – ${r.desc}`; });
+  const b = document.createElement("button"); b.type = "button"; b.className = "rp-btn";
+  b.setAttribute("aria-haspopup", "listbox"); b.setAttribute("aria-expanded", "false");
+  const lbl = sel.id && qs(`label[for="${sel.id}"]`); if(lbl){ lbl.id = lbl.id || sel.id + "-lbl"; lbl.setAttribute("for", ""); lbl.onclick = ()=>b.focus(); }
+  const paint = () => { const v = sel.value, r = ROLE_INFO[v]; b.innerHTML = `<span class="rp-cur"><strong>${esc(v)}</strong>${r ? `<small>${esc(r.en)}</small>` : ""}</span><span aria-hidden="true">▾</span>`;
+    b.setAttribute("aria-label", `${lbl ? lbl.textContent + ": " : ""}${v}`); b.title = r ? r.desc : ""; };
+  paint(); sel.after(b);
+  b.addEventListener("click", ()=>openRolePicker(sel, b, phase));
+  b.addEventListener("keydown", e=>{ if(["ArrowDown","ArrowUp","Enter"," "].includes(e.key)){ e.preventDefault(); e.stopPropagation(); openRolePicker(sel, b, phase); } });
+}
+function closeRolePicker(refocus){
+  if(!rpOpen) return; const {pop, btn} = rpOpen; rpOpen = null;
+  pop.remove(); btn.setAttribute("aria-expanded", "false");
+  document.removeEventListener("pointerdown", rpOutside, true); window.removeEventListener("resize", rpReposition); window.removeEventListener("scroll", rpReposition, true);
+  if(refocus && btn.isConnected) btn.focus({preventScroll:true});
+}
+function rpOutside(e){ if(rpOpen && !rpOpen.pop.contains(e.target) && e.target !== rpOpen.btn && !rpOpen.btn.contains(e.target)) closeRolePicker(false); }
+function rpReposition(){
+  if(!rpOpen) return; const {pop, btn} = rpOpen, r = btn.getBoundingClientRect(), w = Math.max(r.width, 340), h = pop.offsetHeight || 360;
+  const below = innerHeight - r.bottom - 8, top = below >= Math.min(h, 300) || below >= r.top ? r.bottom + 4 : Math.max(8, r.top - h - 4);
+  pop.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px"; pop.style.top = top + "px"; pop.style.width = w + "px";
+  pop.style.maxHeight = Math.max(220, (top > r.top ? innerHeight - top - 8 : r.top - 12)) + "px";
+}
+function openRolePicker(sel, btn, phase){
+  if(rpOpen){ const same = rpOpen.sel === sel; closeRolePicker(false); if(same) return; }
+  const opts = [...sel.options].map(o=>o.value);
+  const pop = document.createElement("div"); pop.className = "rp-pop"; pop.tabIndex = -1;
+  pop.innerHTML = `<div class="rp-head">${phase === "out" ? "Rolle gegen den Ball" : "Rolle mit Ball"} <span class="muted small">· ${opts.length} Rollen</span></div>
+    <ul class="rp-list" role="listbox" aria-label="${phase === "out" ? "Rolle gegen den Ball" : "Rolle mit Ball"}">${opts.map((v,i)=>{ const r = ROLE_INFO[v];
+      return `<li role="option" id="rp-o${i}" data-i="${i}" aria-selected="${v === sel.value}" class="${v === sel.value ? "sel" : ""}"><span class="rp-name">${esc(v)}</span>${r ? `<span class="rp-en">${esc(r.en)}</span>` : '<span class="rp-en">eigene Rolle</span>'}</li>`; }).join("")}</ul>
+    <div class="rp-info" aria-live="polite"></div>`;
+  document.body.appendChild(pop);
+  rpOpen = {pop, btn, sel, opts, i:Math.max(0, opts.indexOf(sel.value)), buf:"", bufT:null};
+  btn.setAttribute("aria-expanded", "true");
+  const list = qs(".rp-list", pop), info = qs(".rp-info", pop);
+  const setActive = (i, scroll) => { rpOpen.i = i; qsa("li", list).forEach((li,k)=>li.classList.toggle("act", k === i)); list.setAttribute("aria-activedescendant", "rp-o" + i);
+    info.innerHTML = rpInfoHTML(opts[i]); if(scroll){ const li = qs(`#rp-o${i}`, pop); if(li && li.scrollIntoView) li.scrollIntoView({block:"nearest"}); } };
+  const choose = i => { const v = opts[i]; closeRolePicker(true); if(v !== sel.value){ sel.value = v; sel.dispatchEvent(new Event("change", {bubbles:true})); } };
+  list.addEventListener("mousemove", e=>{ const li = e.target.closest("li"); if(li && +li.dataset.i !== rpOpen.i) setActive(+li.dataset.i, false); });
+  list.addEventListener("click", e=>{ const li = e.target.closest("li"); if(li) choose(+li.dataset.i); });
+  pop.addEventListener("keydown", e=>{
+    const k = e.key, n = opts.length; let handled = true;
+    if(k === "ArrowDown") setActive((rpOpen.i + 1) % n, true);
+    else if(k === "ArrowUp") setActive((rpOpen.i - 1 + n) % n, true);
+    else if(k === "Home") setActive(0, true); else if(k === "End") setActive(n - 1, true);
+    else if(k === "Enter" || k === " ") choose(rpOpen.i);
+    else if(k === "Escape") closeRolePicker(true);
+    else if(k === "Tab"){ closeRolePicker(true); }
+    else if(k.length === 1 && /\S/.test(k)){ clearTimeout(rpOpen.bufT); rpOpen.buf += k.toLowerCase(); rpOpen.bufT = setTimeout(()=>{ if(rpOpen) rpOpen.buf = ""; }, 700);
+      const j = opts.findIndex(v=>v.toLowerCase().startsWith(rpOpen.buf)); if(j >= 0) setActive(j, true); }
+    else handled = false;
+    if(handled){ e.preventDefault(); } e.stopPropagation();   // keys never reach the dashboard shortcuts while the picker is open
+  });
+  setActive(rpOpen.i, true); rpReposition(); pop.focus({preventScroll:true});
+  document.addEventListener("pointerdown", rpOutside, true); window.addEventListener("resize", rpReposition); window.addEventListener("scroll", rpReposition, true);
+}
 /* 11.5: when switching "Mit Ball / Gegen den Ball" the players move visibly to their new spots.
    Uses the separate CSS property "translate" – "transform" already centres the dots. */
 function pitchPositions(){
@@ -51,7 +121,7 @@ function pitchHTML({mini=false}={}){
         ${mini ? "" : `data-slot="${i}" data-pid="${p?p.id:""}" tabindex="0" role="button" aria-label="${esc(title)}"`} title="${esc(title)}">
       <div class="dot">${p ? esc(initials(p.name)) : "+"}${p ? `<span class="cat">${d.cat}</span>` : ""}</div>
       <div class="p-name">${esc(shortName)}</div>
-      ${p ? `<div class="p-role">${esc(role)}</div>` : ""}
+      ${p ? `<div class="p-role" title="${esc(ROLE_INFO[role] ? `${role} (${ROLE_INFO[role].en}) – ${ROLE_INFO[role].desc}` : role)}">${esc(roleHy(role))}</div>` : ""}
     </div>`;
   }).join("");
 
@@ -120,6 +190,7 @@ function renderSlotEditor(){
     if(base) toast(`Freie Formation – basiert auf ${base}`);
   };
   qs("#se-out").onchange = e=>{ sl.roleOut = e.target.value; saveState(); renderTactics(); };
+  enhanceRolePicker(qs("#se-in"), "in"); enhanceRolePicker(qs("#se-out"), "out");
 }
 
 function renderBench(){
