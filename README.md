@@ -1,109 +1,186 @@
-# FM27 Dashboard als App einrichten
+# FM27 Manager Dashboard · Gaming-Hub
 
-Damit das Dashboard als echte App läuft (eigenes Fenster, Symbol im Startmenü und in der Taskleiste, auch offline), muss es einmal über eine Webadresse erreichbar sein. Browser erlauben das Installieren nur für Seiten mit https, nicht für eine lokal geöffnete Datei.
+Dein persönliches Command Center für **Football Manager** – und für deine anderen Karrieren und Spielsessions.
+Läuft komplett im Browser, funktioniert offline, braucht kein Konto und keinen Server. **Alle Daten bleiben auf deinem Gerät.**
 
-Die einfachste kostenlose Lösung ist **GitHub Pages**.
+![Version](https://img.shields.io/badge/Version-11.9-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.231_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
 
-> **Deine Daten bleiben bei dir.** Hochgeladen werden nur die Programmdateien aus diesem Ordner. Spielstände, Notizen, PIN usw. speichert die App weiterhin nur lokal in Vivaldi auf deinem Rechner.
-> **Lade deshalb niemals** Umzugs-, Export- oder Sicherungsdateien (`fm27_….json`) in das GitHub-Projekt hoch.
-
-Die Menünamen bei GitHub und Vivaldi können sich mit der Zeit leicht ändern. Der Ablauf bleibt aber gleich.
+> **Beta-Hinweis:** Gaming-Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt sind noch als **Beta** gekennzeichnet. Das FM27 Dashboard selbst ist stabil.
 
 ---
 
-## Teil 1 – Einmalig: Dashboard bei GitHub Pages bereitstellen (ca. 10 Minuten)
+## Inhalt
 
-1. **Konto anlegen:** Auf <https://github.com> kostenlos registrieren (falls du noch kein Konto hast).
-2. **Neues Projekt (Repository) anlegen:** Oben rechts auf **„+“ → „New repository“**.
-   - Name z. B. `fm27-dashboard`
-   - Sichtbarkeit **„Public“** (GitHub Pages ist im kostenlosen Tarif nur für öffentliche Projekte verfügbar. Öffentlich ist dabei nur der Programmcode, keine Daten.)
-   - **„Create repository“** klicken.
-3. **Dateien hochladen:** Auf der neuen Projektseite auf **„uploading an existing file“** klicken und den **gesamten Inhalt** dieses Ordners hineinziehen:
-   `index.html`, `app.js`, `style.css`, `manifest.webmanifest`, `sw.js` und den Ordner `icons` (mit allen Bildern darin).
-   Unten auf **„Commit changes“** klicken.
-4. **GitHub Pages einschalten:** Im Projekt auf **„Settings“ → „Pages“**.
-   Unter „Build and deployment“ bei **Source** „Deploy from a branch“ wählen, Branch **„main“** und Ordner **„/ (root)“**, dann **„Save“**.
-5. **Kurz warten** (1–3 Minuten). Oben auf derselben Seite erscheint dann deine Adresse, etwa:
-   `https://DEIN-NAME.github.io/fm27-dashboard/`
-
-## Teil 2 – Deine Daten umziehen (2 Minuten)
-
-1. Die **bisherige Datei-Version** öffnen (die `index.html` aus deinem Ordner, mit diesen neuen Dateien).
-2. **Zahnrad unten links → „Alles exportieren (Umzug)“.** Es wird eine Datei `fm27_umzug_….json` heruntergeladen.
-3. Die neue Adresse in Vivaldi öffnen. Beim ersten Start erscheint **„Willkommen in der FM27-App“**.
-4. **„Umzugsdatei laden …“** klicken und die gerade heruntergeladene Datei wählen → **„Alles übernehmen“**.
-   Alle Spielstände, Einstellungen, Layout, Listen, PIN, Protokoll und Wiederherstellungspunkte sind da.
-
-## Teil 3 – Als App installieren
-
-- **Zahnrad unten links → „Als App installieren“**, oder
-- in Vivaldi per **Rechtsklick auf den Tab → „… installieren“** bzw. über das Installieren-Symbol in der Adressleiste.
-
-Danach findest du „FM27 Dashboard“ im Startmenü und kannst es an die Taskleiste anheften. Die alte Verknüpfung auf die Datei brauchst du nicht mehr.
-
-## Teil 4 – Automatische Sicherung neu verbinden
-
-Die Verbindung zum Sicherungsordner gehört zur alten Datei-Version und zieht nicht mit um. Deshalb in der App einmal:
-**Admin-Bereich → Wiederherstellung → „Ordner wählen …“** und denselben Ordner wie bisher auswählen.
+- [Was ist das?](#was-ist-das)
+- [Funktionen](#funktionen)
+- [Loslegen](#loslegen)
+- [Eigene Kopie auf GitHub Pages](#eigene-kopie-auf-github-pages)
+- [Updates einspielen](#updates-einspielen)
+- [Deine Daten](#deine-daten)
+- [Browser](#browser)
+- [Für Entwickler](#für-entwickler)
+- [Roadmap](#roadmap)
+- [English summary](#english-summary)
+- [Rechtliches](#rechtliches)
 
 ---
 
-## Später: Updates einspielen
+## Was ist das?
 
-Wenn du neue Dateien von mir bekommst:
+Football Manager ist ein riesiges Spiel – aber vieles, was man sich als Manager merkt, hat im Spiel keinen Platz: Kaderplanung über mehrere Saisons, eigene Notizen zu Spielern und Gegnern, Ziele, Finanzpläne, die Geschichte deiner Karriere.
 
-1. Im GitHub-Projekt auf **„Add file“ → „Upload files“**.
-2. Die neuen Dateien hineinziehen (gleichnamige werden ersetzt) → **„Commit changes“**.
-3. Nach 1–3 Minuten meldet die App beim nächsten Start **„Neue Version verfügbar“** → **„Jetzt laden“**.
+Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-Hub**, von dem aus du in deine FM-Spielstände, dein Spiel-Tagebuch, den Karriere-Begleiter für andere Spiele und die Admin-Zentrale springst.
 
-Deine Daten bleiben bei Updates erhalten, denn sie liegen nicht bei GitHub, sondern auf deinem Rechner.
+---
 
-## Version 11.0 – was drin ist
+## Funktionen
 
-- **Kader & Pool:** Tabelle mit frei verschiebbaren Spalten, eigene Felder, FM-Import (CSV/Text/HTML), Massenbearbeitung.
-- **Taktik, Spieltag, Transfers:** Aufstellung per Drag & Drop, Transfer-Center mit Deal-Pipeline und Deadline Day, Finanzen.
-- **Journey:** Rollenspiel pro Spielstand – Jobsuche, Lizenzen, Stationen, Bankkonto, Sparziele, Tagebuch.
-- **Nationalteam-Modus:** eigener Spielstand mit Landesfarben, Nominierung und Lehrgängen; mit dem Verein verknüpfbar (⇄).
-- **Spielstand wechseln:** Wappen oben links oder Taste S. **Tastenkürzel** frei belegbar (Zahnrad → Tastenkürzel anpassen).
+### 🎮 Gaming-Hub (Beta)
+- **Startseite** mit Begrüßung, Uhrzeit und einer großen **„Weiterspielen“-Karte** für deinen zuletzt gespielten Spielstand – in den Farben deines Vereins
+- **Spielstände** auf einen Blick, sortiert nach „zuletzt gespielt“, Wechsel mit einem Klick
+- **Admin & Sicherung**: Sicherungsstatus, Speicher und Fehlerprotokoll auf einen Blick
+- **Neuigkeiten** aus den letzten Versionen
+- Ganze Panels sind klickbar, Taste **H** öffnet den Hub von überall
 
-## Deine Daten – so bleiben sie sicher
+### ⚽ FM27 Dashboard
+- **Portal** mit frei anordenbaren Widgets: nächstes Spiel, Form & Bilanz, Kaderplan, Startelf, Ziele, offene Aufgaben
+- **Kader** als Tabelle mit verschiebbaren Spalten, eigenen Feldern, Filtern und Import aus FM
+- **Taktik** mit Spielfeld, Plan A/B, Standards und zwei Phasen: **mit Ball / gegen den Ball** – die Spieler laufen beim Umschalten sichtbar auf ihre Positionen
+- **🤖 KI-Prompt (Beta)**: stellt aus Kader, Taktik, Ergebnissen und nächstem Gegner eine fertige Anfrage zusammen – kopieren und bei Claude oder einer anderen KI einfügen. Es wird nichts automatisch gesendet.
+- **Spieltag**, Ergebnisse und Gegner-Datenbank
+- **Transfers** mit Transfer-Center, Leihen und Verkaufsliste
+- **Finanzen**, Gehälter, Verträge und Bosman-Warnungen
+- **Entwicklung** und Talente
+- **Journey**: deine Manager-Karriere mit Stationen, Tagebuch, Zielen und eigenen Regeln
+- **Nationalteam-Modus** mit Spielerpool, Nominierung, Lehrgängen und Verknüpfung zum Vereinsspielstand (⇄)
+- **Mehrere Spielstände** mit Schnellwechsler (Taste **S**)
 
-1. **Alles lebt lokal** in deinem Browser – seit 11.2 in der Browser-Datenbank (IndexedDB) mit viel Platz. Nichts wird hochgeladen. Achtung: „Browserdaten / Websitedaten löschen“ löscht auch das Dashboard – vorher „Alles exportieren“.
-2. **Ordner-Sicherung einschalten** (Admin → Wiederherstellung): sichert automatisch in einen Ordner deiner Wahl, auch mit Tageskopien.
-3. **Vor großen Schritten** (Browserwechsel, neuer PC, Browser-Daten löschen): Zahnrad → **„Alles exportieren (Umzug)“** – die Datei enthält alle Spielstände, Journey, Einstellungen und Tastenkürzel.
-4. **Etwas schiefgelaufen?** Admin → Wiederherstellung (Wiederherstellungspunkte, Ordner anzeigen) oder „Import“ mit einer Sicherungsdatei. Ein beschädigter Spielstand wird nie überschrieben – das Original liegt unter Admin → Wartung.
-5. **Fehler melden:** Admin → Datenprüfung → Fehlerprotokoll → „Bericht kopieren“ (enthält keine Spielstand-Daten).
+### 📓 Spiel-Tagebuch (Beta)
+- **Sessions** mit Timer, der auch weiterläuft, wenn du das Dashboard schließt
+- **Session-Vorhaben**: beim Start festlegen, beim Beenden abhaken
+- **Bilder** zu jeder Session – auch per **Strg + V** (z. B. Screenshots aus FM)
+- **Challenges** als einfaches Ziel, mit Zähler oder mit Teilschritten
+- **Zeitleiste**, Wochenüberblick und 🔥 Serie
+- Verknüpft mit der **Journey** – und auch für Spiele außerhalb des Dashboards nutzbar
 
-**Browser:** gedacht für Vivaldi, Chrome oder Edge. In Firefox und Safari läuft das Dashboard ebenfalls, die automatische Ordner-Sicherung gibt es dort aber nicht – dort regelmäßig „Alles exportieren“ nutzen.
+### 🏆 Karriere-Begleiter (Beta)
+- Karrieren aus **anderen Spielen** (z. B. EA FC, F1 Manager) mit eigenem Wappen
+- **Liste mit frei wählbaren Spalten** (Vorlagen für Fußball und Motorsport)
+- **Saisonziele** und **Saisonverlauf**, „Saison abschließen“ nimmt die Liste mit
+- Sessions und Challenges aus dem Tagebuch lassen sich einer Karriere zuordnen
 
+### 🛡 Admin-Zentrale (Beta)
+- **Allgemein · alle Spielstände**: Zentrale, Sicherung, Speicher, Tastenkürzel, Fehlerprotokoll, Sicherheit, Changelog
+- **Pro Spielstand**: Übersicht, Notizen, Protokoll, Wiederherstellungspunkte, Datenprüfung, Wartung & Batch, Rohdaten, Listen, Eigene Felder
+- Geschützt per **PIN** mit automatischer Sperre
 
-## Automatische Tests auf GitHub (ab 11.1, einmalig einrichten)
+### ⌨ Bedienung
+- **Befehlspalette** mit **Strg + K**
+- **Tastenkürzel** frei anpassbar, Übersicht mit **?**
+- **Hell- und Dunkel-Design**, beide auf gute Lesbarkeit geprüft
+- Als **App installierbar** (PWA), funktioniert offline
 
-Bei jedem Hochladen prüft GitHub dann das komplette Dashboard (über 1.000 Prüfungen) – du siehst einen grünen Haken ✓ oder ein rotes ✗ neben deinem Commit und unter dem Reiter **Actions**.
+---
 
-1. Lade zusätzlich zu den App-Dateien hoch: den Ordner **`tests`**, die Datei **`package.json`** und die Datei **`.gitignore`**.
-2. Die Datei für GitHub selbst liegt im versteckten Ordner `.github/workflows/`. So legst du sie am einfachsten an: im Repository **Add file → Create new file**, als Namen `.github/workflows/tests.yml` eintippen (die Schrägstriche legen die Ordner automatisch an), den Inhalt aus der mitgelieferten Datei `tests.yml` einfügen, **Commit changes**.
-3. Unter **Actions** erscheint „Tests“. Beim ersten Mal ggf. auf „I understand my workflows, go ahead and enable them“ klicken. Von Hand starten: Actions → Tests → **Run workflow**.
+## Loslegen
 
-Rotes ✗? Unter Actions auf den Lauf klicken – dort steht, welche Prüfung fehlgeschlagen ist. Die App auf GitHub Pages läuft davon unabhängig weiter; die Tests warnen nur.
+1. Die Seite im Browser öffnen (z. B. deine GitHub-Pages-Adresse, siehe unten).
+2. Beim ersten Start führt dich ein kurzer Willkommens-Dialog durch die ersten Schritte – mit Beispieldaten oder direkt mit deinem eigenen Verein.
+3. Kader aus FM übernehmen: **Kader → Import aus FM**.
+4. Optional: in der Adressleiste auf **„Installieren“** klicken – dann startet das Dashboard wie eine normale App.
 
+**Tipp:** Unter **Hub → Admin & Sicherung → Sicherung** einen Ordner für die automatische Sicherung wählen, z. B. in OneDrive oder Google Drive.
 
-## Desktop-App für Windows und Linux (Vorschau, ab 11.3)
+---
 
-GitHub baut dir die Desktop-App auf Knopfdruck – du musst nichts installieren:
+## Eigene Kopie auf GitHub Pages
 
-1. Alle Dateien wie gewohnt hochladen (neu sind die Ordner `src-tauri` und `scripts` sowie `.github/workflows/desktop.yml`).
-2. Im Repository **Actions → „Desktop-App bauen“ → Run workflow**. Der erste Lauf dauert ca. 10–20 Minuten.
-3. Wenn er grün ist: unten im Lauf unter **Artifacts** „FM27-Dashboard-Windows“ (bzw. „-Linux“) herunterladen und entpacken.
-   - **Windows:** die `…setup.exe` starten. Beim ersten Start meldet Windows „Der Computer wurde durch Windows geschützt“ (unsignierte App) → **Weitere Informationen → Trotzdem ausführen**.
-   - **Linux:** `.deb` installieren oder die `.AppImage` ausführbar machen und starten.
-4. **Daten übernehmen:** Die Desktop-App hat ihren eigenen Speicher. Im Browser Zahnrad → „Alles exportieren (Umzug)“, dann in der Desktop-App beim Willkommen „Umzugsdatei laden“.
+1. Repository forken oder ein neues anlegen und alle Dateien hochladen.
+2. **Settings → Pages → Build and deployment**: Quelle *Deploy from a branch*, Branch `main`, Ordner `/ (root)`.
+3. Nach 1–2 Minuten ist das Dashboard unter `https://<dein-name>.github.io/<repo-name>/` erreichbar.
 
-Wichtig: Es ist eine **Vorschau**. Die automatische Ordner-Sicherung und Downloads (Export) hängen davon ab, was die Fenster-Komponente des Systems kann – unter Linux fehlen sie voraussichtlich. Schlägt der Bau fehl: den roten Lauf öffnen und mir die Fehlermeldung schicken.
+> Beim Hochladen über die GitHub-Webseite gehen Ordner manchmal verloren und alle Dateien landen im Hauptverzeichnis. **Das ist kein Problem** – das Dashboard findet seine Programmdateien in beiden Fällen und lädt immer die Version, die zur aktuellen `index.html` passt.
 
+---
 
-## Gut zu wissen
+## Updates einspielen
 
-- **Offline:** Die App startet auch ohne Internet. Updates kommen, sobald du wieder online bist.
-- **Browserdaten löschen:** Löscht du in Vivaldi die Website-Daten der App-Adresse, sind die Daten dort weg. Genau dafür gibt es die automatische Ordner-Sicherung (Teil 4).
-- **Anderes Gerät:** Dieselbe Adresse öffnen, installieren und die Umzugsdatei bzw. die neueste Sicherung aus dem Cloud-Ordner laden.
+1. Neue Version entpacken.
+2. Im Repository **Add file → Upload files**, alle Dateien hineinziehen, **Commit changes**.
+3. 1–2 Minuten warten, dann die Seite mit **Strg + F5** neu laden.
+
+Deine Daten sind von Updates nicht betroffen – sie liegen in deinem Browser, nicht in den Dateien.
+
+---
+
+## Deine Daten
+
+- **Speicherort:** in der Datenbank deines Browsers (IndexedDB). Es gibt **keinen Server, kein Konto und kein Tracking**.
+- **Automatische Ordner-Sicherung:** eine Datei pro Spielstand plus eine für Hub, Tagebuch und Einstellungen – jeweils mit Tageskopien.
+- **Umzug:** *Admin-Zentrale → Sicherung → Alles exportieren* erzeugt eine Datei mit allem, z. B. für einen neuen PC oder einen anderen Browser.
+- **Wiederherstellungspunkte** und **Rückgängig** für fast jede Aktion.
+
+> Browserdaten löschen entfernt auch die Dashboard-Daten. Regelmäßig exportieren oder die Ordner-Sicherung nutzen.
+
+---
+
+## Browser
+
+| Browser | Status |
+|---|---|
+| Chrome, Edge, Vivaldi, Brave (Chromium) | ✅ empfohlen – alle Funktionen inklusive Ordner-Sicherung |
+| Firefox, Safari | ✅ funktioniert – ohne automatische Ordner-Sicherung (der Browser unterstützt das Schreiben in Ordner nicht); Sicherung über „Alles exportieren“ |
+
+---
+
+## Für Entwickler
+
+Reines HTML, CSS und JavaScript – **kein Build-Schritt**, keine Abhängigkeiten zur Laufzeit.
+
+```
+index.html             Seite + Lader für die Programmteile
+style.css              Aussehen (Hell/Dunkel)
+sw.js                  Service Worker (offline)
+manifest.webmanifest   App-Installation
+js/01-core.js … js/25-init.js   Programmteile, in dieser Reihenfolge geladen
+icons/                 App-Symbole
+tests/run-tests.js     Testreihe
+.github/workflows/     automatische Tests bei jedem Push
+```
+
+### Tests
+
+```bash
+npm install
+npm test
+```
+
+Die Testreihe läuft mit [jsdom](https://github.com/jsdom/jsdom) und [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) und prüft über 1.200 Fälle – von der Datenbank-Migration bis zum Tagebuch. Mit dem Workflow in `.github/workflows/tests.yml` laufen sie bei jedem Push automatisch (dafür müssen die Ordner beim Hochladen erhalten bleiben, z. B. mit GitHub Desktop).
+
+---
+
+## Roadmap
+
+**Version 12 (geplant)**
+- 🌍 **Mehrsprachigkeit:** Deutsch bleibt Hauptsprache, **Englisch** kommt als zweite Sprache dazu
+- ✅ **Raus aus der Beta:** Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt werden gemeinsam für stabil erklärt – vor der Übersetzung, damit die Texte feststehen
+
+**Später**
+- Import an das Exportformat von **FM27** anpassen, sobald das Spiel erscheint
+- Rollenlisten an die exakten FM-Rollennamen anpassen
+
+Den vollständigen Verlauf findest du im Dashboard unter **Hub → Neuigkeiten**.
+
+---
+
+## English summary
+
+**FM27 Manager Dashboard · Gaming-Hub** is a browser-based companion app for *Football Manager* – squad planning, tactics (in and out of possession), transfers, finances, a manager "journey", national team mode and multiple saves. On top of that, a **Gaming-Hub** adds a game diary (session timer, screenshots, challenges), a career companion for other games and a central admin area.
+
+It runs entirely in your browser, works offline, needs no account and keeps **all data on your device**. The interface is currently **German only** – English is planned for version 12.
+
+---
+
+## Rechtliches
+
+Inoffizielles Fan-Projekt. Nicht verbunden mit Sports Interactive oder SEGA. *Football Manager* ist eine Marke der jeweiligen Rechteinhaber. Es werden keine Spieldateien, Logos oder Wappen des Spiels verwendet – Vereinswappen im Dashboard sind selbst erzeugte Kürzel in Vereinsfarben.
