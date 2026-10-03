@@ -51,8 +51,8 @@ function ensureHubRoot(){
   root.setAttribute("role", "region"); root.setAttribute("aria-label", "Gaming-Hub");
   document.body.appendChild(root);
   root.addEventListener("click", hubClick);
-  root.addEventListener("change", e=>{ if(hubView === "diary") diaryChange(e); });
-  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex], [data-d-session][tabindex]")){ e.preventDefault(); e.target.click(); } });
+  root.addEventListener("change", e=>{ if(hubView === "diary") diaryChange(e); if(hubView === "career") careerChange(e); });
+  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex], [data-d-session][tabindex], [data-cr-open][tabindex], [data-cr-season][tabindex]")){ e.preventDefault(); e.target.click(); } });
   return root;
 }
 function showHub(view){
@@ -87,7 +87,7 @@ function openPanel(id){
   if(id === "saves") return openSaveMenu();
   if(id === "changelog") return openHubChangelog();
   if(id === "diary") return showHub("diary");
-  toast(id === "career" ? "Der Karriere-Begleiter ist als Nächstes dran." : "Das Spiel-Tagebuch ist geplant.");
+  if(id === "career") return showHub("career");
 }
 const hubWhen = ts => ts ? relTime(ts) : "noch nie";
 function hubHeroStats(){
@@ -147,6 +147,7 @@ function renderHub(){
   if(hubView === "admin") return renderAdminPage(root);
   parkAdmin();
   if(hubView === "diary") return renderDiary(root);
+  if(hubView === "career") return renderCareer(root);
   const sums = slotSummaries(), cur = sums.find(x=>x.active) || sums[0];
   const metaOf = id => slotIndex.slots.find(m=>m.id === id) || {};
   const recent = sums.slice().sort((a,b)=>(b.active - a.active) || ((metaOf(b.id).lastPlayedAt || b.updatedAt || 0) - (metaOf(a.id).lastPlayedAt || a.updatedAt || 0))).slice(0,4);
@@ -184,9 +185,9 @@ function renderHub(){
             </button>`).join("")}</div>
           <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="saves">Alle Spielstände <kbd>S</kbd></button></div>
         </section>
-        <article class="hub2-card hub2-mod hub2-click soon" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter (bald)">
-          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="hub-soon">bald</span></h3>
-          <p class="muted">Kader, Ziele und Saisonverlauf für andere Karriere- und Managementspiele.</p><span class="hub2-mod-meta"><i aria-hidden="true"></i>In Arbeit</span>
+        <article class="hub2-card hub2-mod hub2-click" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter öffnen">
+          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="beta-pill">Beta</span></h3>
+          <p class="muted">Liste, Saisonziele und Verlauf für Karrieren in anderen Spielen.</p><span class="hub2-mod-meta">${careerTileMeta()}</span>
         </article>
         <article class="hub2-card hub2-mod hub2-click" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch öffnen">
           <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="beta-pill">Beta</span></h3>
@@ -233,6 +234,7 @@ function hubSettingsModal(){
 function hubClick(e){
   const t = e.target;
   if(hubView === "diary" && diaryClick(e)) return;
+  if(hubView === "career" && careerClick(e)) return;
   // 11.6.1: whole panels are clickable – the innermost target wins, so buttons inside a panel only do their own job
   const target = t.closest("[data-hub-save], [data-hub], [data-hub-cl], [data-hub-open]"); if(!target) return;
   if(target.dataset.hubSave){ if(target.dataset.hubSave !== slotIndex.active) switchSlot(target.dataset.hubSave); openPanel("fm"); return; }
@@ -254,12 +256,13 @@ function hubClick(e){
 }
 /** keys inside the hub (returns true when handled) */
 function hubKey(e){
-  if(e.key === "Escape" && (hubView === "admin" || hubView === "diary") && !isTyping(e.target)){ e.preventDefault(); showHub("home"); return true; }
+  if(e.key === "Escape" && hubView === "career" && crView.id && !isTyping(e.target)){ e.preventDefault(); crView.id = ""; renderHub(); return true; }
+  if(e.key === "Escape" && (hubView === "admin" || hubView === "diary" || hubView === "career") && !isTyping(e.target)){ e.preventDefault(); showHub("home"); return true; }
   return false;
 }
 /** called once at the end of init() */
 function hubInit(firstStart){
-  loadHub(); loadDiary(); dGcImages();
+  loadHub(); loadDiary(); loadCareer(); dGcImages();
   ensureHubRoot();
   const btn = qs("#btnHub"); if(btn) btn.addEventListener("click", ()=>showHub("home"));
   if(hub.startPanel === "hub") showHub("home"); else markPlayed();

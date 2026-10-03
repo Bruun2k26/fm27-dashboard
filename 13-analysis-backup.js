@@ -324,7 +324,7 @@ function backupPayload(slotMeta, data){
 const GLOBAL_BASE = "fm27__hub-und-tagebuch";
 let lastGlobalSig = "";
 function globalBackupKeys(){
-  const keys = [HUB_KEY, DIARY_KEY, HOTKEY_KEY, LAYOUT_KEY, COL_KEY].filter(k=>store.getItem(k) !== null);
+  const keys = [HUB_KEY, DIARY_KEY, CAREER_KEY, HOTKEY_KEY, LAYOUT_KEY, COL_KEY].filter(k=>store.getItem(k) !== null);
   for(let i = 0; i < store.length; i++){ const k = store.key(i); if(k && k.startsWith(IMG_PREFIX)) keys.push(k); }
   return keys;
 }
@@ -502,7 +502,7 @@ async function renderFolderBackupList(){
     <div class="bk-summary"><span><strong>${saved}</strong> von ${g.saves.length} Spielständen gesichert</span><span>${files.length} Dateien</span><span>${fmtBytes(total)}</span></div>
     <div class="bk-saves">
       <article class="bk-card bk-global ${g.global.current ? "" : "missing"}">
-        <div class="bk-card-head"><span class="sm-crest bk-global-icon" aria-hidden="true">🎮</span><div class="bk-card-title"><strong>Hub, Tagebuch &amp; Einstellungen</strong><span class="muted small">Sessions, Challenges, Bilder, Kürzel, Layout</span></div></div>
+        <div class="bk-card-head"><span class="sm-crest bk-global-icon" aria-hidden="true">🎮</span><div class="bk-card-title"><strong>Hub, Tagebuch &amp; Einstellungen</strong><span class="muted small">Tagebuch, Bilder, Karrieren, Kürzel, Layout</span></div></div>
         ${g.global.current ? `<div class="bk-current"><div><span class="muted small">Aktueller Stand</span><strong>${esc(bkWhen(g.global.current.modified))}</strong><span class="muted small">${fmtBytes(g.global.current.size)}</span></div>${bkLoadBtn(g.global.current)}</div>`
           : `<div class="bk-current none"><span>Noch nicht im Ordner gesichert.</span><button class="btn btn-sm btn-accent" data-bk="all">Jetzt sichern</button></div>`}
         ${g.global.daily.length ? `<details class="bk-daily"><summary>${g.global.daily.length} Tageskopie${g.global.daily.length === 1 ? "" : "n"} <span class="muted small">(${esc(g.global.daily.slice(-1)[0].name.slice(-15, -5).split("-").reverse().slice(0,2).join("."))}. – ${esc(g.global.daily[0].name.slice(-15, -5).split("-").reverse().slice(0,2).join("."))}.)</span></summary>${g.global.daily.map(bkRow).join("")}</details>` : ""}

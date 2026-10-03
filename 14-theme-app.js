@@ -113,10 +113,15 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.8.2";
+const APP_VERSION = "11.9";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.9", beta:true, title:"Karriere-Begleiter (Beta)", items:[
+    ["neu","Hub → Karriere-Begleiter: Karrieren aus anderen Spielen (EA FC, F1 Manager …) mit eigenem Wappen, Spiel, Team und Saison."],
+    ["neu","Liste mit frei wählbaren Spalten (Vorlagen für Fußball und Motorsport), direkt bearbeitbar und sortierbar; Saisonziele mit Status; Saisonverlauf mit Platz, Bilanz und Titeln – „Saison abschließen“ nimmt die Liste mit."],
+    ["neu","Verknüpft mit dem Spiel-Tagebuch: Sessions und Challenges lassen sich einer Karriere zuordnen, die Karriere zeigt ihre letzten Sessions und startet eigene."],
+    ["besser","Karrieren sind in „Alles exportieren (Umzug)“ und in der Ordner-Sicherung (Hub, Tagebuch & Einstellungen) enthalten."]]},
   {v:"11.8.2", title:"Ordner-Sicherung: auch Hub & Tagebuch", items:[
     ["fix","Die automatische Ordner-Sicherung sicherte bisher nur die Spielstände – jetzt auch Hub, Spiel-Tagebuch (mit Bildern), Tastenkürzel und Layout, als eigene Datei mit Tageskopien. Sie wird nur neu geschrieben, wenn sich daran etwas geändert hat."],
     ["besser","Admin-Zentrale → Sicherung: eigene Karte „Hub, Tagebuch & Einstellungen“; „Laden …“ stellt sie wieder her – Spielstände bleiben dabei unberührt."]]},

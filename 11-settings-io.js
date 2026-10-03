@@ -133,12 +133,12 @@ function showImportErrors(errors){
 /** Validates, migrates and imports a backup (file, folder backup …) – asks: replace current save or new save. */
 /** 11.8.2: restore hub, game diary (with images), hotkeys and layout from a "Hub, Tagebuch & Einstellungen" backup */
 function restoreGlobalBackup(parsed){
-  const st = parsed.storage, allowed = k => [HUB_KEY, DIARY_KEY, HOTKEY_KEY, LAYOUT_KEY, COL_KEY].includes(k) || k.startsWith(IMG_PREFIX);
+  const st = parsed.storage, allowed = k => [HUB_KEY, DIARY_KEY, CAREER_KEY, HOTKEY_KEY, LAYOUT_KEY, COL_KEY].includes(k) || k.startsWith(IMG_PREFIX);
   const keys = Object.keys(st).filter(k=>allowed(k) && typeof st[k] === "string");
   const d = sanitizeDiary((()=>{ try{ return JSON.parse(st[DIARY_KEY] || "null"); }catch(e){ return null; } })());
   const when = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString("de-DE", {dateStyle:"short", timeStyle:"short"}) : "unbekannt";
   openModal({title:"Hub, Tagebuch & Einstellungen wiederherstellen?", body:`
-    <p class="lead" style="margin-top:0">Stand vom <strong>${esc(when)}</strong>: ${d.sessions.length} Sessions, ${d.challenges.length} Challenges, ${keys.filter(k=>k.startsWith(IMG_PREFIX)).length} Bilder, dazu Tastenkürzel und Layout.</p>
+    <p class="lead" style="margin-top:0">Stand vom <strong>${esc(when)}</strong>: ${d.sessions.length} Sessions, ${d.challenges.length} Challenges, ${(sanitizeCareer((()=>{ try{ return JSON.parse(st[CAREER_KEY] || "null"); }catch(e){ return null; } })()).careers.length)} Karrieren, ${keys.filter(k=>k.startsWith(IMG_PREFIX)).length} Bilder, dazu Tastenkürzel und Layout.</p>
     <p class="hint">Ersetzt diese Daten auf diesem Gerät. <strong>Spielstände bleiben unberührt.</strong> Die Seite lädt danach neu.</p>`,
     saveLabel:"Wiederherstellen",
     onSave: ()=>{ keys.forEach(k=>store.setItem(k, st[k])); toast("Hub, Tagebuch & Einstellungen wiederhergestellt – lädt neu …"); reloadApp(); }});
@@ -250,6 +250,7 @@ function buildCommands(){
   add("Aktion","Spielstand wechseln","", ()=>openSaveMenu());
   add("Modul","Gaming-Hub","", ()=>showHub("home"));
   add("Modul","Spiel-Tagebuch (Beta)","", ()=>showHub("diary"));
+  add("Modul","Karriere-Begleiter (Beta)","", ()=>showHub("career"));
   add("Aktion", diary && diary.running ? "Session beenden" : "Session starten", "", ()=>runHotkey("session"));
   add("Aktion","KI-Prompt kopieren (Taktik, Beta)","", ()=>{ navigate("tactics"); openAiPromptModal(); });
   add("Aktion","Tastenkürzel anpassen","", ()=>openHotkeyModal());
@@ -373,7 +374,7 @@ function initShortcuts(){
     if(hubView && !qs("#modalOverlay").classList.contains("active") && !qs("#cmdOverlay").classList.contains("active")){   // 11.4: the hub has its own keys
       if(typeof hubKey === "function" && hubKey(e)) return;
       const c = comboFromEvent(e), m = hotkeyMap(), a = c ? Object.keys(m).find(id=>m[id] === c) : null;
-      if(["palette","saves","help","theme","session","diary"].includes(a)){ e.preventDefault(); runHotkey(a, e); }
+      if(["palette","saves","help","theme","session","diary","career"].includes(a)){ e.preventDefault(); runHotkey(a, e); }
       return;
     }
     const combo = comboFromEvent(e), map = hotkeyMap();

@@ -2017,3 +2017,30 @@ html.boot-hub .app{visibility:hidden;}
 .bk-global{border-color:color-mix(in srgb, var(--accent) 35%, var(--border));}
 .bk-global-icon{background:var(--bg-750);font-size:16px;}
 .bk-global-icon{color:var(--text-primary);text-shadow:none;}
+
+/* ---------- 11.9 (Beta): career companion ---------- */
+.career-page{max-width:1400px;}
+.cr-title{display:flex;align-items:center;gap:14px;margin-top:8px;}
+.cr-title h1{margin:0;display:flex;align-items:center;gap:10px;font-size:clamp(22px,2.6vw,30px);}
+.cr-title p{margin:2px 0 0;}
+.cr-tabs{margin:0 0 14px;}
+.cr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.cr-card{border-color:color-mix(in srgb, var(--hero-accent) 35%, var(--border));}
+.cr-card-top{display:flex;align-items:center;gap:12px;}
+.cr-card-top > div{display:flex;flex-direction:column;min-width:0;}
+.cr-card-top strong{font-size:15px;}
+.cr-table th{padding:0;}
+.cr-sort{width:100%;border:none;background:none;color:inherit;font:inherit;font-weight:700;text-align:inherit;padding:8px 10px;cursor:pointer;}
+.cr-sort:hover{color:var(--accent-text);}
+.cr-cell{width:100%;min-width:70px;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 6px;color:var(--text-primary);font:inherit;}
+.cr-cell:hover{border-color:var(--border);} .cr-cell:focus{outline:none;border-color:var(--accent);background:var(--bg-800);}
+td.num .cr-cell{text-align:right;}
+.cr-add{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.cr-add input{flex:1;min-width:200px;background:var(--bg-800);border:1px solid var(--border);border-radius:var(--radius-m);padding:7px 10px;color:var(--text-primary);font:inherit;}
+.cr-goal{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 8px;border-radius:9px;border:1px solid var(--border);background:var(--bg-800);margin-bottom:6px;border-left-width:4px;}
+.cr-goal.s-done{border-left-color:var(--success);} .cr-goal.s-track{border-left-color:var(--accent);} .cr-goal.s-miss{border-left-color:var(--danger, #d64545);}
+.cr-goal-text{background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 6px;color:var(--text-primary);font:inherit;}
+.cr-goal-text:focus{outline:none;border-color:var(--accent);}
+.cr-goal select{background:var(--bg-850);border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--text-primary);font-size:12.5px;}
+.cr-seasons tbody tr{cursor:pointer;} .cr-seasons tbody tr:hover{background:var(--bg-800);}
+.cr-session{display:flex;flex-direction:column;padding:6px 0;border-bottom:1px solid var(--border);} .cr-session:last-child{border-bottom:none;}

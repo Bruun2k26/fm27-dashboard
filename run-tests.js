@@ -2620,7 +2620,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok((new Date(d1H) - new Date(d0H)) / 86400000 === 8, "Shift+T = +7 Tage");
   kdH("3"); ok(d.querySelector("#view-tactics.active"), "3 = Taktik");
   d.querySelector("#btnHotkeys").click();
-  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel" && d.querySelectorAll("#modal [data-hk]").length===28, "Zahnrad → Tastenkürzel: 28 Aktionen (inkl. Hub, KI-Prompt, Tagebuch)");
+  ok(d.querySelector("#modal h3").textContent==="Tastenkürzel" && d.querySelectorAll("#modal [data-hk]").length===29, "Zahnrad → Tastenkürzel: 29 Aktionen (inkl. Hub, KI-Prompt, Tagebuch, Karriere-Begleiter)");
   ok(d.querySelector('#modal [data-hk="nextDay"]').textContent.trim()==="T" && d.querySelector('#modal [data-hk="theme"]').textContent.includes("—"), "Aktuelle Belegung sichtbar, neue Aktionen ohne Kürzel");
   d.querySelector('#modal [data-hk="nextDay"]').click();
   ok(d.querySelector('#modal [data-hk="nextDay"]').classList.contains("capturing"), "Klick → 'Taste drücken …'");
@@ -3030,7 +3030,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(!hubR6().hidden && w.eval("adminVisible()"), "'Admin öffnen' führt in die Admin-Zentrale (im Hub)");
   // coming modules + national variant
   w.eval("showHub('home')"); H7('[data-hub-open="career"]').click();
-  ok(!hubR6().hidden && d.querySelector("#toastMsg").textContent.includes("Karriere-Begleiter"), "Karriere-Begleiter: Hinweis 'als Nächstes'");
+  ok(!hubR6().hidden && d.querySelector("#hubRoot .career-page"), "Karriere-Begleiter öffnet sich (seit 11.9)"); w.eval("showHub('home')");
   w.eval(`(()=>{ const f = freshState("sample"); f.mode = "national"; f.club.name = "Deutschland"; f.national = {country:"Deutschland", code:"GER", colors:["#000000","#DD0000","#FFCE00"], accent:"#FFCE00", maxSquad:26}; f.players.forEach((p,i)=>{ p.nominated = i < 7; }); switchSlot(createSlot("DFB", sanitizeState(f))); })()`);
   w.eval("showHub('home')");
   ok(H7(".hub2-hero h2").textContent.includes("Nationalteam") && H7(".hub2-hero-stripe") && H7(".hub2-stats").textContent.includes("7 / 26") && H7(".hub2-stats").textContent.includes("Bilanz"), "Nationalteam: Landesfarben-Streifen, Nominiert 7 / 26, Bilanz");
@@ -3320,6 +3320,63 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const noteBefore_G = S().players[0].note;
   d.querySelector("[data-modal-save]").click();
   ok(JSON.parse(w.localStorage.getItem("fm27_diary")).sessions.some(s=>s.title==="Gesichert?") && w.eval("window.__reloaded") && S().players[0].note===noteBefore_G, "Tagebuch zurück, Seite lädt neu, Spielstand unverändert");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[71] Version 11.9: Karriere-Begleiter (Beta)");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const CR_K = () => JSON.parse(w.localStorage.getItem("fm27_career") || "null"), qC_K = sel => d.querySelector("#hubRoot " + sel);
+  ok(qC_K('[data-hub-open="career"] .beta-pill') && qC_K('[data-hub-open="career"]').textContent.includes("Noch keine Karriere"), "Hub: Karriere-Begleiter aktiv (Beta)");
+  qC_K('[data-hub-open="career"] p').click();
+  ok(qC_K(".career-page .diary-empty") && qC_K('[data-cr="new"]'), "Leere Übersicht mit '+ Neue Karriere'");
+  qC_K('[data-cr="new"]').click();
+  d.querySelector('#modal [data-f="name"]').value = "Road to Glory"; d.querySelector('#modal [data-f="game"]').value = "EA SPORTS FC 26";
+  d.querySelector('#modal [data-f="team"]').value = "Wrexham AFC"; d.querySelector('#modal [data-f="season"]').value = "2025/26"; d.querySelector("[data-modal-save]").click();
+  const cr1_K = CR_K().careers[0];
+  ok(cr1_K.name==="Road to Glory" && cr1_K.crest==="WA" && cr1_K.columns.map(c=>c.name).join()==="Name,Position,Alter,Wertung,Notiz" && cr1_K.seasons[0].label==="2025/26" && qC_K(".cr-title h1").textContent.includes("Road to Glory"), "Angelegt mit Fußball-Vorlage, Kürzel automatisch, direkt geöffnet");
+  qC_K('[data-cr="addRow"]').click(); qC_K('[data-cr="addRow"]').click();
+  const cells_K = () => [...d.querySelectorAll("#hubRoot [data-cr-cell]")];
+  const setCell_K = (i, v) => { const c = cells_K()[i]; c.value = v; c.dispatchEvent(new w.Event("change", {bubbles:true})); };
+  setCell_K(0, "Paul Mullin"); setCell_K(3, "78"); setCell_K(5, "Ollie Palmer"); setCell_K(8, "81");
+  ok(CR_K().careers[0].rows.length===2 && Object.values(CR_K().careers[0].rows[0].cells).includes("Paul Mullin"), "Zeilen hinzufügen, Zellen direkt bearbeiten (sofort gespeichert)");
+  const wert_K = cr1_K.columns.find(c=>c.name==="Wertung").id;
+  qC_K(`[data-cr-sort="${wert_K}"]`).click(); qC_K(`[data-cr-sort="${wert_K}"]`).click();
+  ok(cells_K()[0].value==="Ollie Palmer" && qC_K(`[data-cr-sort="${wert_K}"]`).textContent.includes("▼"), "Sortieren nach Wertung (absteigend: 81 vor 78)");
+  qC_K('[data-cr="cols"]').click();
+  d.querySelector('#modal [data-f="cols"]').value = "Name\nPosition\nWertung #\nMarktwert #"; d.querySelector("[data-modal-save]").click();
+  ok(CR_K().careers[0].columns.map(c=>c.name).join()==="Name,Position,Wertung,Marktwert" && CR_K().careers[0].columns.find(c=>c.name==="Wertung").id===wert_K && Object.values(CR_K().careers[0].rows[0].cells).includes("78"), "Spalten ändern: Werte bleiben erhalten, neue Spalte dazu");
+  // goals
+  qC_K('[data-cr-tab="goals"]').click();
+  d.querySelector("#crNewGoal").value = "Aufstieg in die Championship"; qC_K('[data-cr="addGoal"]').click();
+  d.querySelector("#crNewGoal").value = "FA-Cup-Viertelfinale"; qC_K('[data-cr="addGoal"]').click();
+  const gs_K = d.querySelector("#hubRoot [data-cr-gstatus]"); gs_K.value = "done"; gs_K.dispatchEvent(new w.Event("change", {bubbles:true}));
+  ok(CR_K().careers[0].seasons[0].goals.length===2 && CR_K().careers[0].seasons[0].goals[0].status==="done" && qC_K(".diary-side").textContent.includes("1 / 2"), "Ziele anlegen und abhaken (1 / 2 erreicht)");
+  // season close
+  qC_K('[data-cr-tab="seasons"]').click(); qC_K('[data-cr="nextSeason"]').click();
+  ok(d.querySelector('#modal [data-f="label"]').value==="2026/27", "Saison abschließen schlägt '2026/27' vor");
+  d.querySelector("[data-modal-save]").click();
+  const sz_K = CR_K().careers[0].seasons;
+  ok(sz_K.length===2 && sz_K[0].closed && sz_K[0].goals[1].status==="miss" && sz_K[1].label==="2026/27" && sz_K[1].goals.length===0 && CR_K().careers[0].rows.length===2, "Neue Saison: alte geschlossen (offenes Ziel → verfehlt), Liste bleibt, Ziele neu");
+  qC_K(`[data-cr-season="${sz_K[0].id}"]`).click();
+  d.querySelector('#modal [data-f="place"]').value = "1. Platz"; d.querySelector('#modal [data-f="w"]').value = "28"; d.querySelector('#modal [data-f="titles"]').value = "Meister League One"; d.querySelector("[data-modal-save]").click();
+  ok(qC_K(".cr-seasons").textContent.includes("1. Platz") && qC_K(".cr-seasons").textContent.includes("28-0-0") && qC_K(".cr-seasons").textContent.includes("Meister League One"), "Saisonverlauf: Platz, Bilanz, Titel");
+  // diary link
+  qC_K('[data-cr="session"]').click();
+  ok(w.eval("hubView")==="diary" && JSON.parse(w.localStorage.getItem("fm27_diary")).running.careerId===cr1_K.id && qC_K(".diary-run").textContent.includes("Road to Glory"), "'▶ Session starten' in der Karriere: Timer läuft für diese Karriere");
+  w.eval("diary.running.start = Date.now() - 30*60000; saveDiary(); renderHub()"); qC_K('[data-d="stop"]').click();
+  ok(d.querySelector('#modal [data-f="target"]').value==="career:" + cr1_K.id && d.querySelector('#modal optgroup[label="Karriere-Begleiter"]'), "Beenden: Karriere vorausgewählt, eigene Gruppe in der Auswahl");
+  d.querySelector('#modal [data-f="title"]').value = "Derby gegen Chester"; d.querySelector("[data-modal-save]").click();
+  ok(qC_K(".diary-timeline").textContent.includes("Road to Glory") && qC_K(".diary-timeline .sm-crest").textContent==="WA", "Tagebuch zeigt die Karriere mit ihrem Wappen");
+  w.eval(`crView.id = "${cr1_K.id}"; showHub("career")`);
+  ok(qC_K(".cr-session") && qC_K(".diary-side").textContent.includes("Derby gegen Chester"), "Karriere zeigt ihre letzten Sessions");
+  // Esc, hub tile, backup
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  ok(qC_K(".cr-grid .cr-card") && qC_K(".cr-card").textContent.includes("2026/27"), "Esc: aus der Karriere zur Übersicht");
+  d.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true}));
+  ok(qC_K(".hub2-hero") && qC_K('[data-hub-open="career"]').textContent.includes("1 Karriere · zuletzt: Road to Glory"), "Esc: zur Hub-Startseite, Kachel mit Status");
+  ok(w.eval("globalBackupKeys()").includes("fm27_career") && w.eval("storageEntries()").find(e=>e.key==="fm27_career").label==="Karriere-Begleiter", "In Ordner-Sicherung und Speicher-Hausmeister enthalten");
+  w.eval(`crView.id = "${cr1_K.id}"; showHub("career")`); qC_K('[data-cr="edit"]').click(); d.querySelector("#modal [data-cr-del]").click();
+  ok(CR_K().careers.length===0 && qC_K(".diary-empty"), "Karriere löschen");
+  d.querySelector("#toastUndoBtn").click(); ok(CR_K().careers.length===1, "… rückgängig");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

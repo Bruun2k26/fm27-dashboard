@@ -145,6 +145,7 @@ const HOTKEY_ACTIONS = () => [
   ["hub","Gaming-Hub öffnen","h","Allgemein"],
   ["aiPrompt","KI-Prompt kopieren (Beta)","","Spieltag"],
   ["diary","Spiel-Tagebuch öffnen (Beta)","","Allgemein"],
+  ["career","Karriere-Begleiter öffnen (Beta)","","Allgemein"],
   ["session","Session starten / beenden (Beta)","","Allgemein"],
   ...VIEWS.map((v,i)=>["view:" + v, `Modul: ${VIEW_LABEL[v]}`, String(i+1), "Module"])
 ];
@@ -189,6 +190,7 @@ function runHotkey(id, e){
     case "hub": return showHub("home");
     case "aiPrompt": navigate("tactics"); return openAiPromptModal();
     case "diary": return showHub("diary");
+    case "career": return showHub("career");
     case "session": if(!diary) loadDiary(); return diary.running ? (showHub("diary"), sessionModal(diary.running, true)) : startSession();
   }
 }

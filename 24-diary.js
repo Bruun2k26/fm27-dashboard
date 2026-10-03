@@ -13,13 +13,13 @@ function sanitizeDiary(raw){
   const moods = typeof J_MOODS === "object" ? J_MOODS : {};
   const sessions = A(r.sessions).filter(x=>x && typeof x === "object").map(x=>({id:S(x.id) || uid(), start:num(x.start), end:num(x.end), minutes:Math.max(0, Math.round(num(x.minutes))),
     slotId:S(x.slotId), game:S(x.game).slice(0,60), label:S(x.label).slice(0,80), title:S(x.title).slice(0,120), text:S(x.text).slice(0,4000), mood:moods[x.mood] ? x.mood : "good",
-    journeyId:S(x.journeyId), plan:S(x.plan).slice(0,120), planDone:!!x.planDone,
+    careerId:S(x.careerId), journeyId:S(x.journeyId), plan:S(x.plan).slice(0,120), planDone:!!x.planDone,
     images:A(x.images).filter(i=>typeof i === "string" && i).slice(0, DIARY_MAX_IMGS)})).filter(x=>x.start).sort((a,b)=>b.start - a.start).slice(0,2000);
   const challenges = A(r.challenges).filter(x=>x && typeof x === "object" && S(x.title).trim()).map(x=>({id:S(x.id) || uid(), title:S(x.title).trim().slice(0,120), desc:S(x.desc).slice(0,1000),
-    slotId:S(x.slotId), game:S(x.game).slice(0,60), label:S(x.label).slice(0,80), kind:CH_KIND[x.kind] ? x.kind : "simple", target:Math.max(1, Math.round(num(x.target) || 1)),
+    slotId:S(x.slotId), careerId:S(x.careerId), game:S(x.game).slice(0,60), label:S(x.label).slice(0,80), kind:CH_KIND[x.kind] ? x.kind : "simple", target:Math.max(1, Math.round(num(x.target) || 1)),
     current:Math.max(0, Math.round(num(x.current))), steps:A(x.steps).filter(st=>st && S(st.text).trim()).map(st=>({id:S(st.id) || uid(), text:S(st.text).trim().slice(0,120), done:!!st.done})).slice(0,30),
     status:["active","done","dropped"].includes(x.status) ? x.status : "active", createdAt:num(x.createdAt) || Date.now(), doneAt:num(x.doneAt)}));
-  const run = r.running && typeof r.running === "object" && num(r.running.start) ? {start:num(r.running.start), slotId:S(r.running.slotId), game:S(r.running.game).slice(0,60), plan:S(r.running.plan).slice(0,120)} : null;
+  const run = r.running && typeof r.running === "object" && num(r.running.start) ? {start:num(r.running.start), slotId:S(r.running.slotId), careerId:S(r.running.careerId), game:S(r.running.game).slice(0,60), plan:S(r.running.plan).slice(0,120)} : null;
   return {v:1, sessions, challenges, running:run, games:[...new Set(A(r.games).map(g=>S(g).trim()).filter(Boolean))].slice(0,40)};
 }
 function loadDiary(){ diary = sanitizeDiary(readJSON(DIARY_KEY)); return diary; }
@@ -40,6 +40,8 @@ function dDayLabel(ts){
 }
 /** what an entry belongs to: a save of this dashboard (with crest) or another game (free name) */
 function dTarget(x){
+  if(x.careerId){ const t = typeof careerTarget === "function" && careerTarget(x.careerId); if(t) return t;
+    return {name:x.label || "Gelöschte Karriere", sub:"nicht mehr vorhanden", crest:'<span class="sm-crest xs" style="background:var(--bg-750)">?</span>'}; }
   if(x.slotId){ const s = slotSummaries().find(y=>y.id === x.slotId); if(s) return {name:s.name, sub:s.club, crest:smCrest(s, "xs"), slot:s};
     return {name:x.label || "Gelöschter Spielstand", sub:"nicht mehr vorhanden", crest:'<span class="sm-crest xs" style="background:var(--bg-750)">?</span>'}; }
   const g = x.game || "Ohne Zuordnung";
@@ -48,16 +50,18 @@ function dTarget(x){
 function dTargetOptions(sel){
   const sums = slotSummaries();
   return `<optgroup label="Spielstände">${sums.map(s=>`<option value="slot:${s.id}" ${sel === "slot:" + s.id ? "selected" : ""}>${esc(s.name)} · ${esc(s.club)}</option>`).join("")}</optgroup>
+    ${career && career.careers.length ? `<optgroup label="Karriere-Begleiter">${career.careers.map(c=>`<option value="career:${c.id}" ${sel === "career:" + c.id ? "selected" : ""}>${esc(c.name)}${c.game ? " · " + esc(c.game) : ""}</option>`).join("")}</optgroup>` : ""}
     ${diary.games.length ? `<optgroup label="Andere Spiele">${diary.games.map(g=>`<option value="game:${esc(g)}" ${sel === "game:" + g ? "selected" : ""}>${esc(g)}</option>`).join("")}</optgroup>` : ""}
     <option value="new" ${sel === "new" ? "selected" : ""}>+ Anderes Spiel …</option>`;
 }
 function dReadTarget(m){
   const v = qs('[data-f="target"]', m).value;
-  if(v.startsWith("slot:")){ const id = v.slice(5); return {slotId:id, game:"", label:(slotIndex.slots.find(s=>s.id === id) || {}).name || ""}; }
-  if(v.startsWith("game:")) return {slotId:"", game:v.slice(5), label:v.slice(5)};
-  const g = qs('[data-f="newGame"]', m).value.trim(); return {slotId:"", game:g, label:g};
+  if(v.startsWith("slot:")){ const id = v.slice(5); return {slotId:id, careerId:"", game:"", label:(slotIndex.slots.find(s=>s.id === id) || {}).name || ""}; }
+  if(v.startsWith("career:")){ const c = crById(v.slice(7)) || {}; return {slotId:"", careerId:v.slice(7), game:c.game || "", label:c.name || ""}; }
+  if(v.startsWith("game:")) return {slotId:"", careerId:"", game:v.slice(5), label:v.slice(5)};
+  const g = qs('[data-f="newGame"]', m).value.trim(); return {slotId:"", careerId:"", game:g, label:g};
 }
-const dTargetKey = x => x.slotId ? "slot:" + x.slotId : x.game ? "game:" + x.game : "slot:" + slotIndex.active;
+const dTargetKey = x => x.careerId ? "career:" + x.careerId : x.slotId ? "slot:" + x.slotId : x.game ? "game:" + x.game : "slot:" + slotIndex.active;
 function dWeek(){
   const now = new Date(), mon = new Date(now); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
   const list = diary.sessions.filter(s=>s.start >= mon.getTime()), by = {};
@@ -111,7 +115,7 @@ function dRenderPending(){
 function startSession(t, plan){
   if(diary.running) return;
   t = t || {slotId:slotIndex.active, game:""};
-  diaryUndo("Session gestartet – der Timer läuft auch, wenn du das Dashboard schließt", ()=>{ diary.running = {start:Date.now(), slotId:t.slotId, game:t.game, plan:(plan || "").trim()}; if(t.game && !diary.games.includes(t.game)) diary.games.unshift(t.game); });
+  diaryUndo("Session gestartet – der Timer läuft auch, wenn du das Dashboard schließt", ()=>{ diary.running = {start:Date.now(), slotId:t.slotId || "", careerId:t.careerId || "", game:t.game || "", plan:(plan || "").trim()}; if(t.game && !t.careerId && !diary.games.includes(t.game)) diary.games.unshift(t.game); });
 }
 /** 11.8.1: start with an optional plan ("Session-Vorhaben") */
 function startSessionModal(){
@@ -167,7 +171,7 @@ function sessionModal(s, fromRun){
       data.images = (dPending || []).map(p=>p.id); dPending = null;
       const toJ = get("toJourney") && t.slotId && dJourneyOf(t.slotId);
       diaryUndo(fromRun ? `Session gespeichert · ${dMin(mins)}` : "Session gespeichert", ()=>{
-        if(t.game && !diary.games.includes(t.game)) diary.games.unshift(t.game);
+        if(t.game && !t.careerId && !diary.games.includes(t.game)) diary.games.unshift(t.game);
         let target = isNew ? Object.assign({id:uid()}, data) : Object.assign(diary.sessions.find(x=>x.id === s.id), data);
         if(isNew) diary.sessions.push(target);
         if(fromRun) diary.running = null;
@@ -223,7 +227,7 @@ function challengeModal(c){
       const steps = get("steps").split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(text=>({id:(oldSteps.find(s=>s.text === text) || {}).id || uid(), text, done:!!(oldSteps.find(s=>s.text === text) || {}).done}));
       const data = Object.assign({title, desc:get("desc"), kind:get("kind"), target:num(get("goal")) || 1, current:num(get("current")), steps}, t);
       diaryUndo(isNew ? "Challenge angelegt" : "Challenge gespeichert", ()=>{
-        if(t.game && !diary.games.includes(t.game)) diary.games.unshift(t.game);
+        if(t.game && !t.careerId && !diary.games.includes(t.game)) diary.games.unshift(t.game);
         const x = isNew ? Object.assign({id:uid(), status:"active", createdAt:Date.now()}, data) : Object.assign(diary.challenges.find(y=>y.id === c.id), data);
         if(isNew) diary.challenges.push(x);
         chCheckDone(x);
@@ -250,7 +254,7 @@ function renderDiary(root){
     </header>
     <div class="diary-grid">
       <section class="hub2-card diary-timeline" aria-label="Zeitleiste">
-        <div class="hub2-card-head"><h3>Zeitleiste</h3>${keys.length > 1 ? `<select class="d-filter" data-d-filter aria-label="Zeitleiste filtern"><option value="">Alle Spielstände &amp; Spiele</option>${keys.map(k=>{ const [kind, v] = [k.slice(0, k.indexOf(":")), k.slice(k.indexOf(":") + 1)]; const t = dTarget(kind === "slot" ? {slotId:v} : {game:v}); return `<option value="${esc(k)}" ${dFilter === k ? "selected" : ""}>${esc(t.name)}</option>`; }).join("")}</select>` : `<span class="muted small">${diary.sessions.length} Sessions</span>`}</div>
+        <div class="hub2-card-head"><h3>Zeitleiste</h3>${keys.length > 1 ? `<select class="d-filter" data-d-filter aria-label="Zeitleiste filtern"><option value="">Alle Spielstände &amp; Spiele</option>${keys.map(k=>{ const [kind, v] = [k.slice(0, k.indexOf(":")), k.slice(k.indexOf(":") + 1)]; const t = dTarget(kind === "slot" ? {slotId:v} : kind === "career" ? {careerId:v} : {game:v}); return `<option value="${esc(k)}" ${dFilter === k ? "selected" : ""}>${esc(t.name)}</option>`; }).join("")}</select>` : `<span class="muted small">${diary.sessions.length} Sessions</span>`}</div>
         ${days.length ? days.map(d=>`<div class="diary-day"><div class="diary-day-head"><strong>${esc(dDayLabel(d.k))}</strong>${d.min ? `<span class="muted small">${dMin(d.min)}</span>` : ""}</div>
           ${d.list.map(ev=>ev.s ? (()=>{ const s = ev.s, t = dTarget(s); return `<div class="diary-entry" data-d-session="${s.id}" role="button" tabindex="0" aria-label="Session ${esc(s.title || "")} bearbeiten">
               <span class="diary-time">${new Date(s.start).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}<em>${dMin(s.minutes)}</em></span>
