@@ -65,7 +65,7 @@ function showHub(view){
   if(typeof closeMenu === "function") closeMenu();
   renderHub();
   clearInterval(hubClockTimer); hubClockTimer = setInterval(hubTick, 20000);
-  clearInterval(diaryTimer); diaryTimer = hubView === "diary" ? setInterval(diaryTick, 1000) : null;
+  clearInterval(diaryTimer); diaryTimer = (hubView === "diary" || hubView === "home") ? setInterval(diaryTick, 1000) : null;   // the hub card shows the running session too
   const f = qs("#hubRoot [data-hub-first]"); if(f) f.focus({preventScroll:true});
   window.scrollTo && window.scrollTo(0, 0);
   document.title = "Nexus Dashboard";
@@ -119,6 +119,21 @@ function openHubChangelog(v){
       </details>`).join("")}</div>`,
     saveLabel:"Schließen",
     onOpen: m=>{ const el = qs(`[data-cl-v="${CSS.escape ? CSS.escape(openV) : openV}"]`, m); if(el && el.scrollIntoView) el.scrollIntoView({block:"nearest"}); }});
+}
+/** 12.0: "Session & Woche" – start/stop a session right from the hub, the week and active challenges */
+function hubSessionCard(){
+  if(typeof diary === "undefined" || !diary) return "";
+  const run = diary.running, wk = dWeek(), act = diary.challenges.filter(c=>c.status === "active").slice(0,3);
+  return `<section class="hub2-card hub3-session hub2-click ${run ? "running" : ""}" data-hub-open="diary" aria-label="Session und Woche – Klick öffnet das Spiel-Tagebuch">
+    <div class="hub2-card-head"><h3><span aria-hidden="true">⏱</span> Session &amp; Woche</h3>${wk.streak > 1 ? `<span class="sm-badge ok">🔥 ${wk.streak} Tage</span>` : ""}</div>
+    ${run ? `<div class="hub3-run"><span class="diary-run-dot" aria-hidden="true"></span><div class="hub3-run-main"><small>läuft · ${esc(dTarget(run).name)}</small><strong id="diaryClock">${dClock(Date.now() - run.start)}</strong>${run.plan ? `<span class="hub3-run-plan">🎯 ${esc(run.plan)}</span>` : ""}</div>
+        <button class="btn btn-accent" data-hub="sessionStop">■ Beenden</button></div>`
+      : `<button class="btn btn-accent hub3-start" data-hub="sessionStart">▶ Session starten</button>`}
+    <div class="hub3-week"><div><span>Diese Woche</span><strong>${dMin(wk.min)}</strong></div><div><span>Sessions</span><strong>${wk.n}</strong></div></div>
+    ${act.length ? `<div class="hub3-ch">${act.map(c=>{ const p = chProgress(c); return `<div class="hub3-ch-item"><span class="hub3-ch-title">${esc(c.title)}</span>
+        ${c.kind === "simple" ? '<span aria-hidden="true"></span><span class="muted small">offen</span>' : `<span class="hub3-ch-bar" role="img" aria-label="${Math.round(p * 100)} Prozent"><i style="width:${Math.round(p * 100)}%"></i></span><span class="muted small">${c.kind === "count" ? `${c.current}/${c.target}` : `${c.steps.filter(x=>x.done).length}/${c.steps.length}`}</span>`}</div>`; }).join("")}</div>`
+      : '<p class="muted small" style="margin:0">Keine aktive Challenge – im Tagebuch eine anlegen.</p>'}
+  </section>`;
 }
 function hubAdminRows(){
   const rows = [];
@@ -231,6 +246,7 @@ function renderHub(){
           <ul class="hub2-admin-rows">${hubAdminRows().map(([k,v,st])=>`<li><span>${esc(k)}</span><strong class="${st}">${esc(v)}</strong></li>`).join("")}</ul>
           <div class="hub2-card-foot"><button class="btn btn-sm" data-hub="admin">Admin öffnen</button><button class="btn btn-sm" data-hub="exportAll" title="Alle Spielstände, Einstellungen und Hub in eine Datei">Alles exportieren</button></div>
         </section>
+        ${hubSessionCard()}
 
         </aside>
       </div>
@@ -274,6 +290,8 @@ function hubClick(e){
     else if(k === "saves") openSaveMenu();
     else if(k === "admin") openPanel("admin");
     else if(k === "exportAll") exportAll();
+    else if(k === "sessionStart") startSessionModal();
+    else if(k === "sessionStop") sessionModal(diary.running, true);
     else if(k === "legacySave") hubLegacySave();
     else if(k === "legacyDelete") hubUndo(`${hub.games.length} Spiele gelöscht`, ()=>{ hub.games = []; });
     return;

@@ -3510,6 +3510,22 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(w.eval("adminVisible()"), "Panels bleiben ganz klickbar (Admin)"); w.eval("showHub('home')");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
+  console.log("\n[76] 12.0 Vorschau 4: Session & Woche im Hub");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const scS = () => d.querySelector("#hubRoot .hub3-rail .hub3-session");
+  ok(scS() && scS().querySelector('[data-hub="sessionStart"]') && scS().textContent.includes("Diese Woche"), "Seitenleiste: Karte 'Session & Woche' mit Start-Knopf und Woche");
+  scS().querySelector('[data-hub="sessionStart"]').click();
+  ok(d.querySelector("#modal h3").textContent==="Session starten" && !d.querySelector("#hubRoot").hidden, "Start direkt im Hub (Vorhaben-Dialog), Hub bleibt offen");
+  d.querySelector('#modal [data-f="plan"]').value = "Kader ausdünnen"; d.querySelector("[data-modal-save]").click();
+  ok(scS().classList.contains("running") && scS().querySelector("#diaryClock") && scS().textContent.includes("Kader ausdünnen"), "Läuft: Uhr und Vorhaben in der Karte");
+  scS().querySelector('[data-hub="sessionStop"]').click();
+  ok(d.querySelector("#modal h3").textContent==="Session beenden", "'■ Beenden' öffnet den Beenden-Dialog"); w.eval("closeModal()");
+  w.eval(`diary.challenges = [{id:"q1", title:"Zähler", kind:"count", target:4, current:1, status:"active", createdAt:Date.now(), steps:[]}, {id:"q2", title:"Einfach", kind:"simple", status:"active", createdAt:Date.now(), steps:[]}]; saveDiary(); renderHub()`);
+  ok(scS().querySelectorAll(".hub3-ch-item").length===2 && scS().querySelector(".hub3-ch-bar i").style.width==="25%" && scS().textContent.includes("1/4") && scS().textContent.includes("offen"), "Aktive Challenges mit Fortschritt (1/4 = 25 %, einfache: offen)");
+  scS().querySelector(".hub3-week").click();
+  ok(w.eval("hubView")==="diary", "Klick auf die Karte öffnet das Tagebuch");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");

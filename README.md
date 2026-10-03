@@ -7,7 +7,7 @@
 Dein persönliches Command Center für **Football Manager** – und für deine anderen Karrieren und Spielsessions.
 Läuft komplett im Browser, funktioniert offline, braucht kein Konto und keinen Server. **Alle Daten bleiben auf deinem Gerät.**
 
-![Version](https://img.shields.io/badge/Version-12.0_Vorschau_3-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.288_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
+![Version](https://img.shields.io/badge/Version-12.0_Vorschau_4-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.295_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
 
 > **Beta-Hinweis:** Gaming-Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt sind noch als **Beta** gekennzeichnet. Das FM27 Dashboard selbst ist stabil.
 

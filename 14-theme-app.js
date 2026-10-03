@@ -113,10 +113,12 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.0.0-vorschau.3";
+const APP_VERSION = "12.0.0-vorschau.4";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.0.0-vorschau.4", beta:true, title:"Nexus · Vorschau 4: Session & Woche im Hub", items:[
+    ["neu","Hub → Seitenleiste „Session & Woche“: Session direkt im Hub starten (mit Vorhaben) und beenden, laufende Uhr, Spielzeit und Sessions dieser Woche, 🔥 Serie und deine aktiven Challenges mit Fortschritt. Klick auf die Karte öffnet das Tagebuch."]]},
   {v:"12.0.0-vorschau.3", beta:true, title:"Nexus · Vorschau 3: aufgeräumter Hub", items:[
     ["besser","Hub neu aufgeteilt: links die Hauptbühne (Begrüßung, Weiterspielen, Module), rechts eine Seitenleiste mit Uhr, Spielständen, Admin & Sicherung und Neuigkeiten – breiter auf großen Bildschirmen, ruhiger in der Mitte."],
     ["besser","Module als flache Kacheln, Admin-Status als kompakte Felder, Neuigkeiten als schlanke Liste (ein Klick öffnet den ganzen Changelog)."]]},
