@@ -113,10 +113,14 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.9.1";
+const APP_VERSION = "12.0.0-vorschau.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.0.0-vorschau.1", beta:true, title:"Nexus · Vorschau 1: Medien", items:[
+    ["neu","Spiel-Tagebuch → 🎬 Medien: verbinde deinen Aufnahme-Ordner (z. B. Videos\\Captures) – das Dashboard zeigt alle Videos mit Vorschaubild, Länge und Datum, durchsuchbar und nach Unterordnern filterbar. Der Ordner wird nur gelesen, nichts wird kopiert."],
+    ["neu","Eigener Videoplayer: Zeitleiste mit Vorschau-Zeit, ±10 s, Bild für Bild, Geschwindigkeit 0,25–2×, Lautstärke, Wiederholen, Bild im Bild, Vollbild – plus Tastenkürzel (Leertaste, J/L, ←/→, ↑/↓, M, F, , und ., [ und ], 0–9, Esc)."],
+    ["neu","Video-Links: YouTube und Twitch-Clips eingebettet, direkte Videodateien (.mp4, .webm) im eigenen Player."]]},
   {v:"11.9.1", title:"Tippen im Hub repariert", items:[
     ["fix","In Textfeldern im Hub (Admin-Zentrale, Karriere-Begleiter) öffnete ein „s“ das Spielstand-Menü – und andere Ein-Tasten-Kürzel lösten ebenfalls aus. Jetzt gilt wie im Dashboard: beim Tippen keine Kürzel, nur Strg + K (Befehlspalette) funktioniert überall."]]},
   {v:"11.9", beta:true, title:"Karriere-Begleiter (Beta)", items:[

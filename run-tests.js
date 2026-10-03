@@ -14,8 +14,11 @@ const injectApp = w => JS_PARTS.forEach(code=>{ const s = w.document.createEleme
 let failures = 0; let renderIt;
 const ok = (cond, label) => { console.log((cond?"  ✓ ":"  ✗ ")+label); if(!cond) failures++; };
 
+let lastDom = null;   // 12.0: close the previous test window – 300+ open windows (with timers) ate the memory
 async function boot(seed){
+  if(lastDom){ try{ lastDom.window.close(); }catch(e){} }
   const dom = new JSDOM(html, {url:"http://localhost/", runScripts:"dangerously", pretendToBeVisual:true});
+  lastDom = dom;
   const w = dom.window;
   const errs = [];
   w.addEventListener("error", e=>errs.push(e.message));
@@ -2919,7 +2922,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     ok(SCRIPTS.length===parts.length && parts.every((f,i)=>SCRIPTS[i]==="js/"+f), `index.html lädt alle ${parts.length} Teile in der richtigen Reihenfolge (über den Lader)`);
     ok(parts.every(f=>swText.includes(`"./js/${f}"`) && swText.includes(`"./${f}"`)) && !swText.includes('"./app.js"'), "Offline-Modul hält alle Teile für beide Ablagen vor (js/ und Hauptverzeichnis)");
     const pkg = JSON.parse(require("fs").readFileSync(DIR+"package.json","utf8"));
-    const appV = js.match(/APP_VERSION = "([^"]+)"/)[1], full = appV.split(".").concat(["0","0"]).slice(0,3).join(".");
+    const appV = js.match(/APP_VERSION = "([^"]+)"/)[1], full = /-/.test(appV) ? appV : appV.split(".").concat(["0","0"]).slice(0,3).join(".");   // previews: "12.0.0-vorschau.1"
     ok(pkg.version===full, `Versionsnummer App ${appV} = package.json`);
     ok(APP_PARTS.build===appV && js.includes(`window.FM27_BUILD = "${appV}";`), `Versionsstempel: index.html (${APP_PARTS.build}) = Programmdateien = App`);
     ok(!require("fs").existsSync(DIR+"src-tauri") && !require("fs").existsSync(DIR+"scripts") && !require("fs").existsSync(DIR+".github/workflows/desktop.yml") && !pkg.devDependencies["@tauri-apps/cli"] && !/IS_DESKTOP|__TAURI/.test(js),
@@ -3401,6 +3404,51 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   d.activeElement && d.activeElement.blur && d.activeElement.blur();
   d.dispatchEvent(new w.KeyboardEvent("keydown", {key:"s", bubbles:true, cancelable:true}));
   ok(!smHidden(), "Außerhalb von Textfeldern öffnet S im Hub weiterhin die Spielstände");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[73] 12.0 Vorschau 1: Medien – Links, Galerie, eigener Player");
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  const PV_M = u => JSON.stringify(w.eval(`parseVideoLink(${JSON.stringify(u)})`));
+  ok(PV_M("https://youtu.be/dQw4w9WgXcQ").includes('"youtube"') && PV_M("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3").includes("dQw4w9WgXcQ") && PV_M("https://youtube.com/shorts/abcDEF12345").includes("abcDEF12345"), "YouTube-Links erkannt (youtu.be, watch, shorts)");
+  ok(PV_M("https://clips.twitch.tv/FunnySlugName").includes('"twitch"') && PV_M("https://www.twitch.tv/streamer/clip/OtherSlug").includes("OtherSlug"), "Twitch-Clips erkannt");
+  ok(PV_M("https://example.com/goal.mp4").includes('"file"') && PV_M("https://medal.tv/clip/123").includes('"other"') && PV_M("kein link")==="null" && PV_M("javascript:alert(1)")==="null", "Direkte Datei → eigener Player, unbekannt → neuer Tab, Unsinn/javascript: abgelehnt");
+  w.eval("dTab = 'media'; showHub('diary')");
+  ok(d.querySelector("#hubRoot .media-panel").textContent.includes("kann keine Ordner lesen"), "Browser ohne Ordner-Zugriff: klare Erklärung (Links gehen trotzdem)");
+  w.showDirectoryPicker = ()=>{}; w.eval("renderHub()");
+  const qM_M = sel => d.querySelector("#hubRoot " + sel);
+  ok(qM_M(".media-panel") && qM_M('[data-media="choose"]'), "Tagebuch → Medien: 'Ordner wählen'");
+  qM_M('[data-media="link"]').click(); d.querySelector('#modal [data-f="url"]').value = "https://youtu.be/dQw4w9WgXcQ"; d.querySelector('#modal [data-f="title"]').value = "Siegtor"; d.querySelector("[data-modal-save]").click();
+  ok(JSON.parse(w.localStorage.getItem("fm27_diary")).links[0].title==="Siegtor" && qM_M(".media-link .k-youtube"), "Link gespeichert (im Tagebuch, also auch gesichert)");
+  qM_M(".media-link").click();
+  ok(d.querySelector("#modal iframe") && d.querySelector("#modal iframe").src.startsWith("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"), "YouTube spielt eingebettet (ohne Cookies-Domain)"); w.eval("closeModal()");
+  // gallery with a fake folder
+  w.eval(`(()=>{ const mk = (n, t) => ({kind:"file", name:n, getFile: async ()=>({name:n, size:2048000, lastModified:t}) });
+    const sub = {kind:"directory", name:"FM26", async *entries(){ yield ["b.mp4", mk("b.mp4", 1700000000000)]; yield ["readme.txt", mk("readme.txt", 1)]; }};
+    mediaDir = {name:"Captures", async *entries(){ yield ["a.webm", mk("a.webm", 1800000000000)]; yield ["FM26", sub]; }}; mediaPerm = "granted"; })()`);
+  await w.eval("scanMedia()");
+  ok(w.eval("mediaFiles.map(f=>f.path).join()")==="a.webm,FM26/b.mp4" && d.querySelectorAll("#hubRoot .media-card").length===2 && qM_M("#mediaSub"), "Ordner eingelesen: 2 Videos (neueste zuerst), Unterordner, andere Dateien ignoriert");
+  const ms_M = qM_M("#mediaSearch"); ms_M.value = "b.mp"; ms_M.dispatchEvent(new w.Event("input", {bubbles:true}));
+  ok(d.querySelectorAll("#hubRoot .media-card").length===1 && d.activeElement.id==="mediaSearch", "Suche filtert, Fokus bleibt");
+  w.eval("mediaQuery = ''; mediaPerm = 'prompt'; renderHub()");
+  ok(qM_M('[data-media="resume"]') && qM_M(".media-panel").textContent.includes("Captures"), "Nach Neustart: 'Ordner wieder verbinden'"); w.eval("mediaPerm = 'granted'; renderHub()");
+  // player
+  w.HTMLMediaElement.prototype.play = function(){ this.__playing = true; Object.defineProperty(this, "paused", {value:false, configurable:true}); this.dispatchEvent(new w.Event("play")); return Promise.resolve(); };
+  w.HTMLMediaElement.prototype.pause = function(){ Object.defineProperty(this, "paused", {value:true, configurable:true}); this.dispatchEvent(new w.Event("pause")); };
+  w.HTMLMediaElement.prototype.load = function(){};
+  w.eval(`openVideoPlayer({src:"blob:test", title:"Testclip"})`);
+  const V_M = () => d.querySelector(".vp-root video");
+  Object.defineProperty(V_M(), "duration", {value:60, configurable:true});
+  ok(d.querySelector(".vp-root[role=dialog]") && d.querySelector(".vp-title").textContent.includes("Testclip") && d.querySelectorAll(".vp-root [data-vp]").length >= 10 && d.querySelector(".vp-seek[role=slider]"), "Player: Dialog mit eigener Steuerung (Zeitleiste als Slider, ≥10 Knöpfe)");
+  const key_M = k => d.dispatchEvent(new w.KeyboardEvent("keydown", {key:k, bubbles:true, cancelable:true}));
+  key_M("5"); ok(Math.round(V_M().currentTime)===30, "Taste 5 → 50 %");
+  key_M("l"); ok(Math.round(V_M().currentTime)===40, "L → +10 s"); key_M("ArrowLeft"); ok(Math.round(V_M().currentTime)===35, "← → −5 s");
+  key_M("]"); ok(V_M().playbackRate===1.25, "] → schneller (1,25×)"); key_M("["); key_M("["); ok(V_M().playbackRate===0.75, "[ → langsamer");
+  key_M("m"); ok(V_M().muted===true, "M → stumm"); key_M("ArrowUp"); ok(V_M().volume > 0, "↑ → lauter");
+  key_M("s"); ok(!d.querySelector("#saveMenu") || d.querySelector("#saveMenu").hidden, "Andere Tasten (s) erreichen das Dashboard nicht, solange der Player offen ist");
+  d.querySelector('.vp-root [data-vp="loop"]').click(); ok(V_M().loop && d.querySelector('.vp-root [data-vp="loop"]').getAttribute("aria-pressed")==="true", "Wiederholen umschaltbar");
+  key_M("Escape");
+  ok(!d.querySelector(".vp-root") && !w.__vpOpen && w.eval("hubView")==="diary", "Esc schließt nur den Player");
+  ok(JSON.parse(w.localStorage.getItem("fm27_player")).rate===0.75, "Tempo/Lautstärke werden gemerkt");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

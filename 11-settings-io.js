@@ -371,6 +371,7 @@ function initShortcuts(){
     const modalOpen = qs("#modalOverlay").classList.contains("active");
     const cmdOpen = qs("#cmdOverlay").classList.contains("active");
     if(hkCapture) return;                                                      // the hotkey manager is listening
+    if(window.__vpOpen) return;                                                // 12.0: the video player has all keys while it is open
     if(hubView && !qs("#modalOverlay").classList.contains("active") && !qs("#cmdOverlay").classList.contains("active")){   // 11.4: the hub has its own keys
       if(typeof hubKey === "function" && hubKey(e)) return;
       const c = comboFromEvent(e), m = hotkeyMap(), a = c ? Object.keys(m).find(id=>m[id] === c) : null;

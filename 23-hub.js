@@ -52,7 +52,7 @@ function ensureHubRoot(){
   document.body.appendChild(root);
   root.addEventListener("click", hubClick);
   root.addEventListener("change", e=>{ if(hubView === "diary") diaryChange(e); if(hubView === "career") careerChange(e); });
-  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex], [data-d-session][tabindex], [data-cr-open][tabindex], [data-cr-season][tabindex]")){ e.preventDefault(); e.target.click(); } });
+  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex], [data-d-session][tabindex], [data-cr-open][tabindex], [data-cr-season][tabindex], [data-media-card][tabindex], [data-media-link][tabindex]")){ e.preventDefault(); e.target.click(); } });
   return root;
 }
 function showHub(view){
@@ -262,7 +262,7 @@ function hubKey(e){
 }
 /** called once at the end of init() */
 function hubInit(firstStart){
-  loadHub(); loadDiary(); loadCareer(); dGcImages();
+  loadHub(); loadDiary(); loadCareer(); dGcImages(); initMedia();
   ensureHubRoot();
   const btn = qs("#btnHub"); if(btn) btn.addEventListener("click", ()=>showHub("home"));
   if(hub.startPanel === "hub") showHub("home"); else markPlayed();

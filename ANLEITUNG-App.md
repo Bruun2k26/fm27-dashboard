@@ -91,6 +91,11 @@ Nur nötig, wenn du möchtest, dass GitHub selbst prüft – die App braucht das
 Rotes ✗? Unter Actions auf den Lauf klicken – dort steht, welche Prüfung fehlgeschlagen ist. Die App auf GitHub Pages läuft davon unabhängig weiter; die Tests warnen nur.
 
 
+## Geplant: Version 12
+
+- **Mehrsprachigkeit:** Deutsch bleibt Hauptsprache, Englisch kommt als zweite Sprache dazu – umschaltbar in den Einstellungen, alle Texte, Hinweise, Changelog und Anleitung.
+- **Raus aus der Beta:** Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt werden – nach deinem Feedback – gemeinsam für stabil erklärt. Erst danach wird übersetzt, damit die Texte feststehen.
+
 ## Gut zu wissen
 
 - **Offline:** Die App startet auch ohne Internet. Updates kommen, sobald du wieder online bist.

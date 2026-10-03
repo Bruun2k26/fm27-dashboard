@@ -1,6 +1,6 @@
 {
   "name": "fm27-dashboard",
-  "version": "11.9.1",
+  "version": "12.0.0-vorschau.1",
   "private": true,
   "description": "FM27 Manager Dashboard – Web-App, läuft komplett im Browser.",
   "scripts": {

@@ -5,7 +5,7 @@
    Sessions use REAL time; journey entries use the in-game date – so they are shown separately.
    ========================================================================== */
 const DIARY_KEY = "fm27_diary", IMG_PREFIX = "fm27_img_", DIARY_MAX_IMGS = 6;
-let dFilter = "", dPending = null;     // timeline filter · images of the open session dialog
+let dFilter = "", dPending = null, dTab = "timeline";     // 12.0: tab "timeline" | "media"     // timeline filter · images of the open session dialog
 const CH_KIND = {simple:"Einfaches Ziel", count:"Mit Zähler", steps:"Mit Teilschritten"};
 let diary = null, diaryTimer = null;
 function sanitizeDiary(raw){
@@ -20,7 +20,8 @@ function sanitizeDiary(raw){
     current:Math.max(0, Math.round(num(x.current))), steps:A(x.steps).filter(st=>st && S(st.text).trim()).map(st=>({id:S(st.id) || uid(), text:S(st.text).trim().slice(0,120), done:!!st.done})).slice(0,30),
     status:["active","done","dropped"].includes(x.status) ? x.status : "active", createdAt:num(x.createdAt) || Date.now(), doneAt:num(x.doneAt)}));
   const run = r.running && typeof r.running === "object" && num(r.running.start) ? {start:num(r.running.start), slotId:S(r.running.slotId), careerId:S(r.running.careerId), game:S(r.running.game).slice(0,60), plan:S(r.running.plan).slice(0,120)} : null;
-  return {v:1, sessions, challenges, running:run, games:[...new Set(A(r.games).map(g=>S(g).trim()).filter(Boolean))].slice(0,40)};
+  const links = A(r.links).filter(l=>l && /^https?:\/\//.test(S(l.url))).map(l=>({id:S(l.id) || uid(), url:S(l.url).slice(0,500), title:S(l.title).slice(0,100), addedAt:num(l.addedAt) || Date.now()})).slice(0,300);
+  return {v:1, sessions, challenges, running:run, links, games:[...new Set(A(r.games).map(g=>S(g).trim()).filter(Boolean))].slice(0,40)};
 }
 function loadDiary(){ diary = sanitizeDiary(readJSON(DIARY_KEY)); return diary; }
 function saveDiary(){ try{ store.setItem(DIARY_KEY, JSON.stringify(diary)); }catch(e){ toast("Tagebuch konnte nicht gespeichert werden."); } scheduleFolderBackup(); }
@@ -253,6 +254,9 @@ function renderDiary(root){
         <button class="btn" data-d="addSession">+ Session nachtragen</button><button class="btn" data-d="addChallenge">+ Challenge</button></div>
     </header>
     <div class="diary-grid">
+      <div class="diary-main">
+      <div class="seg diary-tabs" role="tablist" aria-label="Ansicht"><button role="tab" data-d-tab="timeline" aria-selected="${dTab === "timeline"}" class="${dTab === "timeline" ? "active" : ""}">Zeitleiste</button><button role="tab" data-d-tab="media" aria-selected="${dTab === "media"}" class="${dTab === "media" ? "active" : ""}">🎬 Medien</button></div>
+      ${dTab === "media" ? mediaGalleryHTML() : `
       <section class="hub2-card diary-timeline" aria-label="Zeitleiste">
         <div class="hub2-card-head"><h3>Zeitleiste</h3>${keys.length > 1 ? `<select class="d-filter" data-d-filter aria-label="Zeitleiste filtern"><option value="">Alle Spielstände &amp; Spiele</option>${keys.map(k=>{ const [kind, v] = [k.slice(0, k.indexOf(":")), k.slice(k.indexOf(":") + 1)]; const t = dTarget(kind === "slot" ? {slotId:v} : kind === "career" ? {careerId:v} : {game:v}); return `<option value="${esc(k)}" ${dFilter === k ? "selected" : ""}>${esc(t.name)}</option>`; }).join("")}</select>` : `<span class="muted small">${diary.sessions.length} Sessions</span>`}</div>
         ${days.length ? days.map(d=>`<div class="diary-day"><div class="diary-day-head"><strong>${esc(dDayLabel(d.k))}</strong>${d.min ? `<span class="muted small">${dMin(d.min)}</span>` : ""}</div>
@@ -264,7 +268,8 @@ function renderDiary(root){
             : `<div class="diary-entry win"><span class="diary-time">🏆</span><span class="diary-entry-main"><strong>Challenge geschafft: ${esc(ev.c.title)}</strong><span class="muted small">${esc(dTarget(ev.c).name)}</span></span>
                 <span class="diary-win-acts"><button type="button" class="tc-arrow" data-d-reopen="${ev.c.id}" title="Versehentlich? Wieder aktiv setzen" aria-label="${esc(ev.c.title)} wieder aktiv setzen">↺</button><button type="button" class="tc-arrow" data-d-delch="${ev.c.id}" title="Challenge löschen" aria-label="${esc(ev.c.title)} löschen">✕</button></span></div>`).join("")}</div>`).join("")
           : `<div class="diary-empty"><p><strong>Noch keine Einträge.</strong></p><p class="muted">Starte vor dem Spielen eine Session – der Timer läuft mit, und beim Beenden hältst du in zwei Sätzen fest, was passiert ist.</p></div>`}
-      </section>
+      </section>`}
+      </div>
       <aside class="diary-side">
         <section class="hub2-card"><div class="hub2-card-head"><h3>Diese Woche</h3>${wk.streak > 1 ? `<span class="sm-badge ok">🔥 ${wk.streak} Tage in Folge</span>` : ""}</div>
           <div class="diary-week"><div><span>Spielzeit</span><strong>${dMin(wk.min)}</strong></div><div><span>Sessions</span><strong>${wk.n}</strong></div></div>
@@ -286,9 +291,12 @@ function renderDiary(root){
         </section>
       </aside>
     </div></main>`;
+  if(dTab === "media") mediaAfterRender(root);
 }
 function diaryClick(e){
   const t = e.target, g = sel => t.closest(sel);
+  const tb = g("[data-d-tab]"); if(tb){ dTab = tb.dataset.dTab; renderHub(); return true; }
+  if(dTab === "media" && mediaClick(e)) return true;
   const im = g("[data-d-img]"); if(im){ const [sid, i] = im.dataset.dImg.split(":"); dLightbox(sid, num(i)); return true; }
   const ro = g("[data-d-reopen]"); if(ro){ const c = diary.challenges.find(x=>x.id === ro.dataset.dReopen);
     diaryUndo(`„${c.title}“ wieder aktiv`, ()=>{ c.status = "active"; c.doneAt = 0; if(c.kind === "count" && c.current >= c.target) c.current = c.target - 1; if(c.kind === "steps" && c.steps.length && c.steps.every(x=>x.done)) c.steps[c.steps.length - 1].done = false; }); return true; }
