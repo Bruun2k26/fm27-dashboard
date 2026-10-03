@@ -113,10 +113,13 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.8.1";
+const APP_VERSION = "11.8.2";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.8.2", title:"Ordner-Sicherung: auch Hub & Tagebuch", items:[
+    ["fix","Die automatische Ordner-Sicherung sicherte bisher nur die Spielstände – jetzt auch Hub, Spiel-Tagebuch (mit Bildern), Tastenkürzel und Layout, als eigene Datei mit Tageskopien. Sie wird nur neu geschrieben, wenn sich daran etwas geändert hat."],
+    ["besser","Admin-Zentrale → Sicherung: eigene Karte „Hub, Tagebuch & Einstellungen“; „Laden …“ stellt sie wieder her – Spielstände bleiben dabei unberührt."]]},
   {v:"11.8.1", beta:true, title:"Tagebuch: Bilder, Vorhaben & mehr", items:[
     ["fix","Beim Start blitzte erst kurz das Dashboard auf, bevor der Hub erschien – jetzt erscheint direkt der Hub (bzw. direkt das Dashboard, wenn so eingestellt)."],
     ["neu","Bilder in Sessions: bis zu 6 pro Session – per Dateiauswahl oder einfach mit Strg + V einfügen (z. B. Screenshots aus FM). Vorschau in der Zeitleiste, Klick öffnet die große Ansicht zum Blättern (auch mit ← / →)."],

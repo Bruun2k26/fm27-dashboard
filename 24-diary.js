@@ -23,7 +23,7 @@ function sanitizeDiary(raw){
   return {v:1, sessions, challenges, running:run, games:[...new Set(A(r.games).map(g=>S(g).trim()).filter(Boolean))].slice(0,40)};
 }
 function loadDiary(){ diary = sanitizeDiary(readJSON(DIARY_KEY)); return diary; }
-function saveDiary(){ try{ store.setItem(DIARY_KEY, JSON.stringify(diary)); }catch(e){ toast("Tagebuch konnte nicht gespeichert werden."); } }
+function saveDiary(){ try{ store.setItem(DIARY_KEY, JSON.stringify(diary)); }catch(e){ toast("Tagebuch konnte nicht gespeichert werden."); } scheduleFolderBackup(); }
 function diaryUndo(label, fn){
   const before = JSON.stringify(diary);
   fn(); diary = sanitizeDiary(diary); saveDiary(); renderHub();

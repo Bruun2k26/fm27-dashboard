@@ -131,11 +131,24 @@ function showImportErrors(errors){
   });
 }
 /** Validates, migrates and imports a backup (file, folder backup …) – asks: replace current save or new save. */
+/** 11.8.2: restore hub, game diary (with images), hotkeys and layout from a "Hub, Tagebuch & Einstellungen" backup */
+function restoreGlobalBackup(parsed){
+  const st = parsed.storage, allowed = k => [HUB_KEY, DIARY_KEY, HOTKEY_KEY, LAYOUT_KEY, COL_KEY].includes(k) || k.startsWith(IMG_PREFIX);
+  const keys = Object.keys(st).filter(k=>allowed(k) && typeof st[k] === "string");
+  const d = sanitizeDiary((()=>{ try{ return JSON.parse(st[DIARY_KEY] || "null"); }catch(e){ return null; } })());
+  const when = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString("de-DE", {dateStyle:"short", timeStyle:"short"}) : "unbekannt";
+  openModal({title:"Hub, Tagebuch & Einstellungen wiederherstellen?", body:`
+    <p class="lead" style="margin-top:0">Stand vom <strong>${esc(when)}</strong>: ${d.sessions.length} Sessions, ${d.challenges.length} Challenges, ${keys.filter(k=>k.startsWith(IMG_PREFIX)).length} Bilder, dazu Tastenkürzel und Layout.</p>
+    <p class="hint">Ersetzt diese Daten auf diesem Gerät. <strong>Spielstände bleiben unberührt.</strong> Die Seite lädt danach neu.</p>`,
+    saveLabel:"Wiederherstellen",
+    onSave: ()=>{ keys.forEach(k=>store.setItem(k, st[k])); toast("Hub, Tagebuch & Einstellungen wiederhergestellt – lädt neu …"); reloadApp(); }});
+}
 function handleBackupText(text){
   let parsed;
   try{ parsed = JSON.parse(text); }
   catch(err){ showImportErrors([`Kein gültiges JSON (${err.message}).`]); return; }
   if(parsed && parsed.kind === "full") return importFullBackup(parsed);   // "Alles exportieren (Umzug)"
+  if(parsed && parsed.kind === "global" && parsed.storage && typeof parsed.storage === "object") return restoreGlobalBackup(parsed);   // 11.8.2
   if(parsed && parsed.kind === "journey" && parsed.journey){
     const j = sanitizeJourney(parsed.journey);
     return openModal({title:"Journey wiederherstellen?", body:`<p class="lead">Ersetzt die Journey <strong>dieses Spielstands</strong> („${esc((activeSlotMeta() || {}).name || state.club.name)}“) durch die Datei${j.profile.name ? ` von <strong>${esc(j.profile.name)}</strong>` : ""}: ${j.stations.length} Stationen, ${j.diary.length} Tagebuch-Einträge, Girokonto ${jEUR(j.bank.giro)}. Direkt danach rückgängig machbar.</p>`,

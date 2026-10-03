@@ -28,7 +28,7 @@ function sanitizeHub(raw){
     games: games.filter(g=>!g.sample), introSeen: !!r.introSeen};
 }
 function loadHub(){ hub = sanitizeHub(readJSON(HUB_KEY)); return hub; }
-function saveHub(){ try{ store.setItem(HUB_KEY, JSON.stringify(hub)); }catch(e){ toast("Hub konnte nicht gespeichert werden – Speicher voll?"); } hubStartHint(); }
+function saveHub(){ try{ store.setItem(HUB_KEY, JSON.stringify(hub)); }catch(e){ toast("Hub konnte nicht gespeichert werden – Speicher voll?"); } hubStartHint(); scheduleFolderBackup(); }
 /** 11.8.1: tiny hint OUTSIDE the database – read by the pre-script in index.html before anything is drawn */
 function hubStartHint(){ try{ localStorage.setItem("fm27_start_hint", hub && hub.startPanel === "fm" ? "fm" : "hub"); }catch(e){} }
 function hubUndo(label, fn){

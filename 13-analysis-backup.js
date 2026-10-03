@@ -319,6 +319,20 @@ function backupPayload(slotMeta, data){
   return JSON.stringify({app:"FM27 Manager Dashboard", schemaVersion:SCHEMA_VERSION, exportedAt:new Date().toISOString(),
     slotName: slotMeta ? slotMeta.name : "", backup:"auto", data}, null, 1);
 }
+/* 11.8.2: everything that belongs to NO single save – hub, game diary (with images), hotkeys, layout – gets its own
+   backup file. Written only when it changed (images can make it big). The admin PIN is left out on purpose. */
+const GLOBAL_BASE = "fm27__hub-und-tagebuch";
+let lastGlobalSig = "";
+function globalBackupKeys(){
+  const keys = [HUB_KEY, DIARY_KEY, HOTKEY_KEY, LAYOUT_KEY, COL_KEY].filter(k=>store.getItem(k) !== null);
+  for(let i = 0; i < store.length; i++){ const k = store.key(i); if(k && k.startsWith(IMG_PREFIX)) keys.push(k); }
+  return keys;
+}
+const globalSignature = () => globalBackupKeys().map(k=>k.startsWith(IMG_PREFIX) ? k : k + "=" + store.getItem(k)).join("\u0001");
+function globalBackupPayload(){
+  return JSON.stringify({app:"FM27 Manager Dashboard", kind:"global", version:APP_VERSION, exportedAt:new Date().toISOString(), backup:"auto",
+    storage:Object.fromEntries(globalBackupKeys().map(k=>[k, store.getItem(k)]))});
+}
 /** Writes "<Spielstand>_aktuell.json" + a daily copy, then removes daily copies older than keepDays. */
 async function writeFolderBackup(reason, allSlots){
   if(!backupDir || backupPerm !== "granted" || backupBusy) return false;
@@ -335,6 +349,14 @@ async function writeFolderBackup(reason, allSlots){
       await writeTextFile(backupDir, `${base}_aktuell.json`, text);
       await writeTextFile(backupDir, `${base}_${day}.json`, text);
       await pruneFolderBackups(base, keep);
+    }
+    const sig = globalSignature();
+    if(allSlots || reason === "Manuell" || sig !== lastGlobalSig){
+      const text = globalBackupPayload();
+      await writeTextFile(backupDir, `${GLOBAL_BASE}_aktuell.json`, text);
+      await writeTextFile(backupDir, `${GLOBAL_BASE}_${day}.json`, text);
+      await pruneFolderBackups(GLOBAL_BASE, keep);
+      lastGlobalSig = sig;
     }
     c.lastAt = Date.now(); c.lastReason = reason; c.lastError = ""; saveBackupCfg(c);
     backupError = "";
@@ -450,6 +472,9 @@ function groupBackupFiles(files){
     const daily = mine.filter(f=>f !== current).sort((a,b)=>b.name.localeCompare(a.name));
     groups.push({kind:"save", sum:x, current, daily, files:mine});
   });
+  const globRe = new RegExp("^" + esc2(GLOBAL_BASE) + "_(aktuell|\\d{4}-\\d{2}-\\d{2})\\.json$");
+  const globFiles = files.filter(f=>globRe.test(f.name)); globFiles.forEach(f=>used.add(f.name));
+  const global = {current:globFiles.find(f=>/_aktuell\.json$/.test(f.name)) || null, daily:globFiles.filter(f=>!/_aktuell\.json$/.test(f.name)).sort((a,b)=>b.name.localeCompare(a.name))};
   const rest = files.filter(f=>!used.has(f.name));
   const orphans = {}, journey = [], other = [];
   rest.forEach(f=>{
@@ -459,7 +484,7 @@ function groupBackupFiles(files){
   });
   // active save first, then by newest backup; saves without any backup last
   groups.sort((a,b)=>(b.sum.active - a.sum.active) || (!!b.current - !!a.current) || ((b.current ? b.current.modified : 0) - (a.current ? a.current.modified : 0)));
-  return {saves:groups, orphans:Object.entries(orphans).map(([name, list])=>({name, files:list.sort((a,b)=>b.modified - a.modified)})).sort((a,b)=>b.files[0].modified - a.files[0].modified),
+  return {global, saves:groups, orphans:Object.entries(orphans).map(([name, list])=>({name, files:list.sort((a,b)=>b.modified - a.modified)})).sort((a,b)=>b.files[0].modified - a.files[0].modified),
     journey:journey.sort((a,b)=>b.modified - a.modified), other:other.sort((a,b)=>b.modified - a.modified)};
 }
 const bkLoadBtn = (f, label) => `<button class="btn btn-sm" data-bk-load="${esc(f.name)}" title="${esc(f.name)}">${label || "Laden …"}</button>`;
@@ -475,7 +500,14 @@ async function renderFolderBackupList(){
   const orphanCount = g.orphans.reduce((a,o)=>a + o.files.length, 0);
   box.innerHTML = `
     <div class="bk-summary"><span><strong>${saved}</strong> von ${g.saves.length} Spielständen gesichert</span><span>${files.length} Dateien</span><span>${fmtBytes(total)}</span></div>
-    <div class="bk-saves">${g.saves.map(x=>`<article class="bk-card ${x.sum.active ? "active" : ""} ${x.current ? "" : "missing"}">
+    <div class="bk-saves">
+      <article class="bk-card bk-global ${g.global.current ? "" : "missing"}">
+        <div class="bk-card-head"><span class="sm-crest bk-global-icon" aria-hidden="true">🎮</span><div class="bk-card-title"><strong>Hub, Tagebuch &amp; Einstellungen</strong><span class="muted small">Sessions, Challenges, Bilder, Kürzel, Layout</span></div></div>
+        ${g.global.current ? `<div class="bk-current"><div><span class="muted small">Aktueller Stand</span><strong>${esc(bkWhen(g.global.current.modified))}</strong><span class="muted small">${fmtBytes(g.global.current.size)}</span></div>${bkLoadBtn(g.global.current)}</div>`
+          : `<div class="bk-current none"><span>Noch nicht im Ordner gesichert.</span><button class="btn btn-sm btn-accent" data-bk="all">Jetzt sichern</button></div>`}
+        ${g.global.daily.length ? `<details class="bk-daily"><summary>${g.global.daily.length} Tageskopie${g.global.daily.length === 1 ? "" : "n"} <span class="muted small">(${esc(g.global.daily.slice(-1)[0].name.slice(-15, -5).split("-").reverse().slice(0,2).join("."))}. – ${esc(g.global.daily[0].name.slice(-15, -5).split("-").reverse().slice(0,2).join("."))}.)</span></summary>${g.global.daily.map(bkRow).join("")}</details>` : ""}
+      </article>
+      ${g.saves.map(x=>`<article class="bk-card ${x.sum.active ? "active" : ""} ${x.current ? "" : "missing"}">
         <div class="bk-card-head">${smCrest(x.sum)}<div class="bk-card-title"><strong>${esc(x.sum.name)}</strong><span class="muted small">${esc(x.sum.club)}${x.sum.mode === "national" ? " · Nationalteam" : ""}</span></div>
           ${x.sum.active ? '<span class="sm-badge ok">aktiv</span>' : ""}</div>
         ${x.current ? `<div class="bk-current"><div><span class="muted small">Aktueller Stand</span><strong>${esc(bkWhen(x.current.modified))}</strong><span class="muted small">${fmtBytes(x.current.size)}</span></div>${bkLoadBtn(x.current)}</div>`

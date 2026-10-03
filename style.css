@@ -2013,3 +2013,7 @@ html.boot-hub .app{visibility:hidden;}
 .d-lightbox{display:flex;justify-content:center;background:#05070b;border-radius:var(--radius-m);overflow:hidden;}
 .d-lightbox img{max-width:100%;max-height:68vh;display:block;}
 .d-lb-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+/* ---------- 11.8.2: global backup card ---------- */
+.bk-global{border-color:color-mix(in srgb, var(--accent) 35%, var(--border));}
+.bk-global-icon{background:var(--bg-750);font-size:16px;}
+.bk-global-icon{color:var(--text-primary);text-shadow:none;}

@@ -1271,11 +1271,11 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   renderIt = () => w.eval("renderAdmin()"); renderIt();
   ok(d.querySelector('[data-bk="choose"]'), "Mit Ordner-Schnittstelle: 'Ordner wählen …'");
   d.querySelector('[data-bk="choose"]').click(); await tick(60);
-  ok(JSON.stringify(files())===JSON.stringify([`fm27_Karriere_1_${today}.json`, "fm27_Karriere_1_aktuell.json"]), "Sofort gesichert: aktuelle Datei + Tageskopie ("+files().join(", ")+")");
+  ok(JSON.stringify(files().filter(f=>!f.startsWith("fm27__hub-und-tagebuch")))===JSON.stringify([`fm27_Karriere_1_${today}.json`, "fm27_Karriere_1_aktuell.json"]) && files().includes("fm27__hub-und-tagebuch_aktuell.json"), "Sofort gesichert: Spielstand (aktuell + Tageskopie) und seit 11.8.2 auch Hub & Tagebuch ("+files().join(", ")+")");
   const saved = JSON.parse(w.eval("window.__dir").files.get("fm27_Karriere_1_aktuell.json").text);
   ok(saved.app==="FM27 Manager Dashboard" && saved.data.players.length===20 && saved.schemaVersion>=6, "Inhalt = normales Export-Format (per Import lesbar)");
   ok(!d.querySelector("#backupPill").hidden && d.querySelector("#backupPill").textContent.startsWith("☁ gesichert"), "Oben: '☁ gesichert hh:mm'");
-  ok(d.querySelector(".backup-card").textContent.includes("OneDrive-FM") && d.querySelectorAll("#folderBackupList .bk-card").length===1 && d.querySelector("#folderBackupList .bk-current [data-bk-load]") && d.querySelectorAll("#folderBackupList .bk-daily .bk-row").length===1 && d.querySelector("#folderBackupList .bk-summary").textContent.includes("2 Dateien"), "Karte zeigt Ordner, aktuellen Stand und 1 Tageskopie (11.1: nach Spielstand gruppiert)");
+  ok(d.querySelector(".backup-card").textContent.includes("OneDrive-FM") && d.querySelectorAll("#folderBackupList .bk-card:not(.bk-global)").length===1 && d.querySelector("#folderBackupList .bk-card:not(.bk-global) .bk-current [data-bk-load]") && d.querySelectorAll("#folderBackupList .bk-card:not(.bk-global) .bk-daily .bk-row").length===1 && d.querySelector("#folderBackupList .bk-summary").textContent.includes("4 Dateien"), "Karte zeigt Ordner, aktuellen Stand und 1 Tageskopie (4 Dateien inkl. Hub & Tagebuch seit 11.8.2)");
   // change → bundled backup after the delay
   w.eval(`state.club.transferBudget = 12345678; saveState()`);
   ok(w.eval("backupTimer !== null") && d.querySelector("#backupPill").textContent.includes("sichert gleich"), "Änderung → Sicherung wird gebündelt geplant");
@@ -1289,7 +1289,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   // pruning of daily copies
   w.eval(`for(let i=1;i<=20;i++){ const dd = new Date(2020,0,i); window.__dir.files.set("fm27_Karriere_1_2020-01-"+String(i).padStart(2,"0")+".json",{text:"{}",modified:+dd}); }`);
   await w.eval("writeFolderBackup('Test')");
-  ok(files().filter(f=>/\d{4}-\d{2}-\d{2}\.json$/.test(f)).length===14 && files().includes(`fm27_Karriere_1_${today}.json`) && !files().includes("fm27_Karriere_1_2020-01-01.json"), "Nur 14 Tageskopien bleiben (älteste gelöscht, heutige da)");
+  ok(files().filter(f=>/^fm27_Karriere_1_\d{4}-\d{2}-\d{2}\.json$/.test(f)).length===14 && files().includes(`fm27_Karriere_1_${today}.json`) && !files().includes("fm27_Karriere_1_2020-01-01.json"), "Nur 14 Tageskopien bleiben (älteste gelöscht, heutige da)");
   w.eval(`window.__dir.files.set("fremde_datei.txt",{text:"x",modified:1})`); await w.eval("writeFolderBackup('Test')");
   ok(files().includes("fremde_datei.txt"), "Fremde Dateien im Ordner werden nie angefasst");
   // all saves
@@ -2822,7 +2822,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     window.__store = store; backupPerm = "granted"; const c = backupCfg(); c.enabled = true; saveBackupCfg(c);
     setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'backup'; navigate('admin'); })()`);
   await new Promise(r=>setTimeout(r,60));
-  ok(d.querySelectorAll("#folderBackupList .bk-card").length===3 && d.querySelector("#folderBackupList .bk-summary").textContent.includes("2 von 3"), "Ansicht: 3 Karten, '2 von 3 Spielständen gesichert'");
+  ok(d.querySelectorAll("#folderBackupList .bk-card:not(.bk-global)").length===3 && d.querySelector("#folderBackupList .bk-global") && d.querySelector("#folderBackupList .bk-summary").textContent.includes("2 von 3"), "Ansicht: 3 Spielstands-Karten + Hub & Tagebuch, '2 von 3 Spielständen gesichert'");
   ok(d.querySelector("#folderBackupList .bk-card.missing [data-bk='all']"), "Ungesicherter Spielstand: 'Jetzt alle sichern'");
   const delBtnB = [...d.querySelectorAll("#folderBackupList [data-bk-del]")].find(b=>b.dataset.bkDel.includes("fm27_Alt_"));
   delBtnB.click();
@@ -3281,6 +3281,45 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(d.querySelectorAll("#dImgs .d-thumb img").length===2, "Nach mehreren geöffneten Dialogen entfernt ✕ genau EIN Bild");
   ok(d.querySelectorAll("#modal").length===1 && d.querySelector("#modal").getAttribute("role")===d.querySelector("#modal").getAttribute("role"), "Genau ein Dialog-Container, Eigenschaften erhalten");
   w.eval("closeModal()");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[70] Version 11.8.2: Ordner-Sicherung auch für Hub & Tagebuch");
+  ({w,d,errs,S} = await boot());
+  w.showDirectoryPicker = ()=>{};
+  w.eval(`(()=>{ const files = new Map(); window.__files = files; window.__writes = {};
+    backupDir = {name:"Sicherung",
+      async getFileHandle(n){ return {async createWritable(){ let buf = ""; return {async write(t){ buf += t; }, async close(){ files.set(n, {text:buf, modified:Date.now()}); window.__writes[n] = (window.__writes[n] || 0) + 1; }}; }}; },
+      async *entries(){ for(const [n, f] of files) yield [n, {kind:"file", async getFile(){ return {size:f.text.length, lastModified:f.modified, text: async ()=>f.text}; }}]; },
+      async removeEntry(n){ files.delete(n); }};
+    backupPerm = "granted"; const c = backupCfg(); c.enabled = true; saveBackupCfg(c);
+    diary.sessions.push({id:"g1", start:Date.now(), minutes:30, slotId:slotIndex.active, title:"Gesichert?", mood:"good", images:["img1"]}); store.setItem(IMG_PREFIX + "img1", "data:image/png;base64,AAAA"); saveDiary();
+    hub.name = "Mein Hub"; saveHub(); })()`);
+  await w.eval(`writeFolderBackup("Automatisch")`);
+  const GF_G = "fm27__hub-und-tagebuch_aktuell.json", file_G = () => JSON.parse(w.eval(`window.__files.get("${GF_G}").text`));
+  ok(w.eval(`window.__files.has("${GF_G}")`) && w.eval(`[...window.__files.keys()].some(n=>/^fm27__hub-und-tagebuch_\\d{4}-\\d{2}-\\d{2}\\.json$/.test(n))`), "Eigene Datei 'Hub, Tagebuch & Einstellungen' + Tageskopie im Ordner");
+  const st_G = file_G().storage;
+  ok(file_G().kind==="global" && JSON.parse(st_G.fm27_diary).sessions.some(s=>s.title==="Gesichert?") && JSON.parse(st_G.fm27_hub).name==="Mein Hub" && st_G["fm27_img_img1"]==="data:image/png;base64,AAAA", "Enthält Tagebuch, Hub und Bilder");
+  ok(!("fm27_admin" in st_G) && !Object.keys(st_G).some(k=>k.startsWith("fm27_slot_")), "Ohne Admin-PIN und ohne Spielstände (die haben eigene Dateien)");
+  const n1_G = w.eval(`window.__writes["${GF_G}"]`);
+  w.eval(`state.players[0].note = "nur Spielstand geändert"; saveState()`); await w.eval(`writeFolderBackup("Automatisch")`);
+  ok(w.eval(`window.__writes["${GF_G}"]`)===n1_G, "Nur der Spielstand geändert → große Hub/Tagebuch-Datei wird NICHT neu geschrieben");
+  w.eval(`diary.challenges.push({id:"cx", title:"Neue Challenge", kind:"simple", status:"active", createdAt:Date.now()}); saveDiary()`);
+  ok(w.eval("!!backupTimer"), "Änderung im Tagebuch plant die Sicherung ein");
+  await w.eval(`writeFolderBackup("Automatisch")`);
+  ok(w.eval(`window.__writes["${GF_G}"]`)===n1_G+1 && JSON.parse(file_G().storage.fm27_diary).challenges.some(c=>c.title==="Neue Challenge"), "… und schreibt die Datei mit dem neuen Stand");
+  // overview card
+  const g_G = w.eval(`groupBackupFiles([...window.__files.entries()].map(([name, f])=>({name, size:f.text.length, modified:f.modified})))`);
+  ok(g_G.global.current && g_G.global.current.name===GF_G && g_G.global.daily.length===1 && !g_G.orphans.some(o=>o.name.includes("hub-und-tagebuch")) && !g_G.other.some(f=>f.name.includes("hub-und-tagebuch")), "Übersicht: eigene Gruppe, nicht als 'ohne Spielstand' oder 'sonstige' einsortiert");
+  w.eval("setPin('1'); adminUnlocked = true; adminLastActivity = Date.now(); adminTab = 'backup'; navigate('admin')"); await new Promise(r=>setTimeout(r,60));
+  ok(d.querySelector("#folderBackupList .bk-global") && d.querySelector("#folderBackupList .bk-global").textContent.includes("Hub, Tagebuch") && d.querySelector("#folderBackupList .bk-global [data-bk-load]"), "Admin-Zentrale → Sicherung: Karte 'Hub, Tagebuch & Einstellungen' mit 'Laden …'");
+  // restore
+  const saved_G = w.eval(`window.__files.get("${GF_G}").text`);
+  w.eval(`diary.sessions = []; diary.challenges = []; saveDiary(); window.__reloaded = false; reloadApp = ()=>{ window.__reloaded = true; };`);
+  w.eval(`handleBackupText(${JSON.stringify(saved_G)})`);
+  ok(d.querySelector("#modal h3").textContent.includes("Hub, Tagebuch") && d.querySelector("#modal").textContent.includes("1 Sessions") && d.querySelector("#modal").textContent.includes("Spielstände bleiben unberührt"), "Wiederherstellen: Dialog mit Inhalt, Spielstände bleiben unberührt");
+  const noteBefore_G = S().players[0].note;
+  d.querySelector("[data-modal-save]").click();
+  ok(JSON.parse(w.localStorage.getItem("fm27_diary")).sessions.some(s=>s.title==="Gesichert?") && w.eval("window.__reloaded") && S().players[0].note===noteBefore_G, "Tagebuch zurück, Seite lädt neu, Spielstand unverändert");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
