@@ -1987,3 +1987,29 @@ body.hub-open{overflow:hidden;}
 .ch-done-item:hover, .journey-feed-item:hover{background:var(--bg-800);}
 .sm-crest.d-game{color:#fff;}
 @media (prefers-reduced-motion: reduce){ .diary-run-dot{animation:none;} }
+
+/* ---------- 11.8.1: no dashboard flash before the hub ---------- */
+html.boot-hub .app{visibility:hidden;}
+/* ---------- 11.8.1: diary images, plan, filter, won-challenge actions ---------- */
+.diary-entry[role=button]{cursor:pointer;}
+.diary-entry[role=button]:hover, .diary-entry[role=button]:focus-visible{border-color:var(--accent);outline:none;}
+.diary-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.diary-thumb{width:72px;height:48px;padding:0;border-radius:7px;overflow:hidden;border:1px solid var(--border);background:var(--bg-750);cursor:zoom-in;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:12px;color:var(--text-secondary);}
+.diary-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.diary-thumb:hover, .diary-thumb:focus-visible{border-color:var(--accent);outline:none;}
+.diary-thumb.more{cursor:default;}
+.diary-plan{font-size:12px;font-weight:700;}
+.diary-plan.ok{color:var(--pos-text);} .diary-plan.no{color:var(--text-secondary);}
+.diary-run-plan{display:block;font-size:11.5px;color:var(--text-secondary);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.diary-win-acts{display:flex;gap:4px;margin-left:auto;align-self:center;}
+.d-filter{background:var(--bg-800);border:1px solid var(--border);padding:5px 9px;border-radius:var(--radius-m);font-size:12px;color:var(--text-primary);max-width:240px;}
+.d-imgs{display:flex;gap:8px;flex-wrap:wrap;}
+.d-thumb{position:relative;width:96px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--bg-800);display:inline-flex;align-items:center;justify-content:center;}
+.d-thumb img{width:100%;height:100%;object-fit:cover;}
+.d-thumb.add{cursor:pointer;font-size:24px;color:var(--text-secondary);border-style:dashed;}
+.d-thumb.add:hover{border-color:var(--accent);color:var(--accent-text);}
+.d-thumb-del{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(8,10,16,.75);color:#fff;font-size:11px;cursor:pointer;}
+.d-plan-check{padding:8px 10px;border-radius:9px;background:var(--bg-800);border:1px solid var(--border);}
+.d-lightbox{display:flex;justify-content:center;background:#05070b;border-radius:var(--radius-m);overflow:hidden;}
+.d-lightbox img{max-width:100%;max-height:68vh;display:block;}
+.d-lb-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}

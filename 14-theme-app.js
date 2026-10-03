@@ -113,10 +113,16 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "11.8";
+const APP_VERSION = "11.8.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"11.8.1", beta:true, title:"Tagebuch: Bilder, Vorhaben & mehr", items:[
+    ["fix","Beim Start blitzte erst kurz das Dashboard auf, bevor der Hub erschien – jetzt erscheint direkt der Hub (bzw. direkt das Dashboard, wenn so eingestellt)."],
+    ["neu","Bilder in Sessions: bis zu 6 pro Session – per Dateiauswahl oder einfach mit Strg + V einfügen (z. B. Screenshots aus FM). Vorschau in der Zeitleiste, Klick öffnet die große Ansicht zum Blättern (auch mit ← / →)."],
+    ["neu","Geschaffte Challenges in der Zeitleiste: „↺ wieder aktiv“ (falls versehentlich) und „✕ löschen“ – beides rückgängig machbar."],
+    ["neu","Session-Vorhaben: beim Start eintragen, was du vorhast – es steht während der Session oben, beim Beenden fragt das Tagebuch „geschafft?“ und übernimmt es als Titel."],
+    ["besser","Zeitleiste filtern nach Spielstand oder Spiel."]]},
   {v:"11.8", beta:true, title:"Spiel-Tagebuch (Beta)", items:[
     ["neu","Hub → Spiel-Tagebuch: „▶ Session starten“ – der Timer läuft mit (auch wenn du das Dashboard schließt); beim Beenden hältst du fest, in welchem Spielstand oder Spiel du warst, was passiert ist und wie die Stimmung war. Sessions lassen sich auch nachtragen."],
     ["neu","Challenges: eigene Herausforderungen als einfaches Ziel, mit Zähler (z. B. 12 / 30 Siege) oder mit Teilschritten zum Abhaken – „geschafft“ erscheint mit 🏆 in der Zeitleiste."],

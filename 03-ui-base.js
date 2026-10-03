@@ -25,7 +25,10 @@ function openModal(o){
   // a dialog replaced by another one still gets its clean-up
   if(_modalOnClose){ const cb = _modalOnClose; _modalOnClose = null; try{ cb(); }catch(e){} }
   _modalOnClose = o.onClose || null;
-  const overlay = qs("#modalOverlay"), modal = qs("#modal");
+  // 11.8.1: a FRESH container for every dialog – listeners that a dialog added with addEventListener must not
+  // survive into the next one (they fired there: errors after the AI-prompt dialog, several images removed at once)
+  const old = qs("#modal"), modal = old.cloneNode(false); old.replaceWith(modal);
+  const overlay = qs("#modalOverlay");
   _modalReturnFocus = document.activeElement;
   modal.onclick = null; modal.onchange = null;   // drop handlers from the previous dialog
   modal.classList.toggle("wide", !!o.wide);

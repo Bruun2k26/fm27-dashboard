@@ -28,7 +28,9 @@ function sanitizeHub(raw){
     games: games.filter(g=>!g.sample), introSeen: !!r.introSeen};
 }
 function loadHub(){ hub = sanitizeHub(readJSON(HUB_KEY)); return hub; }
-function saveHub(){ try{ store.setItem(HUB_KEY, JSON.stringify(hub)); }catch(e){ toast("Hub konnte nicht gespeichert werden – Speicher voll?"); } }
+function saveHub(){ try{ store.setItem(HUB_KEY, JSON.stringify(hub)); }catch(e){ toast("Hub konnte nicht gespeichert werden – Speicher voll?"); } hubStartHint(); }
+/** 11.8.1: tiny hint OUTSIDE the database – read by the pre-script in index.html before anything is drawn */
+function hubStartHint(){ try{ localStorage.setItem("fm27_start_hint", hub && hub.startPanel === "fm" ? "fm" : "hub"); }catch(e){} }
 function hubUndo(label, fn){
   const before = JSON.stringify(hub);
   fn(); hub = sanitizeHub(hub); saveHub(); renderHub();
@@ -50,7 +52,7 @@ function ensureHubRoot(){
   document.body.appendChild(root);
   root.addEventListener("click", hubClick);
   root.addEventListener("change", e=>{ if(hubView === "diary") diaryChange(e); });
-  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex]")){ e.preventDefault(); e.target.click(); } });
+  root.addEventListener("keydown", e=>{ if((e.key === "Enter" || e.key === " ") && e.target.matches("[data-hub-open][tabindex], [data-d-session][tabindex]")){ e.preventDefault(); e.target.click(); } });
   return root;
 }
 function showHub(view){
@@ -230,7 +232,7 @@ function hubSettingsModal(){
 }
 function hubClick(e){
   const t = e.target;
-  if(hubView === "diary" && t.closest("[data-d],[data-d-session],[data-d-ch],[data-d-plus],[data-d-done],[data-d-journey]")){ diaryClick(e); return; }
+  if(hubView === "diary" && diaryClick(e)) return;
   // 11.6.1: whole panels are clickable – the innermost target wins, so buttons inside a panel only do their own job
   const target = t.closest("[data-hub-save], [data-hub], [data-hub-cl], [data-hub-open]"); if(!target) return;
   if(target.dataset.hubSave){ if(target.dataset.hubSave !== slotIndex.active) switchSlot(target.dataset.hubSave); openPanel("fm"); return; }
@@ -257,8 +259,9 @@ function hubKey(e){
 }
 /** called once at the end of init() */
 function hubInit(firstStart){
-  loadHub(); loadDiary();
+  loadHub(); loadDiary(); dGcImages();
   ensureHubRoot();
   const btn = qs("#btnHub"); if(btn) btn.addEventListener("click", ()=>showHub("home"));
   if(hub.startPanel === "hub") showHub("home"); else markPlayed();
+  hubStartHint(); document.documentElement.classList.remove("boot-hub");
 }

@@ -2854,7 +2854,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   // a real 11.1 installation: data in localStorage
   ({w,d,errs,S} = await boot());
   w.eval(`createSlot("Nationalteam", freshState("sample")); state.players[0].note = "aus 11.1"; saveState(); localStorage.setItem("fm27_hotkeys", JSON.stringify({nextDay:"g"}));`);
-  const legacy_ = lsDump_(w), legacyKeys_ = Object.keys(legacy_).filter(k=>k.startsWith("fm27") && !["fm27_backend","fm27_theme_hint"].includes(k));   // the theme hint stays outside on purpose
+  const legacy_ = lsDump_(w), legacyKeys_ = Object.keys(legacy_).filter(k=>k.startsWith("fm27") && !["fm27_backend","fm27_theme_hint","fm27_start_hint"].includes(k));   // the theme and start hints stay outside on purpose
   // 1st start with 11.2 → phase 1
   const fac_ = new IDBFactory();
   let A_ = await bootDB_(fac_, legacy_);
@@ -2877,7 +2877,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const ls2_ = lsDump_(A_.w);
   let B_ = await bootDB_(fac_, ls2_);
   ok(B_.w.eval("store.mode")==="idb" && B_.w.eval("store.notice").startsWith("cleaned:") && B_.w.localStorage.getItem("fm27_backend")==="idb", "2. Start: Datenbank vollständig → alte Kopie entfernt");
-  ok(Object.keys(lsDump_(B_.w)).filter(k=>k.startsWith("fm27_") && !["fm27_backend","fm27_welcome_done","fm27_theme_hint"].includes(k)).length===0 && B_.w.localStorage.getItem("fm27_theme_hint"), "localStorage danach leer bis auf den winzigen Design-Hinweis (Speichergrenze entschärft)");
+  ok(Object.keys(lsDump_(B_.w)).filter(k=>k.startsWith("fm27_") && !["fm27_backend","fm27_welcome_done","fm27_theme_hint","fm27_start_hint"].includes(k)).length===0 && B_.w.localStorage.getItem("fm27_theme_hint"), "localStorage danach leer bis auf die winzigen Design- und Start-Hinweise (Speichergrenze entschärft)");
   ok(B_.w.eval("state.players[0].note")==="in 11.2 geändert", "Die neueste Änderung ist da");
   // 3rd start: normal operation
   const C_ = await bootDB_(fac_, lsDump_(B_.w));
@@ -3134,7 +3134,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(q9_9('[data-hub-open="diary"]') && !q9_9('[data-hub-open="diary"]').classList.contains("soon") && q9_9("#hubDiaryMeta").textContent.includes("Diese Woche 0 Min."), "Hub: Tagebuch-Kachel aktiv (Beta) mit Wochenstatus");
   q9_9('[data-hub-open="diary"] p').click();
   ok(q9_9(".diary-page") && q9_9(".diary-empty") && q9_9('[data-d="start"]'), "Klick öffnet das Tagebuch – leerer Zustand mit 'Session starten'");
-  q9_9('[data-d="start"]').click();
+  q9_9('[data-d="start"]').click(); d.querySelector("[data-modal-save]").click();   // 11.8.1: start dialog with an optional plan
   ok(DY_9().running && Math.abs(DY_9().running.start - Date.now()) < 5000 && DY_9().running.slotId===w.eval("slotIndex.active") && q9_9("#diaryClock"), "Session gestartet: Startzeit gespeichert, Uhr läuft");
   const dumpD_9 = {}; for(let i=0;i<w.localStorage.length;i++){ const k = w.localStorage.key(i); dumpD_9[k] = w.localStorage.getItem(k); }
   ({w,d,errs,S} = await boot(Object.assign(ls=>Object.entries(dumpD_9).forEach(([k,v])=>ls.setItem(k,v)), {hub:true})));
@@ -3209,6 +3209,80 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(w.eval("storageEntries()").find(e=>e.key==="fm27_diary").label==="Spiel-Tagebuch", "Speicher-Hausmeister kennt das Tagebuch");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
+  console.log("\n[68] Version 11.8.1: Start ohne Aufblitzen, Tagebuch-Bilder, Vorhaben, Filter");
+  { const pre_x = /<script>(try\{var t=localStorage[\s\S]*?)<\/script>/.exec(htmlRaw)[1];
+    const mk_x = hint => { const dom = new JSDOM("<html><head></head><body></body></html>", {url:"http://localhost/", runScripts:"dangerously"}); if(hint) dom.window.localStorage.setItem("fm27_start_hint", hint); dom.window.eval(pre_x); return dom.window.document.documentElement.classList.contains("boot-hub"); };
+    ok(mk_x("") && mk_x("hub") && !mk_x("fm"), "Vor-Skript: App bleibt verborgen, solange der Hub kommt – nicht bei 'Start im Dashboard'"); }
+  ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
+  ok(!d.documentElement.classList.contains("boot-hub") && w.localStorage.getItem("fm27_start_hint")==="hub", "Nach dem Start: Hub sichtbar, Hinweis gespeichert");
+  w.eval("hub.startPanel = 'fm'; saveHub()"); ok(w.localStorage.getItem("fm27_start_hint")==="fm", "Einstellung 'Beim Start: Dashboard' landet im Hinweis");
+  w.eval("hub.startPanel = 'hub'; saveHub(); showHub('diary')");
+  const DY8_x = () => JSON.parse(w.localStorage.getItem("fm27_diary") || "null"), q8b_x = sel => d.querySelector("#hubRoot " + sel);
+  // plan
+  q8b_x('[data-d="start"]').click();
+  ok(d.querySelector("#modal h3").textContent==="Session starten", "'Session starten' fragt nach dem Vorhaben");
+  d.querySelector('#modal [data-f="plan"]').value = "Winter-Transferfenster abschließen"; d.querySelector("[data-modal-save]").click();
+  ok(DY8_x().running.plan==="Winter-Transferfenster abschließen" && q8b_x(".diary-run-plan").textContent.includes("Winter-Transferfenster"), "Vorhaben steht in der laufenden Session");
+  w.eval("diary.running.start = Date.now() - 50 * 60000; saveDiary(); renderHub()");
+  q8b_x('[data-d="stop"]').click();
+  ok(d.querySelector('#modal [data-f="planDone"]').checked && d.querySelector('#modal [data-f="title"]').value==="Winter-Transferfenster abschließen", "Beenden: 'Vorhaben geschafft?' angehakt, als Titel vorgeschlagen");
+  // images
+  const PNG_x = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+  ok(w.eval(`dModalAddImage("${PNG_x}")`) && w.eval(`dModalAddImage("${PNG_x}")`) && d.querySelectorAll("#dImgs .d-thumb img").length===2, "Bilder im Dialog: Vorschau mit ✕");
+  d.querySelector("[data-modal-save]").click();
+  const s1_x = DY8_x().sessions[0];
+  ok(s1_x.plan && s1_x.planDone && s1_x.images.length===2 && s1_x.images.every(id=>w.localStorage.getItem("fm27_img_" + id)===PNG_x) && !JSON.stringify(DY8_x()).includes("base64"), "Gespeichert: Vorhaben geschafft, 2 Bilder als eigene Einträge (Tagebuch bleibt klein)");
+  ok(q8b_x(".diary-plan.ok").textContent.includes("geschafft") && q8b_x(".diary-thumbs").querySelectorAll(".diary-thumb").length===2, "Zeitleiste: 🎯 geschafft + 2 Vorschaubilder");
+  q8b_x(`[data-d-img="${s1_x.id}:0"]`).click();
+  ok(d.querySelector("#dLbImg").getAttribute("src")===PNG_x && d.querySelector("#dLbCount").textContent==="1 / 2", "Klick aufs Bild: große Ansicht 1 / 2");
+  d.querySelector('#modal [data-lb="next"]').click(); ok(d.querySelector("#dLbCount").textContent==="2 / 2", "Weiterblättern 2 / 2"); w.eval("closeModal()");
+  ok(w.eval("storageEntries()").find(e=>e.key==="fm27_img_" + s1_x.images[0]).label==="Tagebuch-Bild", "Speicher-Hausmeister kennt Tagebuch-Bilder");
+  q8b_x(`[data-d-session="${s1_x.id}"]`).click();
+  d.querySelector('#modal [data-d-imgdel="0"]').click(); d.querySelector("[data-modal-save]").click();
+  const removed_x = s1_x.images[0];
+  ok(DY8_x().sessions[0].images.length===1 && w.localStorage.getItem("fm27_img_" + removed_x)!==null, "Bild entfernt – Datei bleibt bis zum nächsten Start (Rückgängig möglich)");
+  for(let i=0;i<6;i++) w.eval(`(()=>{ dPending = dPending || []; })()`);
+  q8b_x(`[data-d-session="${s1_x.id}"]`).click();
+  let added_x = 0; for(let i=0;i<8;i++) if(w.eval(`dModalAddImage("${PNG_x}")`)) added_x++;
+  ok(added_x===5 && d.querySelector("#toastMsg").textContent.includes("Höchstens 6"), "Höchstens 6 Bilder pro Session"); w.eval("closeModal()");
+  const dumpB_x = {}; for(let i=0;i<w.localStorage.length;i++){ const k = w.localStorage.key(i); dumpB_x[k] = w.localStorage.getItem(k); }
+  ({w,d,errs,S} = await boot(Object.assign(ls=>Object.entries(dumpB_x).forEach(([k,v])=>ls.setItem(k,v)), {hub:true})));
+  ok(w.localStorage.getItem("fm27_img_" + removed_x)===null && JSON.parse(w.localStorage.getItem("fm27_diary")).sessions[0].images.every(id=>w.localStorage.getItem("fm27_img_" + id)), "Beim nächsten Start: nicht mehr benutzte Bilder aufgeräumt, die anderen bleiben");
+  // won challenge: reopen / delete
+  w.eval(`diary.challenges.push({id:"cw", title:"Meister werden", kind:"count", target:3, current:3, status:"done", createdAt:Date.now()-1e5, doneAt:Date.now()}); saveDiary(); showHub("diary")`);
+  ok(q8b_x(".diary-entry.win [data-d-reopen]") && q8b_x(".diary-entry.win [data-d-delch]"), "Geschaffte Challenge in der Zeitleiste: ↺ und ✕");
+  q8b_x('.diary-entry.win [data-d-reopen="cw"]').click();
+  const cw_x = () => JSON.parse(w.localStorage.getItem("fm27_diary")).challenges.find(c=>c.id==="cw");
+  ok(cw_x().status==="active" && cw_x().current===2 && !q8b_x(".diary-entry.win"), "↺ wieder aktiv (Zähler 2 / 3, nicht sofort wieder 'geschafft')");
+  d.querySelector("#toastUndoBtn").click(); ok(cw_x().status==="done", "… rückgängig");
+  q8b_x('.diary-entry.win [data-d-delch="cw"]').click();
+  ok(!cw_x() && !q8b_x(".diary-entry.win"), "✕ löscht die Challenge"); d.querySelector("#toastUndoBtn").click(); ok(cw_x() && cw_x().status==="done", "… rückgängig");
+  // filter
+  w.eval(`diary.sessions.push({id:"fx", start:Date.now()-7200e3, minutes:30, slotId:"", game:"EA SPORTS FC 26", title:"FC-Abend", mood:"good", images:[]}); diary.games.push("EA SPORTS FC 26"); saveDiary(); renderHub()`);
+  const fsel_x = q8b_x("[data-d-filter]"); ok(fsel_x && fsel_x.options.length===3, "Filter: Alle + 2 Spielstände/Spiele");
+  fsel_x.value = "game:EA SPORTS FC 26"; fsel_x.dispatchEvent(new w.Event("change",{bubbles:true}));
+  ok(d.querySelectorAll("#hubRoot .diary-entry[data-d-session]").length===1 && q8b_x(".diary-timeline").textContent.includes("FC-Abend") && !q8b_x(".diary-entry.win"), "Gefiltert: nur EA SPORTS FC 26");
+  const ent_x = q8b_x('[data-d-session="fx"]'); ent_x.focus(); ent_x.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Enter", bubbles:true}));
+  ok(d.querySelector("#modal h3").textContent==="Session bearbeiten", "Einträge auch per Tastatur (Enter) öffnen"); w.eval("closeModal()");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[69] Version 11.8.1: Dialoge erben keine Listener vorheriger Dialoge");
+  ({w,d,errs,S} = await boot());
+  w.eval("navigate('tactics'); openAiPromptModal()"); w.eval("closeModal()");
+  w.eval("showHub('diary')"); d.querySelector('#hubRoot [data-d="addSession"]').click();
+  const tL = d.querySelector('#modal [data-f="title"]'); tL.value = "x"; tL.dispatchEvent(new w.Event("input", {bubbles:true}));
+  ok(errs.length===0, "Nach dem KI-Prompt-Dialog: Tippen in einem anderen Dialog löst keinen Fehler mehr aus (seit 11.5)");
+  w.eval("closeModal()");
+  for(let i=0;i<3;i++){ d.querySelector('#hubRoot [data-d="addSession"]').click(); w.eval("closeModal()"); }
+  d.querySelector('#hubRoot [data-d="addSession"]').click();
+  const PNGL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+  w.eval(`dModalAddImage("${PNGL}"); dModalAddImage("${PNGL}"); dModalAddImage("${PNGL}")`);
+  d.querySelector('#modal [data-d-imgdel="0"]').click();
+  ok(d.querySelectorAll("#dImgs .d-thumb img").length===2, "Nach mehreren geöffneten Dialogen entfernt ✕ genau EIN Bild");
+  ok(d.querySelectorAll("#modal").length===1 && d.querySelector("#modal").getAttribute("role")===d.querySelector("#modal").getAttribute("role"), "Genau ein Dialog-Container, Eigenschaften erhalten");
+  w.eval("closeModal()");
+  ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");
@@ -3217,4 +3291,4 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   console.log(failures ? `\n${failures} FEHLER` : "\nALLE TESTS BESTANDEN");
   process.exitCode = failures ? 1 : 0;            // GitHub Actions: red ✗ on any failed check
   setTimeout(()=>process.exit(), 50);              // open test windows keep timers (e.g. the hub clock) alive – end explicitly
-})().catch(err=>{ console.error("\nABBRUCH:", err && err.stack || err); process.exitCode = 1; });
+})().catch(err=>{ console.error("\nABBRUCH:", err && err.stack || err); process.exitCode = 1; setTimeout(()=>process.exit(1), 50); });   // never linger after an abort (timers keep the process alive)

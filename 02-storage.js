@@ -45,7 +45,7 @@ const store = {
     let idb = null;
     try{ idb = (typeof indexedDB !== "undefined") ? indexedDB : null; }catch(e){ idb = null; }
     if(!idb) return null;
-    const lsKeys = () => { const out = []; for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k && k.startsWith("fm27") && k !== BACKEND_KEY && k !== "fm27_theme_hint") out.push(k); } return out; };
+    const lsKeys = () => { const out = []; for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if(k && k.startsWith("fm27") && k !== BACKEND_KEY && k !== "fm27_theme_hint" && k !== "fm27_start_hint") out.push(k); } return out; };
     const reqP = r => new Promise((res, rej)=>{ r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
     const txP = tx => new Promise((res, rej)=>{ tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error); });
     const readAll = async db => { const tx = db.transaction(STORE_OS, "readonly"), os = tx.objectStore(STORE_OS);
