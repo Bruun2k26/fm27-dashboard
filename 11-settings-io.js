@@ -249,10 +249,10 @@ function buildCommands(){
   if(linkedPartnerId()) add("Aktion","Zum verknüpften Spielstand wechseln","", switchLinked);
   add("Aktion","Spielstand wechseln","", ()=>openSaveMenu());
   add("Modul","Gaming-Hub","", ()=>showHub("home"));
-  add("Modul","Spiel-Tagebuch (Beta)","", ()=>showHub("diary"));
-  add("Modul","Karriere-Begleiter (Beta)","", ()=>showHub("career"));
+  add("Modul","Spiel-Tagebuch","", ()=>showHub("diary"));
+  add("Modul","Karriere-Begleiter","", ()=>showHub("career"));
   add("Aktion", diary && diary.running ? "Session beenden" : "Session starten", "", ()=>runHotkey("session"));
-  add("Aktion","KI-Prompt kopieren (Taktik, Beta)","", ()=>{ navigate("tactics"); openAiPromptModal(); });
+  add("Aktion","KI-Prompt kopieren (Taktik)","", ()=>{ navigate("tactics"); openAiPromptModal(); });
   add("Aktion","Tastenkürzel anpassen","", ()=>openHotkeyModal());
   add("Modul","Transfer-Center","", ()=>{ state.ui.transferTab = "center"; navigate("recruitment"); renderRecruitment(); });
   add("Modul","Deadline Day (Transfer-Center)","", ()=>{ state.ui.transferTab = "center"; navigate("recruitment"); renderRecruitment(); });

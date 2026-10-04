@@ -154,6 +154,18 @@ const ROLE_WORDS = [
   ["prospect", ["perspektive","perspektivspieler","hotprospect","youngster","talent","nachwuchs","prospect","nachwuchsspieler"]],
   ["sell", ["abgabe","notneeded","nichtbenotigt","sell","transferliste","verkaufen"]]
 ];
+/** 13.1: FM shows strength/potential as stars (★★★½), decimals (2,5), percent or CA/PA (0–200) – all to 1–5 stars */
+function parseStarsCell(t){
+  const s = String(t || "").trim(); if(!s) return undefined;
+  const glyphs = (s.match(/★/g) || []).length; if(glyphs) return clamp(Math.round(glyphs + (/[½⯪]/.test(s) ? 0.5 : 0)), 1, 5);
+  const m = /(\d+(?:[.,]\d+)?)\s*(%)?/.exec(s); if(!m) return undefined;
+  const v = parseFloat(m[1].replace(",", "."));
+  if(m[2]) return clamp(Math.round(v / 20), 1, 5);                  // percent
+  if(v <= 5) return clamp(Math.round(v), 1, 5);                      // already stars (2,5 → 3)
+  if(v <= 10) return clamp(Math.round(v / 2), 1, 5);                 // 1–10 scale
+  if(v <= 20) return clamp(Math.round(v / 4), 1, 5);                 // 1–20 attribute scale
+  return clamp(Math.round(v / 40), 1, 5);                            // CA/PA 0–200
+}
 function parseRoleCell(t){ const k = normKey(t); const hit = ROLE_WORDS.find(([,ws])=>ws.some(w=>k === w || k.startsWith(w))); return hit ? hit[0] : null; }
 function parseStatusCell(t){
   const k = normKey(t);
@@ -192,8 +204,8 @@ function buildImportRecords(rows, mapping, wageUnit){
     const ct = get("contractUntil");
     if(ct !== undefined){ const d = parseDateCell(ct); if(d) rec.contractUntil = d.year; }
     const role = get("squadRole"); if(role !== undefined){ const r = parseRoleCell(role); if(r) rec.squadRole = r; }
-    const rt = get("rating"); if(rt !== undefined && /\d/.test(rt)) rec.rating = clamp(parseInt(rt,10), 1, 5);
-    const pt = get("potential"); if(pt !== undefined && /\d/.test(pt)) rec.potential = clamp(parseInt(pt,10), 1, 5);   // 13.0
+    const rt = parseStarsCell(get("rating")); if(rt !== undefined) rec.rating = rt;
+    const pt = parseStarsCell(get("potential")); if(pt !== undefined) rec.potential = pt;   // 13.1: CA/PA, %, decimals, ★ → 1–5
     const st = get("status"); if(st !== undefined){ const x = parseStatusCell(st); if(x !== null) rec.status = x; }
     const nt = get("note"); if(nt !== undefined) rec.note = nt;
     const hc = get("homeClub"); if(hc !== undefined && hc.trim()) rec.homeClub = hc.trim().slice(0,60);

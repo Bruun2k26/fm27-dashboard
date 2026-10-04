@@ -113,7 +113,7 @@ function renderCareer(root){
   const gCount = k => s.goals.filter(g=>g.status === k).length;
   root.innerHTML = `<main class="hub-main hub2 career-page" style="--hero-accent:${esc(c.accent)}">
     <header class="hub2-head"><div><button class="btn btn-sm" data-cr="back" title="Zur Übersicht (Esc)">← Karrieren</button>
-      <div class="cr-title">${crCrest(c, "xl")}<div><h1>${esc(c.name)} <span class="beta-pill">Beta</span></h1><p class="muted">${esc([c.game, c.team, crSeasonName(s.label)].filter(Boolean).join(" · "))}</p></div></div></div>
+      <div class="cr-title">${crCrest(c, "xl")}<div><h1>${esc(c.name)}</h1><p class="muted">${esc([c.game, c.team, crSeasonName(s.label)].filter(Boolean).join(" · "))}</p></div></div></div>
       <div class="diary-actions"><button class="btn btn-accent" data-cr="session">▶ Session starten</button><button class="btn" data-cr="edit">Bearbeiten</button></div></header>
     <div class="seg cr-tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${crView.tab === k}" class="${crView.tab === k ? "active" : ""}" data-cr-tab="${k}">${l}</button>`).join("")}</div>
     <div class="diary-grid">
@@ -144,7 +144,7 @@ function renderCareer(root){
 function renderCareerList(root){
   root.innerHTML = `<main class="hub-main hub2 career-page">
     <header class="hub2-head"><div><button class="btn btn-sm" data-hub="home" title="Zurück zum Hub (Esc)">← Hub</button>
-      <h1>🏆 Karriere-Begleiter <span class="beta-pill">Beta</span></h1><p class="muted">Für Karrieren in anderen Spielen – Liste, Saisonziele und Verlauf. Dein FM-Spielstand bleibt im FM27 Dashboard.</p></div>
+      <h1>🏆 Karriere-Begleiter</h1><p class="muted">Für Karrieren in anderen Spielen – Liste, Saisonziele und Verlauf. Dein FM-Spielstand bleibt im FM27 Dashboard.</p></div>
       <div class="diary-actions"><button class="btn btn-accent" data-cr="new">+ Neue Karriere</button></div></header>
     ${career.careers.length ? `<div class="cr-grid">${career.careers.slice().sort((a,b)=>b.updatedAt - a.updatedAt).map(c=>{ const s = crCurSeason(c), done = s.goals.filter(g=>g.status === "done").length;
       return `<article class="hub2-card hub2-click cr-card" data-cr-open="${c.id}" role="button" tabindex="0" style="--hero-accent:${esc(c.accent)}" aria-label="${esc(c.name)} öffnen">

@@ -2976,7 +2976,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   console.log("\n[62] Version 11.5: KI-Prompt (Beta) & Phasenwechsel");
   ({w,d,errs,S} = await boot());
   w.eval("navigate('tactics')");
-  ok(d.querySelector("#btnAiPrompt .beta-pill"), "Taktik: Knopf '🤖 KI-Prompt' mit Beta-Kennzeichen");
+  ok(d.querySelector("#btnAiPrompt") && !d.querySelector("#btnAiPrompt .beta-pill"), "Taktik: Knopf '🤖 KI-Prompt' – seit 13.1 ohne Beta-Kennzeichen");
   d.querySelector("#btnAiPrompt").click();
   const prev6 = () => d.querySelector("#aiPreview").value;
   ok(d.querySelector("#modal h3").textContent==="KI-Prompt kopieren" && d.querySelector("#modal").textContent.includes("nichts automatisch gesendet") && d.querySelector("#aiCopyBtn"), "Dialog mit Vorschau und 'Prompt kopieren'");
@@ -3012,7 +3012,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval(`createSlot("Napoli", freshState("sample")); createSlot("Alt", freshState("empty")); renderHub()`);
   const H7 = sel => d.querySelector("#hubRoot " + sel);
   ok(H7("h1").textContent.endsWith("!") && /^\d\d:\d\d$/.test(H7("#hubClockTime").textContent) && H7("#hubClockDate").textContent.includes(String(new Date().getFullYear())), "Begrüßung, Uhrzeit und echtes Datum");
-  ok(H7(".hub2-brand .beta-pill"), "Startseite als Beta gekennzeichnet");
+  ok(H7(".hub2-brand") && !H7(".hub2-brand .beta-pill"), "Startseite – seit 13.1 nicht mehr Beta");
   const hero7 = H7(".hub2-hero"), st7 = S();
   ok(hero7.textContent.includes("Zuletzt gespielt") && hero7.textContent.includes(st7.club.name) && hero7.textContent.includes(st7.club.season) && hero7.querySelector(".sm-crest.xl"), "Weiterspielen-Karte: Wappen, Verein, Saison");
   const stats7 = [...hero7.querySelectorAll(".hub2-stats > div")].map(x=>x.textContent);
@@ -3337,7 +3337,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   console.log("\n[71] Version 11.9: Karriere-Begleiter (Beta)");
   ({w,d,errs,S} = await boot(Object.assign(ls=>{}, {hub:true})));
   const CR_K = () => JSON.parse(w.localStorage.getItem("fm27_career") || "null"), qC_K = sel => d.querySelector("#hubRoot " + sel);
-  ok(qC_K('[data-hub-open="career"] .beta-pill') && qC_K('[data-hub-open="career"]').textContent.includes("Noch keine Karriere"), "Hub: Karriere-Begleiter aktiv (Beta)");
+  ok(!qC_K('[data-hub-open="career"] .beta-pill') && qC_K('[data-hub-open="career"]').textContent.includes("Noch keine Karriere"), "Hub: Karriere-Begleiter aktiv (seit 13.1 stabil)");
   qC_K('[data-hub-open="career"] p').click();
   ok(qC_K(".career-page .diary-empty") && qC_K('[data-cr="new"]'), "Leere Übersicht mit '+ Neue Karriere'");
   qC_K('[data-cr="new"]').click();
@@ -3880,6 +3880,64 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     card.dispatchEvent(new w.MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:20, clientY:20}));
     ok(d.querySelector(".cm") && d.querySelectorAll(".cm .cm-it").length===card.querySelectorAll("[data-tc]").length, "Pipeline-Karte: Kontextmenü mit genau den Knöpfen der Karte ("+card.querySelectorAll("[data-tc]").length+")");
     w.eval("cmClose()");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[87] Nexus v13.1: Talentprofil, Kontextmenü für Talente und Leihen, Sterne aus FM-Werten");
+  { ({w,d,errs,S} = await boot());
+    const PS = v => w.eval(`parseStarsCell(${JSON.stringify(v)})`);
+    ok(PS("120")===3 && PS("160")===4 && PS("200")===5 && PS("45")===1, "CA/PA (0–200) → Sterne: 120→3, 160→4, 200→5, 45→1");
+    ok(PS("2,5")===3 && PS("4.5")===5 && PS("3")===3 && PS("★★★½")===4 && PS("★★")===2, "Kommazahlen und ★-Zeichen");
+    ok(PS("75%")===4 && PS("15")===4 && PS("8")===4 && PS("")===undefined && PS("–")===undefined, "Prozent, 1–20, 1–10, leer/Strich ignoriert");
+    w.eval("state.ui.devTab = 'prospects'; navigate('development'); renderDevelopment()");
+    const row = () => d.querySelector("#prospectTbody tr[data-id]"), pid = row().dataset.id, P = () => w.eval(`state.prospects.find(x=>x.id===${JSON.stringify(pid)})`);
+    row().querySelector(".player-link").click();
+    ok(d.querySelector("#modal h3").textContent==="Talentprofil" && d.querySelectorAll("#modal .pp-kpis > div").length===5, "Klick auf den Namen: Talentprofil mit 5 Kennzahlen");
+    const pw = d.querySelector('#modal [data-f="pathway"]'); pw.value = "u23"; pw.dispatchEvent(new w.Event("change", {bubbles:true}));
+    ok(d.querySelector("#modal .pp-head").textContent.includes("U23") && P().pathway!=="u23", "Live: Weg im Kopf, gespeichert erst mit Speichern");
+    d.querySelector('#modal [data-f="potential"]').value = "4"; d.querySelector("#ppLogNew").value = "Sichtung **gut**"; d.querySelector("#ppLogAdd").click();
+    ok(P().noteLog.length===1 && d.querySelector("#ppLog strong").textContent==="gut", "Notiz-Verlauf: datierter, formatierter Eintrag");
+    d.querySelector("[data-modal-save]").click();
+    ok(P().pathway==="u23" && P().potential===4, "Speichern übernimmt die Änderungen");
+    d.querySelector("#toastUndoBtn").click(); ok(P().pathway!=="u23", "… rückgängig");
+    // context menu
+    const ctx = el => el.dispatchEvent(new w.MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:30, clientY:30}));
+    ctx(row().querySelector(".player-link"));
+    ok(d.querySelector(".cm") && [...d.querySelectorAll(".cm .cm-bar button")].map(b=>b.getAttribute("aria-label")).join()==="Profil,Kader,Verleihen,Notiz,Entfernen", "Rechtsklick auf ein Talent: Profil, Kader, Verleihen, Notiz, Entfernen");
+    d.querySelector('.cm .chs.status [data-k="loan"]').click(); ok(P().pathway==="loan", "Weg-Chip 'Leihe geplant'");
+    ctx(row().querySelector(".player-link")); const np = w.eval("POS_LIST").find(x=>x!==P().pos); d.querySelector(`.cm .chs.pos [data-k="${np}"]`).click();
+    ok(P().pos===np, "Position per Einfachklick ("+np+")");
+    ctx(row().querySelector(".player-link")); d.querySelectorAll(".cm .cm-stars")[0].querySelector('[data-s="3"]').click(); ok(P().current===3, "Sterne 'Aktuell' im Menü");
+    const name = P().name, pot = P().potential, nLog = P().noteLog.length;
+    ctx(row().querySelector(".player-link")); d.querySelector('.cm .cm-bar button[aria-label="Kader"]').click();
+    const promoted = w.eval(`state.players.find(x=>x.name===${JSON.stringify(name)})`);
+    ok(promoted && promoted.potential===pot && promoted.noteLog.length===nLog && !w.eval(`state.prospects.some(x=>x.id===${JSON.stringify(pid)})`), "'Kader': befördert, Potenzial und Notiz-Verlauf ziehen mit");
+    // loans
+    w.eval("state.ui.devTab = 'loans'; renderDevelopment()");
+    const lr = d.querySelector("#loanTbody tr[data-id]");
+    if(lr){ ctx(lr.querySelector("td")); ok(d.querySelector(".cm") && [...d.querySelectorAll(".cm .cm-it")].some(x=>x.textContent.includes("Zurück in den Kader holen")), "Rechtsklick auf eine Leihe: eigenes Menü"); w.eval("cmClose()"); }
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[88] Nexus v13.1: Performance & Raus aus Beta");
+  { ({w,d,errs,S} = await boot());
+    let renders = 0; const orig = w.renderSquad; w.eval("window.__rs = 0; const __o = renderSquad; renderSquad = function(){ window.__rs++; return __o.apply(this, arguments); }");
+    w.eval("navigate('squad'); navigate('home')"); const r0 = w.eval("window.__rs");
+    w.eval("navigate('squad'); navigate('home')");
+    ok(w.eval("window.__rs")===r0, "Kader unverändert → beim erneuten Öffnen nicht neu gezeichnet");
+    w.eval("state.players[0].note = 'ungespeichert'; navigate('squad')");
+    ok(w.eval("window.__rs")===r0 + 1 && d.querySelector(`#squadTbody tr[data-id="${S().players[0].id}"] [data-field="note"]`).value==="ungespeichert", "Auch eine ungespeicherte Änderung wird erkannt und gezeichnet");
+    w.eval("navigate('home')"); const fid = S().players[2].id; w.eval(`squadFocusId = ${JSON.stringify(fid)}; navigate('squad')`);
+    ok(d.querySelector(`#squadTbody tr[data-id="${fid}"]`).classList.contains("row-focus"), "Sprung zu einem Spieler markiert seine Zeile (Fokus gehört zum Fingerabdruck)");
+    w.eval("navigate('tactics')"); const before = w.eval("window.__rs");
+    const slEl = d.querySelector('#pitch .pitch-slot[data-pid]:not([data-pid=""])');
+    slEl.dispatchEvent(new w.MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:20, clientY:20}));
+    d.querySelectorAll(".cm .cm-stars")[0].querySelector('[data-s="2"]').click();
+    ok(w.eval("window.__rs")===before, "Kontextmenü-Aktion auf dem Spielfeld zeichnet den (unsichtbaren) Kader nicht neu");
+    w.eval("navigate('squad')"); ok(w.eval("window.__rs")===before + 1, "… erst beim Öffnen des Kaders");
+    ok(/content-visibility:hidden/.test(require("fs").readFileSync(DIR+"style.css","utf8")), "Versteckte Ansichten behalten ihr Layout (content-visibility)");
+    // beta exit
+    const appJs = require("fs").readdirSync(DIR+"js").map(f=>require("fs").readFileSync(DIR+"js/"+f,"utf8")).join("\n") + require("fs").readFileSync(DIR+"index.html","utf8");
+    ok(!/(?<!\? ')<span class="beta-pill">(Beta|BETA)<\/span>/.test(appJs), "Keine Beta-Kennzeichen mehr in der App (Changelog-Historie bleibt)");
+    ok(w.eval("CHANGELOG[0].v")==="13.1" && !w.eval("CHANGELOG[0].beta") && w.eval("CHANGELOG.some(c=>c.beta)"), "13.1 ist kein Beta-Release, ältere Einträge zeigen ihre Beta-Geschichte");
     ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

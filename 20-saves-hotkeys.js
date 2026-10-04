@@ -143,10 +143,10 @@ const HOTKEY_ACTIONS = () => [
   ["admin","Admin-Bereich öffnen","","Ansicht"],
   ["export","Spielstand exportieren","","Ansicht"],
   ["hub","Gaming-Hub öffnen","h","Allgemein"],
-  ["aiPrompt","KI-Prompt kopieren (Beta)","","Spieltag"],
-  ["diary","Spiel-Tagebuch öffnen (Beta)","","Allgemein"],
-  ["career","Karriere-Begleiter öffnen (Beta)","","Allgemein"],
-  ["session","Session starten / beenden (Beta)","","Allgemein"],
+  ["aiPrompt","KI-Prompt kopieren","","Spieltag"],
+  ["diary","Spiel-Tagebuch öffnen","","Allgemein"],
+  ["career","Karriere-Begleiter öffnen","","Allgemein"],
+  ["session","Session starten / beenden","","Allgemein"],
   ...VIEWS.map((v,i)=>["view:" + v, `Modul: ${VIEW_LABEL[v]}`, String(i+1), "Module"])
 ];
 const HK_RESERVED = new Set(["escape","enter","tab","arrowup","arrowdown","arrowleft","arrowright","backspace","delete"," ","shift","control","alt","meta","altgraph","capslock","contextmenu"]);

@@ -65,7 +65,7 @@ function renderAdmin(){
       <div class="adm2">
         <nav class="adm2-nav" id="adminTabs" role="tablist" aria-label="Admin-Bereiche">
           <div class="adm2-title">🛡 Admin</div>
-          ${ADMIN_GROUPS.map(g=>`<div class="adm2-group ${g.save ? "save" : ""}">${esc(g.save ? `Spielstand · ${(activeSlotMeta() || {}).name || state.club.name}` : g.label)}</div>${g.tabs.map(k=>`<button role="tab" data-atab="${k}" class="${k===adminTab?"active":""}"><span class="adm2-ico" aria-hidden="true">${ADMIN_ICONS[k] || "•"}</span>${esc(ADMIN_TABS[k])}${k === "labs" ? ' <span class="beta-pill">Beta</span>' : ""}</button>`).join("")}`).join("")}
+          ${ADMIN_GROUPS.map(g=>`<div class="adm2-group ${g.save ? "save" : ""}">${esc(g.save ? `Spielstand · ${(activeSlotMeta() || {}).name || state.club.name}` : g.label)}</div>${g.tabs.map(k=>`<button role="tab" data-atab="${k}" class="${k===adminTab?"active":""}"><span class="adm2-ico" aria-hidden="true">${ADMIN_ICONS[k] || "•"}</span>${esc(ADMIN_TABS[k])}${k === "labs" ? ' ' : ""}</button>`).join("")}`).join("")}
         </nav>
         <section class="adm2-main">
           <div class="adm2-head"><div><h2>${ADMIN_ICONS[adminTab] || ""} ${esc(ADMIN_TABS[adminTab])}</h2><div class="muted small">${sub}</div></div>

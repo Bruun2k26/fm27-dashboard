@@ -113,10 +113,16 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "13.0";
+const APP_VERSION = "13.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"13.1", title:"Nexus v13.1 – Schneller & stabil", items:[
+    ["neu","Entwicklung → Talente: Talentprofil per Klick auf den Namen (Kennzahlen, alle Daten mit Live-Aktualisierung, Notiz-Verlauf, In den Kader / Verleihen / Löschen) und Kontextmenü mit Weg und Position als Chips, Aktuell und Potenzial als Sterne. Auch Leihen haben ein Kontextmenü."],
+    ["besser","Raus aus Beta: Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter, Medien und KI-Prompt sind stabil."],
+    ["besser","Schneller: Seitenwechsel bei großen Spielständen etwa zehnmal flotter (unveränderte Seiten werden nicht neu gezeichnet und behalten ihr Layout), Kontextmenü-Aktionen etwa sechsmal."],
+    ["besser","FM-Import rechnet Stärke und Potenzial um – CA/PA (0–200), Kommazahlen, Prozent und ★-Zeichen werden zu 1–5 Sternen (bisher wurde z. B. 120 einfach zu 5 ★)."],
+    ["besser","Beim Befördern in den Kader ziehen Potenzial und Notiz-Verlauf mit."]]},
   {v:"13.0", beta:true, title:"Nexus v13.0 – Kontextmenü & Transfers", items:[
     ["neu","Kontextmenü für die ganze App – Rechtsklick (oder lange drücken, Menü-Taste, Shift+F10) auf Spieler im Spielfeld, auf der Bank, im Kader, in der Startelf, auf freie Positionen, aufs Spielfeld und auf Transfer-Karten. Status und Positionen als Chips (Klick = Nebenposition, Doppelklick = Hauptposition), Stärke und Potenzial als Sterne, Rollen mit Kurzbeschreibung, Tauschen, Bank, Verkaufsliste, Verleihen, Löschen – alles rückgängig machbar."],
     ["neu","Hub → Einstellungen: Stil des Kontextmenüs – „Schnellleiste“ (Symbolknöpfe + Chips) oder „Klassisch“ (Untermenüs). Shift + Rechtsklick und Textfelder behalten das Browser-Menü."],
@@ -172,7 +178,7 @@ const CHANGELOG = [
     ["neu","Video-Links: YouTube und Twitch-Clips eingebettet, direkte Videodateien (.mp4, .webm) im eigenen Player."]]},
   {v:"11.9.1", title:"Tippen im Hub repariert", items:[
     ["fix","In Textfeldern im Hub (Admin-Zentrale, Karriere-Begleiter) öffnete ein „s“ das Spielstand-Menü – und andere Ein-Tasten-Kürzel lösten ebenfalls aus. Jetzt gilt wie im Dashboard: beim Tippen keine Kürzel, nur Strg + K (Befehlspalette) funktioniert überall."]]},
-  {v:"11.9", beta:true, title:"Karriere-Begleiter (Beta)", items:[
+  {v:"11.9", beta:true, title:"Karriere-Begleiter", items:[
     ["neu","Hub → Karriere-Begleiter: Karrieren aus anderen Spielen (EA FC, F1 Manager …) mit eigenem Wappen, Spiel, Team und Saison."],
     ["neu","Liste mit frei wählbaren Spalten (Vorlagen für Fußball und Motorsport), direkt bearbeitbar und sortierbar; Saisonziele mit Status; Saisonverlauf mit Platz, Bilanz und Titeln – „Saison abschließen“ nimmt die Liste mit."],
     ["neu","Verknüpft mit dem Spiel-Tagebuch: Sessions und Challenges lassen sich einer Karriere zuordnen, die Karriere zeigt ihre letzten Sessions und startet eigene."],
@@ -186,7 +192,7 @@ const CHANGELOG = [
     ["neu","Geschaffte Challenges in der Zeitleiste: „↺ wieder aktiv“ (falls versehentlich) und „✕ löschen“ – beides rückgängig machbar."],
     ["neu","Session-Vorhaben: beim Start eintragen, was du vorhast – es steht während der Session oben, beim Beenden fragt das Tagebuch „geschafft?“ und übernimmt es als Titel."],
     ["besser","Zeitleiste filtern nach Spielstand oder Spiel."]]},
-  {v:"11.8", beta:true, title:"Spiel-Tagebuch (Beta)", items:[
+  {v:"11.8", beta:true, title:"Spiel-Tagebuch", items:[
     ["neu","Hub → Spiel-Tagebuch: „▶ Session starten“ – der Timer läuft mit (auch wenn du das Dashboard schließt); beim Beenden hältst du fest, in welchem Spielstand oder Spiel du warst, was passiert ist und wie die Stimmung war. Sessions lassen sich auch nachtragen."],
     ["neu","Challenges: eigene Herausforderungen als einfaches Ziel, mit Zähler (z. B. 12 / 30 Siege) oder mit Teilschritten zum Abhaken – „geschafft“ erscheint mit 🏆 in der Zeitleiste."],
     ["neu","Zeitleiste nach Tagen, „Diese Woche“ mit Spielzeit, Sessions, Verteilung auf Spielstände und 🔥 Serie."],
@@ -196,7 +202,7 @@ const CHANGELOG = [
     ["fix","Im Nationalteam fehlten Umschalter und Kürzel zum Verein, wenn die Verknüpfung nur auf einer Seite gespeichert war (z. B. nach „Rückgängig“ direkt nach der Einrichtung). Die Verknüpfung repariert sich jetzt selbst – auch bei bestehenden Spielständen."],
     ["fix","„Rückgängig“ nach dem Speichern der Nationalteam-Einstellungen setzt die Verknüpfung auf beiden Seiten zurück."],
     ["besser","Neuer Umschalter oben: Wappen und Name des Ziels („Zum Verein · Feyenoord Rotterdam“; auf schmaleren Bildschirmen nur Wappen + ⇄) in dessen Farben, mit deinem Tastenkürzel, falls vergeben."]]},
-  {v:"11.7", beta:true, title:"Admin-Zentrale im Hub (Beta)", items:[
+  {v:"11.7", beta:true, title:"Admin-Zentrale im Hub", items:[
     ["neu","Der Admin-Bereich ist jetzt die Admin-Zentrale im Hub: oben „Allgemein · alle Spielstände“ (Zentrale, Sicherung, Speicher, Tastenkürzel, Fehlerprotokoll, Sicherheit, Changelog), darunter alles zum aktiven Spielstand (Übersicht, Notizen, Protokoll, Wiederherstellungspunkte, Datenprüfung, Wartung & Batch, Rohdaten, Listen, Eigene Felder)."],
     ["neu","Zentrale: Status auf einen Blick, alle Spielstände mit Größe, „zuletzt gespielt“ und letztem Export, dazu Schnellzugriff (Alles exportieren, Datei laden)."],
     ["besser","Was vorher gemischt war, ist getrennt: Ordner-Sicherung und Umzug unter „Sicherung“, Speicherbelegung und Speicher-Altlasten unter „Speicher“, das Fehlerprotokoll als eigener Bereich."],
@@ -206,7 +212,7 @@ const CHANGELOG = [
     ["besser","Im Hub öffnet ein Klick irgendwo auf ein Panel dieses Panel: „Weiterspielen“ das Dashboard, „Spielstände“ die Auswahl, „Admin & Sicherung“ den Admin-Bereich. Knöpfe darin tun weiterhin nur ihre eigene Aufgabe."],
     ["neu","Panel „Neuigkeiten“ mit den letzten drei Versionen – ein Klick öffnet den kompletten Changelog (ohne PIN)."],
     ["besser","„Was ist neu?“ nach einem Update öffnet jetzt direkt den Changelog statt des PIN-geschützten Admin-Bereichs."]]},
-  {v:"11.6", beta:true, title:"Neue Hub-Startseite (Beta)", items:[
+  {v:"11.6", beta:true, title:"Neue Hub-Startseite", items:[
     ["neu","Begrüßung mit Uhrzeit und Datum, darunter die große Karte „Weiterspielen“: aktueller Spielstand mit Wappen, Verein, Saison, Spieldatum und Kennzahlen (Transfer frei, Taktik, nächstes Spiel – im Nationalteam Nominierung und Bilanz). Die Karte nimmt die Farben deines Vereins an."],
     ["neu","Karte „Spielstände“: die letzten vier, sortiert nach „zuletzt gespielt“ – ein Klick wechselt und öffnet; „Alle Spielstände“ öffnet den Schnellwechsler."],
     ["neu","Karte „Admin & Sicherung“: Ordner-Sicherung, letzter Export, Speicher und Fehlerprotokoll auf einen Blick, mit „Admin öffnen“ und „Alles exportieren“."],
@@ -217,7 +223,7 @@ const CHANGELOG = [
     ["besser","Die Spielebibliothek ist wieder entfernt (dafür gibt es Steam). Selbst eingetragene Spiele bleiben gespeichert, bis du sie im Hub als Datei sicherst oder löschst."]]},
   {v:"11.4.1", title:"Lädt immer die passende Version", items:[
     ["fix","Lagen nach mehreren Uploads alte Programmdateien im Ordner „js“ und neue im Hauptverzeichnis, lud das Dashboard die alten – der Hub fehlte. Jetzt trägt jede Version einen Stempel, und das Dashboard nimmt genau die Dateien, die zur aktuellen Version passen."]]},
-  {v:"11.4", beta:true, title:"Gaming-Hub & Spielebibliothek (Beta)", items:[
+  {v:"11.4", beta:true, title:"Gaming-Hub & Spielebibliothek", items:[
     ["neu","Gaming-Hub als Startseite: Kacheln für FM27 Dashboard, Spielebibliothek, Karriere-Begleiter (bald) und Spiel-Tagebuch (geplant). Erreichbar über ◆ Hub in der Seitenleiste oder Taste H; „Beim Start öffnen“ einstellbar."],
     ["neu","Spielebibliothek (Beta): alle Spiele als Regal, Liste oder Board (Karten ziehen), mit Cover, Status, Bewertung, Spielzeit, Tags, Notizen und ▶-Start über Steam."],
     ["neu","„Was spiele ich als Nächstes?“ schlägt aus dem Backlog vor – nach Zeit, Plattform und Stimmung; dazu Statistik (Backlog-Stunden, durchgespielt im Jahr) und Text-Import."],

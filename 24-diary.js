@@ -277,7 +277,7 @@ function renderDiary(root){
   const feed = dJourneyFeed(5), maxMin = Math.max(1, ...wk.by.map(b=>b.min));
   root.innerHTML = `<main class="hub-main hub2 diary-page">
     <header class="hub2-head"><div><button class="btn btn-sm" data-hub="home" title="Zurück zum Hub (Esc)">← Hub</button>
-      <h1>📓 Spiel-Tagebuch <span class="beta-pill">Beta</span></h1><p class="muted">Sessions, Challenges und deine Journey-Geschichten an einem Ort.</p></div>
+      <h1>📓 Spiel-Tagebuch</h1><p class="muted">Sessions, Challenges und deine Journey-Geschichten an einem Ort.</p></div>
       <div class="diary-actions">${run
         ? `<div class="diary-run"><span class="diary-run-dot" aria-hidden="true"></span><div><small>Session läuft · ${esc(dTarget(run).name)}</small><strong id="diaryClock">${dClock(Date.now() - run.start)}</strong>${run.plan ? `<span class="diary-run-plan">🎯 ${esc(run.plan)}</span>` : ""}</div><button class="btn btn-accent" data-d="stop">■ Beenden</button></div>`
         : `<button class="btn btn-accent" data-d="start">▶ Session starten</button>`}

@@ -153,7 +153,7 @@ function renderAdminPage(root){
     parkAdmin();
     root.innerHTML = `<main class="hub-main hub2 hub-admin-page">
       <header class="hub2-head hub-admin-head"><div><button class="btn btn-sm" data-hub="home" title="Zurück zum Hub (Esc)">← Hub</button>
-        <h1>🛡 Admin-Zentrale <span class="beta-pill">Beta</span></h1><p class="muted">Allgemeines gilt für alle Spielstände – darunter alles zum aktiven Spielstand.</p></div></header>
+        <h1>🛡 Admin-Zentrale</h1><p class="muted">Allgemeines gilt für alle Spielstände – darunter alles zum aktiven Spielstand.</p></div></header>
       <div id="hubAdminHost"></div></main>`;
   }
   const ar = qs("#adminRoot"); if(ar && ar.parentElement !== qs("#hubAdminHost")) qs("#hubAdminHost").appendChild(ar);
@@ -188,7 +188,7 @@ function renderHub(){
       <div class="hub3-layout">
         <div class="hub3-main">
       <header class="hub2-head hub3-head">
-        <div><span class="hub2-brand"><img class="nexus-mark" src="nexus.svg" alt="" width="26" height="26"><strong>Nexus</strong><span class="muted">·</span>${esc(hub.name)} <span class="beta-pill">Beta</span></span>
+        <div><span class="hub2-brand"><img class="nexus-mark" src="nexus.svg" alt="" width="26" height="26"><strong>Nexus</strong><span class="muted">·</span>${esc(hub.name)}</span>
           <h1>${hubGreeting()}!</h1><p class="muted">Dein Command Center ist bereit für die nächste Session.</p></div>
         
       </header>
@@ -206,11 +206,11 @@ function renderHub(){
         </section>
             <div class="hub3-mods">
         <article class="hub2-card hub2-mod hub2-click" data-hub-open="career" role="button" tabindex="0" aria-label="Karriere-Begleiter öffnen">
-          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter <span class="beta-pill">Beta</span></h3>
+          <span class="hub2-mod-icon" aria-hidden="true">🏆</span><h3>Karriere-Begleiter</h3>
           <p class="muted">Liste, Saisonziele und Verlauf für Karrieren in anderen Spielen.</p><span class="hub2-mod-meta">${careerTileMeta()}</span>
         </article>
         <article class="hub2-card hub2-mod hub2-click" data-hub-open="diary" role="button" tabindex="0" aria-label="Spiel-Tagebuch öffnen">
-          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch <span class="beta-pill">Beta</span></h3>
+          <span class="hub2-mod-icon" aria-hidden="true">📓</span><h3>Spiel-Tagebuch</h3>
           <p class="muted">Sessions, Challenges und deine Journey-Geschichten.</p><span class="hub2-mod-meta" id="hubDiaryMeta">${diaryTileMeta()}</span>
         </article>
             </div>

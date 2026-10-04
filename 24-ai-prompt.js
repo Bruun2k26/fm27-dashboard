@@ -89,7 +89,7 @@ async function aiCopy(text){
 }
 function openAiPromptModal(){
   openModal({title:"KI-Prompt kopieren", wide:true, body:`
-    <p class="lead" style="margin-top:0">Stellt eine fertige Anfrage aus deinen Daten zusammen – zum Einfügen bei Claude oder einer anderen KI. <strong>Es wird nichts automatisch gesendet.</strong> <span class="beta-pill">Beta</span></p>
+    <p class="lead" style="margin-top:0">Stellt eine fertige Anfrage aus deinen Daten zusammen – zum Einfügen bei Claude oder einer anderen KI. <strong>Es wird nichts automatisch gesendet.</strong></p>
     <div class="field-row"><div class="field"><label>Worum geht's?</label><select data-f="preset">${Object.entries(AI_PRESETS).map(([k,[l]])=>`<option value="${k}">${l}</option>`).join("")}</select></div></div>
     <div class="field"><label>Zusatz oder eigene Frage (optional)</label><textarea data-f="extra" rows="2" placeholder="z. B. Wir kassieren viele Gegentore nach Kontern über die linke Seite."></textarea></div>
     <div class="ai-parts" role="group" aria-label="Was soll in den Prompt?">${Object.entries(AI_PARTS).map(([k,l])=>`<label class="check-label"><input type="checkbox" data-ai-part="${k}" checked> ${l}</label>`).join("")}</div>

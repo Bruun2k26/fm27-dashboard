@@ -7,9 +7,7 @@
 Dein persönliches Command Center für **Football Manager** – und für deine anderen Karrieren und Spielsessions.
 Läuft komplett im Browser, funktioniert offline, braucht kein Konto und keinen Server. **Alle Daten bleiben auf deinem Gerät.**
 
-![Version](https://img.shields.io/badge/Version-13.0-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.443_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
-
-> **Beta-Hinweis:** Gaming-Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt sind noch als **Beta** gekennzeichnet. Das FM27 Dashboard selbst ist stabil.
+![Version](https://img.shields.io/badge/Version-13.1-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.467_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
 
 ---
 
@@ -39,7 +37,7 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 
 ## Funktionen
 
-### 🎮 Gaming-Hub (Beta)
+### 🎮 Gaming-Hub
 - **Startseite** mit Begrüßung, Uhrzeit und einer großen **„Weiterspielen“-Karte** für deinen zuletzt gespielten Spielstand – in den Farben deines Vereins
 - **Spielstände** auf einen Blick, sortiert nach „zuletzt gespielt“, Wechsel mit einem Klick
 - **Admin & Sicherung**: Sicherungsstatus, Speicher und Fehlerprotokoll auf einen Blick
@@ -50,16 +48,16 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 - **Portal** mit frei anordenbaren Widgets: nächstes Spiel, Form & Bilanz (mit Schnell-Form per Klick), Kaderplan, Startelf, Ziele, offene Aufgaben – ein Klick aufs Panel öffnet die passende Seite
 - **Kader** als ruhige Tabelle mit Stärke und Potenzial, verschiebbaren Spalten, eigenen Feldern, Filtern und Import aus FM – ein Klick auf einen Namen öffnet das Spielerprofil
 - **Taktik** mit Plan A/B, Standards und vier Ansichten (**mit Ball, gegen den Ball, kombiniert, beide nebeneinander**) – eigene Formation gegen den Ball, alle 68 FM26-Rollen, ein Board, das Positionen wie in FM erkennt (LIV/RIV, AV/FV, LM/RM …) und passende Rollen aus der Bewegung vorschlägt, sowie Bankplätze für Liga, Pokal und Vorbereitung – die Spieler laufen beim Umschalten sichtbar auf ihre Positionen
-- **🤖 KI-Prompt (Beta)**: stellt aus Kader, Taktik, Ergebnissen und nächstem Gegner eine fertige Anfrage zusammen – kopieren und bei Claude oder einer anderen KI einfügen. Es wird nichts automatisch gesendet.
+- **🤖 KI-Prompt**: stellt aus Kader, Taktik, Ergebnissen und nächstem Gegner eine fertige Anfrage zusammen – kopieren und bei Claude oder einer anderen KI einfügen. Es wird nichts automatisch gesendet.
 - **Spieltag**, Ergebnisse und Gegner-Datenbank
 - **Transfers** mit Transfer-Center, Kaderplanung als Planungsbrett, ausblendbaren Hinweisen, Leihen und Verkaufsliste
 - **Finanzen**, Gehälter, Verträge und Bosman-Warnungen
-- **Entwicklung** und Talente – mit FM-Import und CSV-Export
+- **Entwicklung** und Talente – Talentprofil, Kontextmenü, FM-Import (rechnet CA/PA in Sterne um) und CSV-Export
 - **Journey**: deine Manager-Karriere mit Stationen, Tagebuch, Zielen und eigenen Regeln
 - **Nationalteam-Modus** mit Spielerpool, Nominierung, Lehrgängen und Verknüpfung zum Vereinsspielstand (⇄)
 - **Mehrere Spielstände** mit Schnellwechsler (Taste **S**)
 
-### 📓 Spiel-Tagebuch (Beta)
+### 📓 Spiel-Tagebuch
 - **Sessions** mit Timer, der auch weiterläuft, wenn du das Dashboard schließt
 - **Session-Vorhaben**: beim Start festlegen, beim Beenden abhaken
 - **Bilder** zu jeder Session – auch per **Strg + V** (z. B. Screenshots aus FM)
@@ -67,13 +65,13 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 - **Zeitleiste**, Wochenüberblick und 🔥 Serie
 - Verknüpft mit der **Journey** – und auch für Spiele außerhalb des Dashboards nutzbar
 
-### 🏆 Karriere-Begleiter (Beta)
+### 🏆 Karriere-Begleiter
 - Karrieren aus **anderen Spielen** (z. B. EA FC, F1 Manager) mit eigenem Wappen
 - **Liste mit frei wählbaren Spalten** (Vorlagen für Fußball und Motorsport)
 - **Saisonziele** und **Saisonverlauf**, „Saison abschließen“ nimmt die Liste mit
 - Sessions und Challenges aus dem Tagebuch lassen sich einer Karriere zuordnen
 
-### 🛡 Admin-Zentrale (Beta)
+### 🛡 Admin-Zentrale
 - **Allgemein · alle Spielstände**: Zentrale, Sicherung, Speicher, Tastenkürzel, Fehlerprotokoll, Sicherheit, Changelog
 - **Pro Spielstand**: Übersicht, Notizen, Protokoll, Wiederherstellungspunkte, Datenprüfung, Wartung & Batch, Rohdaten, Listen, Eigene Felder
 - Geschützt per **PIN** mit automatischer Sperre
@@ -166,7 +164,6 @@ Die Testreihe läuft mit [jsdom](https://github.com/jsdom/jsdom) und [fake-index
 
 ## Roadmap
 
-- **Nexus v13.1 – Performance & Raus aus Beta:** schnellerer Start, flüssigere Listen; alle Beta-Bereiche werden stabil
 - **Nexus v13.2 – Deutsch & English:** Englisch als zweite Sprache
 - **Sobald FM27 erscheint:** Import an das neue Exportformat anpassen
 

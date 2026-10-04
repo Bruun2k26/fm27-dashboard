@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "13.0";
+window.FM27_BUILD = "13.1";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -1114,7 +1114,8 @@ function sanitizeState(s){
     pos: POS_LIST.includes(p.pos) ? p.pos : "ZM", age: num(p.age, 17),
     current: clamp(Math.round(num(p.current, 2)), 1, 5), potential: clamp(Math.round(num(p.potential, 3)), 1, 5),
     pathway: PATHWAYS[p.pathway] ? p.pathway : "u19",
-    focus: str(p.focus), readyBy: str(p.readyBy), note: str(p.note)
+    focus: str(p.focus), readyBy: str(p.readyBy), note: str(p.note),
+    noteLog: arr(p.noteLog).filter(e=>e && typeof e.t === "string" && e.t.trim()).map(e=>({id:str(e.id) || uid(), d:/^\d{4}-\d{2}-\d{2}$/.test(e.d) ? e.d : "", t:e.t.slice(0,4000), at:num(e.at, 0)})).slice(0,200)   // 13.1
   }));
 
   s.loans = arr(s.loans).map(l=>({

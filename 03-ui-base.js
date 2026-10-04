@@ -281,6 +281,15 @@ const VIEWS = ["home","squad","tactics","recruitment","finance","development","f
 const VIEW_LABEL = {home:"Portal",squad:"Kader",tactics:"Taktik",recruitment:"Transfers",finance:"Finanzen",development:"Entwicklung",fixtures:"Spieltag",notes:"Notizen",journey:"Journey"};
 let currentView = "home";
 
+/** 13.1: fingerprint of everything a heavy view shows (about 1 ms) – unchanged → no redraw (a 60-player table costs ~120 ms) */
+const VIEW_SIG = {
+  squad: () => JSON.stringify([state.players, state.loans, state.sales, state.mode, state.club, state.lists, state.customFields, state.ui, state.national,
+    typeof colPrefs !== "undefined" ? colPrefs : null, typeof layout !== "undefined" ? layout.theme : "", qs("#squadSearch") && qs("#squadSearch").value,
+    typeof squadFocusId !== "undefined" ? squadFocusId : "", typeof squadSort !== "undefined" ? squadSort : null,          // a jump to a player marks his row
+    typeof squadActiveFilters === "function" ? squadActiveFilters() : [], typeof selectedPlayers !== "undefined" ? [...selectedPlayers] : []]),
+  development: () => JSON.stringify([state.prospects, state.loans, state.ui, state.mode, state.club, state.lists, typeof layout !== "undefined" ? layout.theme : ""])
+};
+let viewSig = {};
 function navigate(view){
   if(view !== "recruitment" && typeof stopDeadlineClock === "function") stopDeadlineClock();
   if(typeof renderDeadlineBar === "function") renderDeadlineBar();       // never show a stale deadline bar
@@ -296,9 +305,10 @@ function navigate(view){
   });
   qsa(".view").forEach(v=>v.classList.toggle("active", v.id === "view-"+view));
   renderDeadlineBar();
-  // every view is drawn fresh when opened – otherwise it may show the state from page load
-  const vr = VIEW_RENDERERS()[view];
-  if(vr) withRenderCache(vr);
+  // every view is drawn fresh when opened – otherwise it may show the state from page load.
+  // 13.1: the heavy views (squad, development) are skipped if exactly what they show is unchanged since the last drawing
+  const vr = VIEW_RENDERERS()[view], sigFn = VIEW_SIG[view], sig = sigFn ? sigFn() : null;
+  if(vr && !(sig && viewSig[view] === sig)){ withRenderCache(vr); if(sig) viewSig[view] = sig; }
   if(view === "admin") renderAdmin();
   qs("#btnAdmin").classList.toggle("active", view === "admin");
   qs("#btnMenu").classList.toggle("active", view === "admin");

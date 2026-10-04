@@ -26,6 +26,7 @@ function initDevelopment(){
     });
   };
   bind("#prospectTbody", "prospects", "Talent", (e, p)=>{
+    if(e.target.closest("[data-prof]")) return openProspectProfile(p);
     if(e.target.closest("[data-promote]")) promoteProspect(p);
     if(e.target.closest("[data-loan]")) loanProspect(p);
   });
@@ -55,7 +56,7 @@ function renderDevelopment(){
 
   qs("#prospectTbody").innerHTML = state.prospects.slice().sort((a,b)=>b.potential-a.potential || a.age-b.age).map(p=>`
     <tr data-id="${p.id}">
-      <td data-label="Name"><input type="text" class="w-name" value="${esc(p.name)}" data-field="name" aria-label="Name"></td>
+      <td data-label="Name"><div class="player-cell"><span class="avatar" data-prof aria-hidden="true">${esc(initials(p.name))}</span><button type="button" class="player-link" data-prof title="Talentprofil öffnen" aria-label="Talentprofil von ${esc(p.name)} öffnen">${esc(p.name)}</button></div></td>
       <td data-label="Pos."><select class="w-pos" data-field="pos" aria-label="Position">${options(POS_LIST, p.pos)}</select></td>
       <td data-label="Alter"><input type="number" class="w-xs" value="${p.age}" data-field="age" aria-label="Alter"></td>
       <td data-label="Aktuell">${starsInput(p.current, 'data-stars="current" aria-label="Aktuelles Niveau"')}</td>
@@ -144,10 +145,69 @@ function openLoanModal(){
     }
   });
 }
+/* ---------- 13.1: prospect profile (like the player profile – live head, note log, actions) ---------- */
+function prospectHeadHTML(p){
+  return `<div class="pp-live"><div class="pp-head">
+      <span class="pp-avatar">${esc(initials(p.name || "?"))}</span>
+      <div class="pp-id"><strong>${esc(p.name || "Unbenannt")}</strong>
+        <span class="pp-meta"><span class="pp-pos">${esc(p.pos)}</span><span>${p.age} Jahre</span><span>${esc(PATHWAYS[p.pathway] || "")}</span></span></div>
+      <span class="badge info">Talent</span>
+    </div>
+    <div class="pp-kpis">
+      <div><span>Aktuell</span>${starsRO(p.current)}</div>
+      <div><span>Potenzial</span>${starsRO(p.potential)}</div>
+      <div><span>Entwicklungsweg</span><strong>${esc(PATHWAYS[p.pathway] || "—")}</strong></div>
+      <div><span>Bereit bis</span><strong>${esc(p.readyBy || "—")}</strong></div>
+      <div><span>Trainingsfokus</span><strong>${esc(p.focus || "—")}</strong></div>
+    </div></div>`;
+}
+function openProspectProfile(p){
+  const stars = sel => options({1:"★",2:"★★",3:"★★★",4:"★★★★",5:"★★★★★"}, sel);
+  openModal({title:"Talentprofil", body:`${prospectHeadHTML(p)}
+    <div class="pp-grid"><section class="pp-sec"><h4>Profil &amp; Entwicklung</h4>
+      <div class="field"><label>Name</label><input data-f="name" value="${esc(p.name)}"></div>
+      <div class="field-row"><div class="field"><label>Position</label><select data-f="pos">${options(POS_LIST, p.pos)}</select></div>
+        <div class="field"><label>Alter</label><input data-f="age" type="number" min="12" max="25" value="${p.age}"></div>
+        <div class="field"><label>Entwicklungsweg</label><select data-f="pathway">${options(PATHWAYS, p.pathway)}</select></div></div>
+      <div class="field-row"><div class="field"><label>Aktuell (1–5)</label><select data-f="current">${stars(p.current)}</select></div>
+        <div class="field"><label>Potenzial (1–5)</label><select data-f="potential">${stars(p.potential)}</select></div>
+        <div class="field"><label>Bereit bis</label><input data-f="readyBy" value="${esc(p.readyBy)}" placeholder="z. B. 2028/29"></div></div>
+      <div class="field"><label>Trainingsfokus</label><input data-f="focus" value="${esc(p.focus)}" placeholder="z. B. Abschluss, Zweikämpfe"></div></section>
+    <section class="pp-sec"><h4>Notizen</h4>
+      <div class="field"><textarea data-f="note" rows="4" aria-label="Notiz" placeholder="Feste Notiz – Pläne, Beobachtungen …">${esc(p.note)}</textarea></div>
+      <h4 style="margin-top:12px">Notiz-Verlauf</h4><div class="pp-log" id="ppLog">${ppNoteLogHTML(p)}</div>
+      <div class="pp-log-add"><textarea id="ppLogNew" rows="2" aria-label="Neuer datierter Eintrag" placeholder="Neuer Eintrag mit Spieldatum … (**fett**, - Aufzählung)"></textarea><button type="button" class="btn btn-sm" id="ppLogAdd">+ Eintrag</button></div></section></div>`,
+    leftButtons:`<button class="btn btn-sm" type="button" data-pp="promote">⬆ In den Kader</button><button class="btn btn-sm" type="button" data-pp="loan">↗ Verleihen</button><button class="btn btn-sm btn-danger-outline" type="button" data-pp="del">Löschen</button>`,
+    onOpen: m=>{ m.classList.add("pp-wide");
+      const g = f => { const el = qs(`[data-f="${f}"]`, m); return el ? readInput(el) : undefined; };
+      const refresh = ()=>{ const tmp = Object.assign({}, p, {name:String(g("name") || "").trim(), pos:g("pos"), age:clamp(num(g("age")), 12, 25), pathway:g("pathway"),
+        current:clamp(num(g("current"), 2), 1, 5), potential:clamp(num(g("potential"), 3), 1, 5), readyBy:String(g("readyBy") || ""), focus:String(g("focus") || "")});
+        const live = qs(".pp-live", m); if(live) live.outerHTML = prospectHeadHTML(tmp); };
+      m.addEventListener("input", e=>{ if(e.target.closest("[data-f]")) refresh(); });
+      m.addEventListener("change", e=>{ if(e.target.closest("[data-f]")) refresh(); });
+      const repaint = ()=>{ qs("#ppLog", m).innerHTML = ppNoteLogHTML(p); };
+      qs("#ppLogAdd", m).onclick = ()=>{ const ta = qs("#ppLogNew", m); if(addPlayerNote(p, ta.value)){ ta.value = ""; saveState(); repaint(); toast("Eintrag gespeichert"); } };
+      qs("#ppLogNew", m).addEventListener("keydown", e=>{ if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); qs("#ppLogAdd", m).click(); } });
+      qs("#ppLog", m).addEventListener("click", e=>{ const d = e.target.closest("[data-pp-logdel]"); if(!d) return;
+        const idx = p.noteLog.findIndex(x=>x.id === d.dataset.ppLogdel), gone = p.noteLog[idx]; if(idx < 0) return;
+        p.noteLog.splice(idx, 1); saveState(); repaint(); toast("Eintrag gelöscht", {onUndo:()=>{ p.noteLog.splice(idx, 0, gone); saveState(); repaint(); }}); });
+      qsa("[data-pp]", m).forEach(b=>b.addEventListener("click", ()=>{ const k = b.dataset.pp; closeModal();
+        if(k === "promote") promoteProspect(p); else if(k === "loan") loanProspect(p);
+        else removeWithUndo("prospects", p.id, `Talent „${p.name}“`, ()=>{ renderDevelopment(); renderHome(); }); }));
+    },
+    saveLabel:"Speichern",
+    onSave: get=>{
+      const before = JSON.stringify(p);
+      Object.assign(p, {name:get("name").trim() || "Talent", pos:get("pos"), age:clamp(num(get("age")), 12, 25), pathway:get("pathway"),
+        current:clamp(num(get("current"), 2), 1, 5), potential:clamp(num(get("potential"), 3), 1, 5), readyBy:get("readyBy").trim(), focus:get("focus").trim(), note:get("note")});
+      saveState(); renderDevelopment(); renderHome();
+      toast("Talentprofil gespeichert", {onUndo:()=>{ Object.assign(p, JSON.parse(before)); saveState(); renderDevelopment(); }});
+    }});
+}
 function promoteProspect(p){
   const undo = snapshotUndo(`${p.name} in den Profikader übernommen`, renderAll);
   state.players.push({id:uid(), name:p.name, pos:p.pos, altPos:[], age:p.age, salary:0, contractUntil:ingameDate().getFullYear()+3,
-    squadRole:"prospect", rating:p.current, status:"", note:[p.focus && "Fokus: "+p.focus, p.note].filter(Boolean).join(" · ")});
+    squadRole:"prospect", rating:p.current, potential:p.potential, status:"", note:[p.focus && "Fokus: "+p.focus, p.note].filter(Boolean).join(" · "), noteLog:(p.noteLog || []).slice()});
   state.prospects = state.prospects.filter(x=>x.id!==p.id);
   saveState(); renderAll(); undo();
 }

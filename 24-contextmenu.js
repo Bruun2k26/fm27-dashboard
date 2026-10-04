@@ -16,16 +16,15 @@ function cmOutside(e){ if(!cmStack.some(m=>m.contains(e.target))) cmClose(false)
 const cmIsOpen = () => cmStack.length > 0;
 /** after an action: save and repaint whatever shows players */
 function cmCommit(msg, undoFn){
-  saveState(); renderSquad(); renderTactics(); renderHome(); renderHeader();
+  saveState(); renderAll();                 // 13.1: only the visible view is redrawn – the others when they are opened
   if(typeof spRefresh === "function") spRefresh();
-  if(typeof renderTransferCenter === "function" && qs("#tr-center") && qs("#tr-center").offsetParent) renderTransferCenter();
   if(msg) toast(msg, undoFn ? {onUndo:undoFn} : undefined);
 }
 /** snapshot-based undo for a player / slot change */
 function cmUndoable(label, fn){
-  const before = JSON.stringify({players:state.players, tactics:state.tactics, bench:state.bench, sales:state.sales});
+  const before = JSON.stringify({players:state.players, tactics:state.tactics, bench:state.bench, sales:state.sales, prospects:state.prospects, loans:state.loans});
   fn();
-  cmCommit(label, ()=>{ const b = JSON.parse(before); state.players = b.players; state.tactics = b.tactics; state.bench = b.bench; state.sales = b.sales; cmCommit("Rückgängig gemacht"); });
+  cmCommit(label, ()=>{ const b = JSON.parse(before); Object.assign(state, b); cmCommit("Rückgängig gemacht"); });
 }
 /* ---------- notes: dated entries (shown formatted in the player profile) ---------- */
 function fmtNoteHTML(t){
@@ -115,6 +114,25 @@ function cmMenuForPlayer(p, ctx){
   return {head:{ini:initials(p.name), name:p.name, sub:inXI ? (ctx.phase === "out" ? cmSlotInfo(slotIdx, "out").bp : cmSlotInfo(slotIdx, "in").bpIn) + (sl && cmSlotInfo(slotIdx,"in").bpIn !== cmSlotInfo(slotIdx,"in").bpOut ? ` → ${cmSlotInfo(slotIdx,"in").bpOut}` : "") : p.pos + (p.altPos.length ? " · " + p.altPos.join(", ") : "")},
     bar: quick ? bar : null, items};
 }
+/** 13.1: youth prospects (Entwicklung → Talente) */
+function cmMenuForProspect(p){
+  const quick = cmStyle() === "quick";
+  const del = ()=>removeWithUndo("prospects", p.id, `Talent „${p.name}“`, ()=>{ renderDevelopment(); renderHome(); });
+  const parts = [
+    {chips:"Weg", kind:"status", neutral:true, list:Object.keys(PATHWAYS), cur:p.pathway, label:k=>PATHWAYS[k], set:k=>cmUndoable(`${p.name}: ${PATHWAYS[k]}`, ()=>{ p.pathway = k; })},
+    {chips:"Position", kind:"pos", single:true, list:POS_LIST, main:p.pos, on:[], toggle:x=>cmUndoable(`${p.name}: Position ${x}`, ()=>{ p.pos = x; }), setMain:x=>cmUndoable(`${p.name}: Position ${x}`, ()=>{ p.pos = x; })},
+    {stars:"Aktuell", v:p.current, set:n=>cmUndoable(`${p.name}: Aktuell ${n} ★`, ()=>{ p.current = n; })},
+    {stars:"Potenzial", v:p.potential, set:n=>cmUndoable(`${p.name}: Potenzial ${n} ★`, ()=>{ p.potential = n; })}];
+  const bar = [{ic:"👤", lb:"Profil", run:()=>openProspectProfile(p)}, {ic:"⬆", lb:"Kader", run:()=>promoteProspect(p)}, {ic:"↗", lb:"Verleihen", run:()=>loanProspect(p)},
+    {ic:"✎", lb:"Notiz", note:p}, {ic:"✕", lb:"Entfernen", dan:true, run:del}];
+  const items = quick ? [{grp:"Talent"}, ...parts]
+    : [{lb:"Profil öffnen", ic:"👤", kb:"Enter", run:()=>openProspectProfile(p)}, "sep", {grp:"Talent"},
+       {sub:"Weg", ic:"◆", items:Object.keys(PATHWAYS).map(k=>({lb:PATHWAYS[k], ck:p.pathway === k, run:()=>cmUndoable(`${p.name}: ${PATHWAYS[k]}`, ()=>{ p.pathway = k; })}))},
+       {sub:"Position", ic:"⌖", items:POS_LIST.map(x=>({lb:x, ck:p.pos === x, run:()=>cmUndoable(`${p.name}: Position ${x}`, ()=>{ p.pos = x; })}))},
+       parts[2], parts[3], {lb:"Notiz …", ic:"✎", kb:"N", note:p}, "sep", {grp:"Planung"},
+       {lb:"In den Profikader übernehmen", ic:"⬆", run:()=>promoteProspect(p)}, {lb:"Verleihen", ic:"↗", run:()=>loanProspect(p)}, "sep", {lb:"Entfernen", ic:"✕", kb:"Entf", dan:true, run:del}];
+  return {head:{ini:initials(p.name), name:p.name, sub:`${p.pos} · ${p.age} J. · ${PATHWAYS[p.pathway] || ""}`}, bar: quick ? bar : null, items};
+}
 function cmMenuForEmptySlot(i){
   const d = formationDefs(state.formationName)[i], inXI = new Set(Object.values(currentSlots()).map(s=>s.playerId).filter(Boolean));
   const cands = state.players.filter(p=>!inXI.has(p.id) && !UNAVAILABLE.includes(p.status)).sort((a,b)=>positionFit(b, d.cat) - positionFit(a, d.cat) || b.rating - a.rating);
@@ -144,6 +162,13 @@ function cmResolve(target){
     return p ? cmMenuForPlayer(p, {where:"pitch", slot:i, phase}) : cmMenuForEmptySlot(i); }
   if(target.closest(".pitch[data-board]")) return cmMenuForPitch();
   const bi = target.closest("#benchList .bench-item, #benchRest .bench-item"); if(bi){ const p = playerById(bi.dataset.pid); return p ? cmMenuForPlayer(p, {where:"bench"}) : null; }
+  const pr = target.closest("#prospectTbody tr[data-id]"); if(pr){ const p = state.prospects.find(x=>x.id === pr.dataset.id); return p ? cmMenuForProspect(p) : null; }
+  const lt = target.closest("#loanTbody tr[data-id]");
+  if(lt){ const l = state.loans.find(x=>x.id === lt.dataset.id); if(!l) return null;
+    const lb = b => (b.getAttribute("aria-label") || b.title || "").replace(l.name, "").trim() || b.textContent.trim();
+    return {head:{ini:initials(l.name), name:l.name, sub:`verliehen an ${l.club || "?"}${l.playtime ? " · Spielzeit: " + (PLAYTIME[l.playtime] || l.playtime) : ""}`},
+      items:[{lb:"Zurück in den Kader holen", ic:"↙", run:()=>returnLoan(l)}, "sep", {lb:"Notiz …", ic:"✎", note:l},
+        "sep", {lb:"Löschen", ic:"✕", dan:true, run:()=>{ removeWithUndo("loans", l.id, `Leihe „${l.name}“`, ()=>{ renderDevelopment(); renderHome(); }); }}]}; }
   const pc = target.closest("[data-plan-pid]"); if(pc){ const p = playerById(pc.dataset.planPid); return p ? cmMenuForPlayer(p, {where:"squad"}) : null; }
   const deal = target.closest("#tr-center .tc-deal");
   if(deal){   // pipeline card: the menu offers exactly the card's own buttons
@@ -187,13 +212,14 @@ function cmBuild(def, items, x, y, level){
     if(it.chips){
       const r = document.createElement("div"); r.className = "cm-chips";
       r.innerHTML = `<div class="cl">${esc(it.chips)}</div><div class="chs ${it.kind}">${it.list.map(k=>{
-        const cls = it.kind === "status" ? ((it.cur === k ? "on " : "") + (listBase("status", k) && listBase("status", k) !== "ok" ? "bad" : "")) : (k === it.main ? "is-main" : it.on.includes(k) ? "on" : "");
+        const cls = it.kind === "status" ? ((it.cur === k ? "on " : "") + (it.neutral ? "neutral" : listBase("status", k) && listBase("status", k) !== "ok" ? "bad" : "")) : (k === it.main ? "is-main" : it.on.includes(k) ? "on" : "");
         return `<button type="button" data-k="${esc(k)}" class="${cls}" aria-pressed="${it.kind === "status" ? it.cur === k : k === it.main || it.on.includes(k)}">${esc(it.kind === "status" ? it.label(k) : k)}</button>`; }).join("")}</div>`;
       qsa("[data-k]", r).forEach(b=>{
         let t = null;
         b.onclick = e=>{ e.stopPropagation(); const k = b.dataset.k;
           if(it.kind === "status"){ cmClose(false); it.set(k); return; }
           if(k === it.main) return;
+          if(it.single){ cmClose(false); it.setMain(k); return; }
           clearTimeout(t); t = setTimeout(()=>{ cmClose(false); it.toggle(k); }, 240); };   // wait: a double click makes it the main position
         b.ondblclick = e=>{ e.stopPropagation(); if(it.kind !== "pos") return; clearTimeout(t); cmClose(false); it.setMain(b.dataset.k); };
       });

@@ -2420,3 +2420,9 @@ tr.row-flash td{animation:row-flash 2.2s ease;}
 .sp-chip .sp-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .sp-chip .sp-meta{font-size:10.5px;color:var(--text-secondary);}
 .sp-chip.maybe{border-style:dashed;} .sp-chip.out{opacity:.65;} .sp-chip.out .sp-name{text-decoration:line-through;}
 .sp-add{align-self:stretch;}
+.cm-chips .chs.status button.on.neutral{background:color-mix(in srgb, var(--accent) 22%, transparent);border-color:var(--accent);}
+/* 13.1: hidden views keep their layout (content-visibility) – switching back no longer re-lays out hundreds of fields.
+   Browsers without support simply fall back to the rule above (display:none). */
+@supports (content-visibility: hidden){
+  .view:not(.active){display:block;content-visibility:hidden;height:0;overflow:hidden;margin:0;padding:0;border:0;}
+}
