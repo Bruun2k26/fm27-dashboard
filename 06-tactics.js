@@ -172,7 +172,7 @@ function pitchHTML({mini=false, phaseOverride=null, domId="pitch"}={}){
     return `<div class="${cls.join(" ")}" style="left:${pos[i].x}%;top:${pos[i].y}%" ${mini ? "" : `data-slot="${i}" data-pid="${p?p.id:""}" tabindex="0" role="button" aria-label="${esc(label)}"`}
         data-tip="${esc(JSON.stringify(p ? {n:p.name, s:status, pi:bpIn[i], po:bpOut[i], ri:rIn, ro:rOut, l:ln, h:hint} : {}))}">
       <div class="tok"><div class="dot">${p ? esc(initials(p.name)) : "+"}</div>${hint ? '<span class="hint-mark" aria-hidden="true">💡</span>' : ""}</div>
-      ${p ? `<div class="pcard"><span class="pc-top"><span class="cat">${esc(bp[i])}</span><span class="pc-name">${esc(shortName)}</span></span>
+      ${mini ? (p ? `<span class="mini-name">${esc(shortName)}</span>` : "") : p ? `<div class="pcard"><span class="pc-top"><span class="cat">${esc(bp[i])}</span><span class="pc-name">${esc(shortName)}</span></span>
         <span class="pc-roles l-${ln}"><span class="pc-r1${phase === "out" && view !== "both" ? " dim" : ""}">${esc(roleAbbr(rIn))}</span><span class="pc-r2${phase === "in" && view !== "both" ? " dim" : ""}">${esc(roleAbbr(rOut))}</span></span></div>`
         : `<div class="pcard empty"><span class="cat">${esc(bp[i])}</span></div>`}
     </div>`;

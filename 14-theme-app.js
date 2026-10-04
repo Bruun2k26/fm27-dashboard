@@ -113,10 +113,15 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.7.1";
+const APP_VERSION = "12.8";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.8", beta:true, title:"Nexus v12.8 – Portal-Overhaul", items:[
+    ["neu","Portal-Panels funktionieren wie im Hub: ein Klick auf eine freie Stelle öffnet die passende Seite (Nächstes Spiel → Spieltag, Kaderplan & Vertragsfristen → Kader, Startelf → Taktik, Leihen → Entwicklung …). Knöpfe im Panel tun weiter nur ihre eigene Aufgabe."],
+    ["neu","Startelf neu: ein aufgeräumtes kleines Spielfeld plus die Elf als Liste mit Position, Name und Rollen (mit | gegen den Ball) – ein Klick öffnet den Spieler direkt in der Taktik."],
+    ["neu","Leihen im Blick: Klick auf einen Spieler springt in Entwicklung → Leihen direkt zu seiner Zeile."],
+    ["neu","Form & Bilanz: leere Felder per Klick als Schnell-Form setzen – S (grün) → U (gelb) → N (rot) → leer. Echte Ergebnisse aus dem Spieltag bleiben unverändert."]]},
   {v:"12.7.1", beta:true, title:"Nexus v12.7.1 – Kombiniert übersichtlicher", items:[
     ["besser","Ansicht „Kombiniert“: Die Kreise gegen den Ball zeigen die Initialen des Spielers, Laufwege beginnen und enden am Rand der Punkte. Fahre über einen Spieler (oder wähle ihn aus) – sein Laufweg leuchtet auf, alle anderen treten zurück."]]},
   {v:"12.7", beta:true, title:"Nexus v12.7 – Taktik-Overhaul", items:[

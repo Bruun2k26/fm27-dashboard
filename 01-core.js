@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "12.7.1";
+window.FM27_BUILD = "12.8";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -1044,7 +1044,9 @@ function sanitizeState(s){
     winter: parseWindow(win.winter) ? str(win.winter) : DEFAULT_WINDOWS.winter
   };
 
-  s.phase = ["out","both","split"].includes(s.phase) ? s.phase : "in";     // 12.7: "both" = combined, "split" = two pitches
+  s.phase = ["out","both","split"].includes(s.phase) ? s.phase : "in";
+  // 12.8: quick form on the portal – manual S/U/N in the boxes without a recorded game (left → right)
+  s.formQuick = Array.from({length:5}, (_,i)=>(Array.isArray(s.formQuick) && ["W","D","L"].includes(s.formQuick[i])) ? s.formQuick[i] : "");     // 12.7: "both" = combined, "split" = two pitches
   // 12.7: matchday bench (per save) – only used when a bench size is set
   s.bench = Array.isArray(s.bench) ? [...new Set(s.bench.filter(id=>typeof id === "string" && (s.players || []).some(p=>p.id === id)))] : [];
 

@@ -3688,6 +3688,31 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     ok(d.querySelector("#pitch.run-focus") && d.querySelector(`#pitch line.run.on[data-run="${gi}"]`), "Ausgewählter Spieler bleibt hervorgehoben");
     ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
 
+  console.log("\n[82] Nexus v12.8: Portal-Overhaul");
+  { ({w,d,errs,S} = await boot());
+    w.eval("state.results = []; saveState(); navigate('home'); renderHome()");
+    const qf = i => d.querySelector(`[data-qf="${i}"]`);
+    ok(d.querySelectorAll("[data-qf]").length===5 && qf(0).textContent==="–", "Form & Bilanz ohne Spiele: 5 anklickbare Felder");
+    qf(1).click(); ok(S().formQuick[1]==="W" && qf(1).textContent==="S" && qf(1).classList.contains("W"), "1. Klick: S (grün)");
+    qf(1).click(); ok(S().formQuick[1]==="D" && qf(1).textContent==="U" && qf(1).classList.contains("D"), "2. Klick: U (gelb)");
+    qf(1).click(); ok(S().formQuick[1]==="L" && qf(1).textContent==="N" && qf(1).classList.contains("L"), "3. Klick: N (rot)");
+    qf(1).click(); ok(S().formQuick[1]==="" && qf(1).classList.contains("empty") && w.eval("currentView")==="home", "4. Klick: wieder leer – Seite bleibt");
+    qf(0).click(); ok(JSON.parse(JSON.stringify(w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state))))"))).formQuick[0]==="W", "Schnell-Form übersteht Speichern/Laden");
+    // panels clickable
+    const sq = d.querySelector('[data-panel="squadPlan"]');
+    ok(sq.classList.contains("card-click") && d.querySelector('[data-panel="xi"]').classList.contains("card-click") && !d.querySelector('[data-panel="goals"]').classList.contains("card-click"), "Panels mit Ziel sind klickbar (Kaderplan, Startelf …), Vorstandsziele nicht");
+    sq.querySelector(".kv-list").click(); ok(w.eval("currentView")==="squad", "Klick auf freie Stelle im Kaderplan → Kader"); w.eval("navigate('home')");
+    d.querySelector('[data-panel="xi"] .xi-meta').click(); ok(w.eval("currentView")==="tactics", "Klick auf freie Stelle in der Startelf → Taktik"); w.eval("navigate('home')");
+    d.querySelector("#btnAddGoal").click(); ok(d.querySelector("#modalOverlay").classList.contains("active") && w.eval("currentView")==="home", "Knöpfe im Panel tun nur ihre eigene Aufgabe (+ Ziel öffnet den Dialog)"); w.eval("closeModal()");
+    // starting XI widget
+    ok(d.querySelectorAll("#miniPitch .xi-row").length===11 && d.querySelector("#miniPitch .pitch.mini .mini-name") && !d.querySelector("#miniPitch .pitch.mini .pcard") && d.querySelector("#miniPitch .xi-meta").textContent.includes(w.eval("activePlan().name")), "Startelf: Mini-Spielfeld mit Namen + Liste der Elf mit Plan");
+    d.querySelector('#miniPitch [data-xi="3"]').click(); ok(w.eval("currentView")==="tactics" && w.eval("selectedSlot")===3, "Klick auf einen Spieler öffnet ihn in der Taktik"); w.eval("navigate('home')");
+    // loans
+    w.eval("state.loans = [{id:'ln1', name:'Leih Spieler', pos:'ZM', age:20, club:'Testclub', league:'', until:'', apps:3, minutes:200, clause:'recall', recallCheck:false, playtime:'', note:''}]; saveState(); renderHome()");
+    d.querySelector('[data-loan="ln1"]').click(); await new Promise(r=>setTimeout(r,40));
+    ok(w.eval("currentView")==="development" && S().ui.devTab==="loans" && d.querySelector('#loanTbody tr[data-id="ln1"]'), "Leihe angeklickt → Entwicklung → Leihen, Zeile vorhanden");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.
   const cssText = require("fs").readFileSync(DIR+"style.css","utf8");

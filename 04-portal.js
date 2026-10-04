@@ -2,6 +2,7 @@
    PORTAL
    ========================================================================== */
 function renderHome(){
+  markHomePanels();
   { const h = qs('[data-panel="goals"] .card-head h2'); if(h) h.textContent = isNat() ? "Verbandsziele" : "Vorstandsziele"; }
   renderHomeNational();
   renderHomeWindow();
@@ -30,13 +31,19 @@ function renderHome(){
   const gf = last5.reduce((a,r)=>a+r.gf,0), ga = last5.reduce((a,r)=>a+r.ga,0), diff = gf-ga;
   const pips = last5.slice().reverse().map(r=>`
       <div class="form-col" title="${esc(r.opponent)}${r.date ? " · "+fmtDate(r.date,{day:"numeric",month:"short"}) : ""}"><div class="form-pip ${resultOf(r)}">${RESULT_LETTER[resultOf(r)]}</div><span>${r.gf}:${r.ga}</span></div>`);
-  for(let i=last5.length;i<5;i++) pips.unshift(`<div class="form-col"><div class="form-pip empty" title="Noch kein Spiel">–</div><span>&nbsp;</span></div>`);
+  for(let i=last5.length;i<5;i++) pips.unshift("");
+  const nEmpty = 5 - last5.length;
+  for(let i = 0; i < nEmpty; i++){         // 12.8: boxes without a recorded game – click: S → U → N → empty
+    const v = state.formQuick[i] || "";
+    pips[i] = `<div class="form-col"><button type="button" class="form-pip ${v ? v + " manual" : "empty"}" data-qf="${i}" title="Schnell-Form: klicken für Sieg → Unentschieden → Niederlage → leer"
+      aria-label="Schnell-Form Feld ${i + 1}: ${v ? ({W:"Sieg",D:"Unentschieden",L:"Niederlage"})[v] : "leer"}">${v ? RESULT_LETTER[v] : "–"}</button><span>&nbsp;</span></div>`;
+  }
   const plans = groupRecord(season, r=>r.planId || "_none", r=>planDisplayName(r)).slice(0,3);
   qs("#formCurve").innerHTML = season.length ? `
     <div class="form-strip">${pips.join("")}</div>
     <div class="form-sum"><span><strong>${pts}</strong> Pkt.</span><span>Tore <strong>${gf}:${ga}</strong></span><span>Diff. <strong>${diff>0?"+":""}${diff}</strong></span></div>
     <div class="rec-mini">${plans.map(g=>`<div class="rec-line"><span class="rec-name">${esc(g.label)}</span>${recordBadges(g)}<span class="rec-ppg">${fmtNum(g.ppg,1)} P/Sp</span></div>`).join("")}</div>`
-    : `<div class="form-strip">${pips.join("")}</div><p class="empty">Noch keine Spiele diese Saison. Ergebnisse trägst du unter „Spieltag“ ein – das Dashboard fragt nach dem Spieltag automatisch.</p>`;
+    : `<div class="form-strip">${pips.join("")}</div><p class="empty">Noch keine Spiele diese Saison. Felder anklicken für eine Schnell-Form (S/U/N) – oder Ergebnisse unter „Spieltag“ eintragen, dann zählen sie auch in der Bilanz.</p>`;
 
   // Squad plan
   const counts = {}; SQUAD_ROLE_ORDER.forEach(r=>counts[r]=0);
@@ -77,7 +84,7 @@ function renderHome(){
     : `<p class="empty">Kein Vertrag läuft in den nächsten 12 Monaten aus.</p>`;
 
   // Mini pitch
-  qs("#miniPitch").innerHTML = pitchHTML({mini:true});
+  qs("#miniPitch").innerHTML = xiWidgetHTML();
 
   // Todos
   const open = state.todos.filter(t=>!t.done);
@@ -89,11 +96,26 @@ function renderHome(){
   const ptRank = l => ({bad:0, ok:1, "":2, good:3})[listBase("playtime", l.playtime) || ""] ?? 2;
   const loans = state.loans.slice().sort((a,b)=>ptRank(a)-ptRank(b) || (b.recallCheck-a.recallCheck));
   qs("#loanPreview").innerHTML = loans.length ? loans.slice(0,4).map(l=>`
-    <div class="alert-row ${listBase("playtime", l.playtime) === "bad" ? "loan-bad" : ""}">${listBase("playtime", l.playtime) === "bad" ? '<span class="c-dot c-red" title="Spielzeit schlecht"></span>' : l.recallCheck ? '<span class="c-dot c-amber" title="Rückruf prüfen"></span>' : '<span class="c-dot c-green"></span>'}
+    <div class="alert-row loan-link ${listBase("playtime", l.playtime) === "bad" ? "loan-bad" : ""}" data-loan="${l.id}" role="button" tabindex="0" aria-label="${esc(l.name)} in Entwicklung → Leihen öffnen">${listBase("playtime", l.playtime) === "bad" ? '<span class="c-dot c-red" title="Spielzeit schlecht"></span>' : l.recallCheck ? '<span class="c-dot c-amber" title="Rückruf prüfen"></span>' : '<span class="c-dot c-green"></span>'}
       <div class="grow"><strong>${esc(l.name)}</strong><div class="muted">${esc(l.club)||"—"} · ${l.apps} Sp.${l.playtime ? " · Spielzeit: " + esc(PLAYTIME[l.playtime]) : ""}</div></div></div>`).join("")
     : `<p class="empty">Keine Spieler verliehen.</p>`;
 }
 
+/** 12.8: starting XI on the portal – a clean mini pitch plus the eleven as a list (position, name, roles with | without the ball) */
+function xiWidgetHTML(){
+  const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f), oop = oopInfo();
+  const bpIn = boardPositions(defs.map((d,i)=>({cat:d.cat, ...slotCoords(d, slots[i], "in")})));
+  const order = defs.map((d,i)=>i).sort((a,b)=>defs[b].y - defs[a].y || defs[a].x - defs[b].x);
+  const rows = order.map(i=>{ const sl = slots[i], p = sl && playerById(sl.playerId); const ln = lineOf(bpIn[i]);
+    const st = !p ? "" : UNAVAILABLE.includes(p.status) ? " unavail" : positionFit(p, defs[i].cat) < 0.85 ? " offpos" : "";
+    return `<button type="button" class="xi-row${st}" data-xi="${i}" aria-label="${p ? esc(p.name) : "unbesetzt"}, ${bpIn[i]} – in der Taktik öffnen">
+      <span class="cat">${esc(bpIn[i])}</span><span class="xi-name">${p ? esc(p.name) : '<span class="muted">unbesetzt</span>'}</span>
+      ${p ? `<span class="pc-roles l-${ln}"><span class="pc-r1" title="${esc(sl.roleIn)}">${esc(roleAbbr(sl.roleIn))}</span><span class="pc-r2" title="${esc(sl.roleOut)}">${esc(roleAbbr(sl.roleOut))}</span></span>` : ""}</button>`; }).join("");
+  const plan = activePlan();
+  return `<div class="xi-wrap"><div class="xi-pitch">${pitchHTML({mini:true})}</div>
+    <div class="xi-side"><div class="xi-meta"><strong>${esc(plan ? plan.name : "Plan")}</strong> · mit Ball ${esc(formationLabel(f, state))}${oop ? ` · gegen den Ball ${esc(oop.form)}` : ""}</div>
+    <div class="xi-list">${rows}</div></div></div>`;
+}
 function nextBirthdayLine(){
   const next = state.players.filter(p=>p.birthDate).map(p=>({p, n:daysToBirthday(p.birthDate, ingameDate())}))
     .sort((a,b)=>a.n-b.n)[0];
@@ -102,7 +124,35 @@ function nextBirthdayLine(){
   return `<div class="kv" title="${esc(birthdayInfo(next.p).text)}"><span>Nächster Geburtstag</span><strong>${esc(next.p.name.split(" ").slice(-1)[0])} · ${when}</strong></div>`;
 }
 
+/** 12.8: portal panels work like the hub – a click on free space opens the page of the panel's header button */
+function homePanelTarget(card){
+  if(!card) return null;
+  const b = card.querySelector(":scope > .card-head [data-goto]"); if(b) return b;
+  return card.dataset.panelGoto ? {click: ()=>navigate(card.dataset.panelGoto)} : null;   // panels without a header button (Kaderplan)
+}
+function markHomePanels(){
+  qsa("#view-home .card").forEach(card=>{ const b = homePanelTarget(card); card.classList.toggle("card-click", !!b);
+    if(b){ card.tabIndex = 0; card.setAttribute("role", "link"); card.setAttribute("aria-label", `${(card.querySelector(".card-head h2") || {}).textContent || "Panel"} öffnen`); } });
+}
+function openLoanInDev(id){
+  state.ui.devTab = "loans"; saveState(); navigate("development"); renderDevelopment();
+  requestAnimationFrame(()=>{ const row = qs(`#loanTbody tr[data-id="${CSS.escape(id)}"]`); if(!row) return;
+    row.scrollIntoView && row.scrollIntoView({block:"center", behavior:"smooth"}); row.classList.add("row-flash"); setTimeout(()=>row.classList.remove("row-flash"), 2200); });
+}
+function homeClick(e){
+  const t = e.target;
+  const qf = t.closest("[data-qf]"); if(qf){ const i = num(qf.dataset.qf), cyc = {"":"W", W:"D", D:"L", L:""};
+    state.formQuick[i] = cyc[state.formQuick[i] || ""]; saveState(); renderHome(); const again = qs(`[data-qf="${i}"]`); if(again) again.focus(); return; }
+  const ln = t.closest("[data-loan]"); if(ln){ openLoanInDev(ln.dataset.loan); return; }
+  const xr = t.closest("[data-xi]"); if(xr){ selectedSlot = num(xr.dataset.xi); navigate("tactics"); renderTactics(); return; }
+  if(t.closest("button, a, input, select, textarea, label, summary, [contenteditable], .goal-row, .todo-preview li")) return;
+  const card = t.closest("#view-home .card.card-click"); if(card){ const b = homePanelTarget(card); if(b) b.click(); }
+}
 function initHome(){
+  { const v = qs("#view-home"); if(v){ v.addEventListener("click", homeClick);
+      v.addEventListener("keydown", e=>{ if(e.key !== "Enter" && e.key !== " ") return;
+        const ln = e.target.closest && e.target.closest("[data-loan]"); if(ln){ e.preventDefault(); openLoanInDev(ln.dataset.loan); return; }
+        if(e.target.matches && e.target.matches("#view-home .card.card-click")){ e.preventDefault(); const b = homePanelTarget(e.target); if(b) b.click(); } }); } }
   qs("#btnAddGoal").addEventListener("click", ()=> openGoalModal(null));
   const box = qs("#boardGoals");
   box.addEventListener("change", e=>{
