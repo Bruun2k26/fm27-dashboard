@@ -98,13 +98,43 @@ function oopInfo(){
   return of && validOopMap(t.oopMap, formationDefs(state.formationName).length) ? {form:of, defs:FORMATIONS[of], map:t.oopMap} : null;
 }
 const oopDefAt = (oop, i) => oop ? oop.defs[oop.map[i]] : null;
-function pitchHTML({mini=false}={}){
+/** 12.7: roles a player may have WITH the ball – his position's roles plus those of his position WITHOUT the ball (FM26: an inverted wing-back is a full-back role) */
+function ipRoleList(i){
+  const defs = formationDefs(state.formationName), oop = oopInfo(), base = ROLES_IP[defs[i].cat], od = oopDefAt(oop, i);
+  return od && od.cat !== defs[i].cat ? base.concat(ROLES_IP[od.cat].filter(r=>!base.includes(r))) : base;
+}
+function boardsNow(){
+  const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f), oop = oopInfo();
+  const bpIn = boardPositions(defs.map((d,i)=>({cat:d.cat, ...slotCoords(d, slots[i], "in")})));
+  const bpOut = boardPositions(defs.map((d,i)=>({cat:(oopDefAt(oop, i) || d).cat, ...slotCoords(d, slots[i], "out", oopDefAt(oop, i))})));
+  return {defs, slots, bpIn, bpOut};
+}
+/** suggestion for slot i ("" = none or already set) */
+function roleHint(i, b){
+  b = b || boardsNow(); const sl = b.slots[i]; if(!sl || !sl.playerId) return "";
+  const sug = suggestRoleIn(b.bpIn[i], b.bpOut[i]);
+  return sug && sug !== sl.roleIn && ipRoleList(i).includes(sug) ? sug : "";
+}
+/** standard roles follow the move automatically; own choices only get a 💡 hint. Returns how many were changed. */
+function applyRoleHints(){
+  const b = boardsNow(); let n = 0;
+  b.defs.forEach((d,i)=>{ const sug = roleHint(i, b), sl = b.slots[i]; if(sug && sl.roleIn === ROLES_IP[d.cat][0]){ sl.roleIn = sug; n++; } });
+  return n;
+}
+function pitchHTML({mini=false, phaseOverride=null, domId="pitch"}={}){
   const f = state.formationName, defs = formationDefs(f), slots = slotsFor(state, f);
-  const phase = mini ? "in" : state.phase, oop = phase === "out" ? oopInfo() : null;
+  const view = mini ? "in" : (phaseOverride || state.phase), phase = view === "out" ? "out" : "in";
+  const oopAll = oopInfo();
+  const oop = phase === "out" ? oopAll : null;
   const pos = defs.map((d,i)=>slotCoords(d, slots[i], phase, oopDefAt(oop, i)));
+  const posOut = view === "both" ? defs.map((d,i)=>slotCoords(d, slots[i], "out", oopDefAt(oopAll, i))) : null;
+  // board positions of the shown phase (and of the other one for the info window)
+  const itemsIn = defs.map((d,i)=>({cat:d.cat, ...slotCoords(d, slots[i], "in")}));
+  const itemsOut = defs.map((d,i)=>({cat:(oopDefAt(oopAll, i) || d).cat, ...slotCoords(d, slots[i], "out", oopDefAt(oopAll, i))}));
+  const bpIn = boardPositions(itemsIn), bpOut = boardPositions(itemsOut), bp = phase === "out" ? bpOut : bpIn;
 
   let lines = "";
-  if(!mini && state.ui.showLinks){
+  if(!mini && state.ui.showLinks && view !== "both"){
     const inv = oop ? Object.fromEntries(Object.entries(oop.map).map(([i,j])=>[j, +i])) : null;
     const linkPairs = oop ? formationLinks(oop.form).map(([a,b])=>[inv[a], inv[b]]) : formationLinks(f);
     lines = linkPairs.filter(([a,b])=>slots[a]?.playerId && slots[b]?.playerId).map(([a,b])=>{
@@ -112,7 +142,12 @@ function pitchHTML({mini=false}={}){
       return `<line class="${hi?"hi":""}" x1="${pos[a].x}" y1="${pos[a].y}" x2="${pos[b].x}" y2="${pos[b].y}"/>`;
     }).join("");
   }
+  if(view === "both") lines = defs.map((d,i)=>slots[i]?.playerId && (Math.abs(pos[i].x - posOut[i].x) + Math.abs(pos[i].y - posOut[i].y) > 1.5)
+    ? `<line class="run" x1="${pos[i].x}" y1="${pos[i].y}" x2="${posOut[i].x}" y2="${posOut[i].y}" marker-end="url(#runHead)"/>` : "").join("");
 
+  const ghosts = view === "both" ? defs.map((d,i)=>{ const sl = slots[i], p = sl && playerById(sl.playerId); if(!p) return "";
+      if(Math.hypot((pos[i].x - posOut[i].x) * 0.68, pos[i].y - posOut[i].y) < 5) return "";   // hardly moves → no ghost over its own card
+      return `<div class="pitch-ghost" style="left:${posOut[i].x}%;top:${posOut[i].y}%" aria-hidden="true"><span>${esc(bpOut[i])}</span></div>`; }).join("") : "";
   const nodes = defs.map((dIn,i)=>{
     const d = oopDefAt(oop, i) || dIn;                 // without the ball: position of the own formation
     const sl = slots[i], p = sl && playerById(sl.playerId);
@@ -123,26 +158,46 @@ function pitchHTML({mini=false}={}){
       else if(positionFit(p, d.cat) < 0.85) cls.push("offpos");
     }
     if(!mini && selectedSlot === i) cls.push("selected");
-    const role = sl ? (phase === "out" ? sl.roleOut : sl.roleIn) : (phase === "out" ? ROLES_OOP[d.cat][0] : ROLES_IP[d.cat][0]);
-    const title = p ? `${p.name} (${p.pos}) – ${role}${UNAVAILABLE.includes(p.status)?" · "+STATUS[p.status]:""}${cls.includes("offpos")?" · Fremdposition":""}` : `${POS_NAME[d.cat]} – unbesetzt`;
-    const shortName = p ? p.name.split(" ").slice(-1)[0] : d.cat;
-    return `<div class="${cls.join(" ")}" style="left:${pos[i].x}%;top:${pos[i].y}%"
-        ${mini ? "" : `data-slot="${i}" data-pid="${p?p.id:""}" tabindex="0" role="button" aria-label="${esc(title)}"`} title="${esc(title)}">
-      <div class="dot">${p ? esc(initials(p.name)) : "+"}${p ? `<span class="cat">${d.cat}</span>` : ""}</div>
-      <div class="p-name">${esc(shortName)}</div>
-      ${p ? `<div class="p-role" title="${esc(ROLE_INFO[role] ? `${role} (${ROLE_INFO[role].en}) – ${ROLE_INFO[role].desc}` : role)}">${esc(roleHy(role))}</div>` : ""}
+    const rIn = sl ? sl.roleIn : ROLES_IP[dIn.cat][0], rOut = sl ? sl.roleOut : ROLES_OOP[(oopDefAt(oopAll, i) || dIn).cat][0];
+    const ln = lineOf(bp[i]), status = !p ? "" : UNAVAILABLE.includes(p.status) ? STATUS[p.status] : cls.includes("offpos") ? "Fremdposition" : "";
+    const hint = !mini && p ? (()=>{ const sug = suggestRoleIn(bpIn[i], bpOut[i]); return sug && sug !== rIn && ipRoleList(i).includes(sug) ? sug : ""; })() : "";
+    if(hint) cls.push("hinted");
+    const label = p ? `${p.name}, ${bp[i]} – mit Ball ${rIn}, gegen den Ball ${rOut}${status ? ", " + status : ""}` : `${POS_NAME[d.cat]} – unbesetzt`;
+    const shortName = p ? p.name.split(" ").slice(-1)[0] : "";
+    return `<div class="${cls.join(" ")}" style="left:${pos[i].x}%;top:${pos[i].y}%" ${mini ? "" : `data-slot="${i}" data-pid="${p?p.id:""}" tabindex="0" role="button" aria-label="${esc(label)}"`}
+        data-tip="${esc(JSON.stringify(p ? {n:p.name, s:status, pi:bpIn[i], po:bpOut[i], ri:rIn, ro:rOut, l:ln, h:hint} : {}))}">
+      <div class="tok"><div class="dot">${p ? esc(initials(p.name)) : "+"}</div>${hint ? '<span class="hint-mark" aria-hidden="true">💡</span>' : ""}</div>
+      ${p ? `<div class="pcard"><span class="pc-top"><span class="cat">${esc(bp[i])}</span><span class="pc-name">${esc(shortName)}</span></span>
+        <span class="pc-roles l-${ln}"><span class="pc-r1${phase === "out" && view !== "both" ? " dim" : ""}">${esc(roleAbbr(rIn))}</span><span class="pc-r2${phase === "in" && view !== "both" ? " dim" : ""}">${esc(roleAbbr(rOut))}</span></span></div>`
+        : `<div class="pcard empty"><span class="cat">${esc(bp[i])}</span></div>`}
     </div>`;
   }).join("");
 
-  return `<div class="pitch ${mini?"mini":""}" ${mini?'style="width:300px;max-width:100%"':'id="pitch"'}>
+  return `<div class="pitch ${mini?"mini":""} ${view === "both" ? "view-both" : ""}" ${mini?'style="width:300px;max-width:100%"':`id="${domId}" data-board data-phase="${view === "out" ? "out" : "in"}"`}>
     <div class="pitch-mark pm-outline"></div><div class="pitch-mark pm-half"></div><div class="pitch-mark pm-circle"></div>
     <div class="pitch-mark pm-box-top"></div><div class="pitch-mark pm-box-bot"></div>
     <div class="pitch-mark pm-six-top"></div><div class="pitch-mark pm-six-bot"></div>
-    <svg class="pitch-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lines}</svg>
-    ${nodes}
+    <svg class="pitch-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${mini || view !== "both" ? "" : `<defs><marker id="runHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="rgba(255,255,255,.75)"/></marker></defs>`}${lines}</svg>
+    ${ghosts}${nodes}
+    ${mini ? "" : `<div class="pitch-tip" ${domId === "pitch" ? 'id="pitchTip"' : ""} hidden></div>`}
   </div>`;
 }
-
+/** 12.7: one shared info window for the pitch – both roles with their short description */
+function pitchTipHTML(t){
+  const row = (cls, ab, role) => { const r = ROLE_INFO[role]; return `<div class="pt-r"><span class="pt-c ${cls}">${esc(roleAbbr(role))}</span><b>${esc(role)}</b>${r ? `<small>${esc(r.desc)}</small>` : ""}</div>`; };
+  return `<div class="pt-h">${esc(t.n)}<em>${esc(t.pi === t.po ? t.pi : t.pi + " → " + t.po)}${t.s ? " · " + esc(t.s) : ""}</em></div>
+    ${row("r1 l-" + t.l, "", t.ri)}${row("r2 l-" + t.l, "", t.ro)}${t.h ? `<div class="pt-hint">💡 passt besser: <b>${esc(t.h)}</b></div>` : ""}`;
+}
+function showPitchTip(el){
+  const pitch = el && el.closest(".pitch[data-board]"), tip = pitch && pitch.querySelector(".pitch-tip"); if(!tip) return;
+  let t; try{ t = JSON.parse(el.dataset.tip || "{}"); }catch(e){ t = {}; } if(!t.n){ tip.hidden = true; return; }
+  tip.innerHTML = pitchTipHTML(t); tip.hidden = false;
+  const r = el.getBoundingClientRect(), q = pitch.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  let L = r.left - q.left + r.width / 2 - w / 2, T = r.bottom - q.top + 4;
+  if(T + h > q.height - 4) T = r.top - q.top - h - 4;
+  tip.style.left = Math.max(4, Math.min(L, q.width - w - 4)) + "px"; tip.style.top = Math.max(4, T) + "px";
+}
+function hidePitchTip(){ qsa(".pitch[data-board] .pitch-tip").forEach(t=>{ t.hidden = true; }); }
 function renderOopFormSelect(){
   const sel = qs("#oopFormSelect"); if(!sel) return;
   const t = state.tactics[state.formationName], of = oopFormOf(t);
@@ -161,8 +216,9 @@ function setOopForm(val){
   const oop = oopInfo();
   Object.entries(t.slots || {}).forEach(([i, sl])=>{ delete sl.oopPos; const cat = (oopDefAt(oop, +i) || formationDefs(f)[i]).cat;
     if(!ROLES_OOP[cat].includes(sl.roleOut)) sl.roleOut = ROLES_OOP[cat][0]; });
-  state.phase = "out"; saveState(); renderTactics(); if(before) animatePitchFrom(before);
-  toast(val ? `Gegen den Ball: ${val} – Spieler automatisch zugeordnet. Tauschen per Ziehen.` : "Gegen den Ball: wie mit Ball (kompakt)");
+  const nh = applyRoleHints();
+  if(state.phase !== "split") state.phase = "out"; saveState(); renderTactics(); if(before) animatePitchFrom(before);
+  toast(val ? `Gegen den Ball: ${val} – Spieler automatisch zugeordnet${nh ? `, ${nh} Rolle${nh === 1 ? "" : "n"} passend zur Bewegung gesetzt` : ""}. Tauschen per Ziehen.` : "Gegen den Ball: wie mit Ball (kompakt)");
 }
 /** without the ball (own formation): swap WHO stands where – the line-up with the ball stays as it is */
 function swapOop(a, b){
@@ -171,6 +227,7 @@ function swapOop(a, b){
   const sa = ensureSlot(a), sb = ensureSlot(b);
   [sa.roleOut, sb.roleOut] = [sb.roleOut, sa.roleOut];   // the role belongs to the position
   const pa = sa.oopPos, pb = sb.oopPos; if(pb) sa.oopPos = pb; else delete sa.oopPos; if(pa) sb.oopPos = pa; else delete sb.oopPos;
+  applyRoleHints();
   return true;
 }
 function renderTactics(){
@@ -179,13 +236,18 @@ function renderTactics(){
   qsa(".phase-btn").forEach(b=>b.classList.toggle("active", b.dataset.phase === state.phase));
   qs("#toggleLinks").checked = state.ui.showLinks;
   renderPlanBar();
-  qs("#btnResetOop").hidden = !(state.phase === "out" && hasOopOverrides());
+  qs("#btnResetOop").hidden = !(["out","split"].includes(state.phase) && hasOopOverrides());
   qsa("#tacticsTabs [data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab === state.ui.tacticsTab));
   qs("#tactics-formation").classList.toggle("active", state.ui.tacticsTab === "formation");
   qs("#tactics-setpieces").classList.toggle("active", state.ui.tacticsTab === "setpieces");
   if(selectedSlot !== null && !formationDefs(state.formationName)[selectedSlot]) selectedSlot = null;
 
-  qs("#pitchHost").innerHTML = pitchHTML();
+  if(state.phase === "split"){        // 12.7: two boards – with the ball | without the ball, both editable
+    const of = oopInfo();
+    qs("#pitchHost").innerHTML = `<div class="pitch-split"><figure><figcaption>Mit Ball · ${esc(state.formationName)}</figcaption>${pitchHTML({phaseOverride:"in"})}</figure>
+      <figure><figcaption>Gegen den Ball · ${esc(of ? of.form : state.formationName + " (kompakt)")}</figcaption>${pitchHTML({phaseOverride:"out", domId:"pitchOut"})}</figure></div>`;
+  } else qs("#pitchHost").innerHTML = pitchHTML();
+  qs("#pitchHost").closest(".pitch-col").classList.toggle("split", state.phase === "split");
   renderSlotEditor();
   renderBench();
   renderSetPieces();
@@ -206,7 +268,8 @@ function renderSlotEditor(){
     <div class="slot-title"><span class="cat-big">${d.cat}</span><strong>${POS_NAME[d.cat]}</strong>
       ${d.cat !== "TW" ? `<select id="se-cat" class="se-cat" title="Positionskürzel manuell festlegen" aria-label="Positionskürzel">${options(POS_LIST.filter(x=>x!=="TW"), d.cat)}</select>` : ""}</div>
     <div class="sp-field"><label for="se-player">Spieler</label><select id="se-player">${playerOptions(sl.playerId)}</select></div>
-    <div class="sp-field"><label for="se-in">Rolle mit Ball</label><select id="se-in">${options(ROLES_IP[d.cat], sl.roleIn)}</select></div>
+    <div class="sp-field"><label for="se-in">Rolle mit Ball</label><select id="se-in">${options(ipRoleList(selectedSlot), sl.roleIn)}</select></div>
+    ${roleHint(selectedSlot) ? `<div class="hint-box">💡 Passt besser zur Bewegung: <strong>${esc(roleHint(selectedSlot))}</strong> <button class="btn btn-sm" type="button" id="btnHintApply">Übernehmen</button></div>` : ""}
     <div class="sp-field"><label for="se-out">Rolle gegen Ball${oopDefAt(oopInfo(), selectedSlot) ? ` <span class="muted small">· als ${oopDefAt(oopInfo(), selectedSlot).cat} im ${oopInfo().form}</span>` : ""}</label><select id="se-out">${options(ROLES_OOP[(oopDefAt(oopInfo(), selectedSlot) || d).cat], sl.roleOut)}</select></div>
     ${p && positionFit(p,d.cat) < 0.85 ? `<p class="hint" style="color:var(--warning)">${esc(p.name)} spielt hier nicht auf seiner Haupt- oder Nebenposition.</p>` : ""}
     ${p && UNAVAILABLE.includes(p.status) ? `<p class="hint" style="color:var(--neg-text)">${esc(p.name)}: ${STATUS[p.status]}</p>` : ""}`;
@@ -230,22 +293,59 @@ function renderSlotEditor(){
   };
   qs("#se-out").onchange = e=>{ sl.roleOut = e.target.value; saveState(); renderTactics(); };
   enhanceRolePicker(qs("#se-in"), "in"); enhanceRolePicker(qs("#se-out"), "out");
+  { const hb = qs("#btnHintApply"); if(hb) hb.onclick = ()=>{ const sug = roleHint(selectedSlot); if(!sug) return; const before = sl.roleIn; sl.roleIn = sug; saveState(); renderTactics();
+      toast(`Rolle: ${sug}`, {onUndo:()=>{ sl.roleIn = before; saveState(); renderTactics(); }}); }; }
 }
 
-function renderBench(){
-  const inXI = new Set(Object.values(currentSlots()).map(s=>s.playerId).filter(Boolean));
-  const pf = qs("#benchFilter").value;
-  const nomOnly = isNat() && state.national.benchNominated && state.players.some(p=>p.nominated);
-  const list = state.players.filter(p=>!inXI.has(p.id) && (!pf || p.pos===pf || p.altPos.includes(pf)) && (!nomOnly || p.nominated))
-    .sort((a,b)=>POS_LIST.indexOf(a.pos)-POS_LIST.indexOf(b.pos) || b.rating-a.rating);
-  qs("#benchList").innerHTML = list.map(p=>`
-    <div class="bench-item ${UNAVAILABLE.includes(p.status)?"unavail":""}" data-pid="${p.id}" tabindex="0" role="button"
+const benchLimit = () => state.ui.benchSize === "all" ? null : num(state.ui.benchSize);
+function benchItemHTML(p){
+  return `<div class="bench-item ${UNAVAILABLE.includes(p.status)?"unavail":""}" data-pid="${p.id}" tabindex="0" role="button"
          aria-label="${esc(p.name)}, ${p.pos}${UNAVAILABLE.includes(p.status)?", "+STATUS[p.status]:""}">
       <span class="pos">${p.pos}</span><span class="nm">${esc(p.name)}</span>
       ${UNAVAILABLE.includes(p.status) ? `<span class="badge ${listBase("status", p.status)}">${STATUS[p.status]}</span>` : starsRO(p.rating)}
-    </div>`).join("") || `<p class="empty">Alle passenden Spieler stehen in der Startelf.</p>`;
+    </div>`;
 }
-
+/** 12.7: "Alle zeigen" = everybody not in the XI (as before); a number = a real matchday bench with that many places */
+function renderBench(){
+  const inXI = new Set(Object.values(currentSlots()).map(s=>s.playerId).filter(Boolean));
+  const pf = qs("#benchFilter").value, lim = benchLimit();
+  const nomOnly = isNat() && state.national.benchNominated && state.players.some(p=>p.nominated);
+  const pool = state.players.filter(p=>!inXI.has(p.id) && (!nomOnly || p.nominated));
+  const sortP = (a,b)=>POS_LIST.indexOf(a.pos)-POS_LIST.indexOf(b.pos) || b.rating-a.rating;
+  const fit = p => !pf || p.pos===pf || p.altPos.includes(pf);
+  qs("#benchSize").value = lim === null ? "all" : String(lim);
+  qs("#benchTools").hidden = !lim; qs("#benchRestWrap").hidden = lim === null;
+  if(lim === null){
+    qs("#benchTitle").textContent = "Nicht aufgestellt";
+    qs("#benchList").innerHTML = pool.filter(fit).sort(sortP).map(benchItemHTML).join("") || `<p class="empty">Alle passenden Spieler stehen in der Startelf.</p>`;
+    return;
+  }
+  const bench = state.bench.map(playerById).filter(p=>p && !inXI.has(p.id)).slice(0, lim);
+  const onBench = new Set(bench.map(p=>p.id)), rest = pool.filter(p=>!onBench.has(p.id));
+  qs("#benchTitle").textContent = lim ? `Bank ${bench.length}/${lim}` : "Bank aus";
+  qs("#benchList").innerHTML = lim ? bench.filter(fit).map(benchItemHTML).join("") + Array.from({length:Math.max(0, lim - bench.length)}, ()=>`<div class="bench-free" aria-hidden="true">frei</div>`).join("")
+    : `<p class="empty">Keine Bankplätze – alle übrigen Spieler stehen unten unter „Nicht im Kader“.</p>`;
+  qs("#benchRestTitle").textContent = `Nicht im Kader (${rest.length})`;
+  qs("#benchRest").innerHTML = rest.filter(fit).sort(sortP).map(benchItemHTML).join("") || `<p class="empty">Niemand.</p>`;
+}
+function benchAdd(pid){
+  const lim = benchLimit(); if(!lim) return false;
+  const inXI = new Set(Object.values(currentSlots()).map(s=>s.playerId).filter(Boolean));
+  state.bench = state.bench.filter(id=>id !== pid && !inXI.has(id) && playerById(id));
+  if(state.bench.length >= lim){ toast(`Bank voll (${lim}/${lim}) – erst jemanden nach „Nicht im Kader“ ziehen.`); return false; }
+  state.bench.push(pid); return true;
+}
+function benchRemove(pid){ state.bench = state.bench.filter(id=>id !== pid); }
+/** fill the free places: best available players, at least one keeper */
+function benchFill(){
+  const lim = benchLimit(); if(!lim) return;
+  const inXI = new Set(Object.values(currentSlots()).map(s=>s.playerId).filter(Boolean));
+  state.bench = state.bench.filter(id=>!inXI.has(id) && playerById(id)).slice(0, lim);
+  const nomOnly = isNat() && state.national.benchNominated && state.players.some(p=>p.nominated);
+  const free = state.players.filter(p=>!inXI.has(p.id) && !state.bench.includes(p.id) && !UNAVAILABLE.includes(p.status) && (!nomOnly || p.nominated)).sort((a,b)=>b.rating - a.rating);
+  if(!state.bench.some(id=>playerById(id).pos === "TW")){ const gk = free.find(p=>p.pos === "TW"); if(gk && state.bench.length < lim){ state.bench.push(gk.id); free.splice(free.indexOf(gk), 1); } }
+  while(state.bench.length < lim && free.length) state.bench.push(free.shift().id);
+}
 /* ---------- Tactic plans (Plan A / B / C) ---------- */
 function activePlan(){ return state.plans.find(pl=>pl.id === state.activePlanId) || state.plans[0]; }
 /** Tactic data of any plan; the active one lives in the top-level state fields. */
@@ -360,18 +460,23 @@ function pitchPercent(pitchEl, clientX, clientY){
   return {x: (clientX - r.left) / r.width * 100, y: (clientY - r.top) / r.height * 100};
 }
 
+/* 12.7: info window on hover / keyboard focus */
+document.addEventListener("mouseover", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el && !document.body.classList.contains("dragging")) showPitchTip(el); });
+document.addEventListener("mouseout", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el && !el.contains(e.relatedTarget)) hidePitchTip(); });
+document.addEventListener("focusin", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el) showPitchTip(el); else hidePitchTip(); });
 /* ---------- Drag & drop (pointer events: mouse, touch, pen) ---------- */
 let drag = null;
 function initDragDrop(){
   document.addEventListener("pointerdown", e=>{
     if(e.button > 0) return;
-    const src = e.target.closest("#pitch .pitch-slot, #benchList .bench-item");
+    const src = e.target.closest(".pitch[data-board] .pitch-slot, #benchList .bench-item, #benchRest .bench-item");
     if(!src) return;
     if(e.pointerType === "mouse") e.preventDefault();   // stops text selection while dragging
     drag = { src, pid: src.dataset.pid || null,
              fromSlot: src.dataset.slot !== undefined ? num(src.dataset.slot) : null,
              x:e.clientX, y:e.clientY, moved:false, ghost:null, over:null, freePos:null,
-             origLeft: src.style.left, origTop: src.style.top };
+             origLeft: src.style.left, origTop: src.style.top,
+             board: src.closest(".pitch[data-board]"), phase: (src.closest(".pitch[data-board]") || {dataset:{}}).dataset.phase || (state.phase === "out" ? "out" : "in") };
   });
   document.addEventListener("pointermove", e=>{
     if(!drag) return;
@@ -385,7 +490,7 @@ function initDragDrop(){
       drag.ghost.textContent = p ? p.name : formationDefs(state.formationName)[drag.fromSlot].cat;
       document.body.appendChild(drag.ghost);
       drag.src.classList.add("drag-src");
-      document.body.classList.add("dragging");
+      document.body.classList.add("dragging"); hidePitchTip();
     }
     e.preventDefault();
     drag.ghost.style.left = e.clientX+"px"; drag.ghost.style.top = e.clientY+"px";
@@ -393,18 +498,20 @@ function initDragDrop(){
     const prevPE = drag.src.style.pointerEvents; drag.src.style.pointerEvents = "none";
     const over = document.elementFromPoint(e.clientX, e.clientY);
     drag.src.style.pointerEvents = prevPE;
-    let target = over && (over.closest("#pitch .pitch-slot") || over.closest("#benchList"));
+    let target = over && (over.closest(".pitch[data-board] .pitch-slot") || over.closest("#benchList") || over.closest("#benchRest"));
+    if(target && target.classList.contains("pitch-slot") && drag.board && target.closest(".pitch[data-board]") !== drag.board) target = null;   // only within the same board
     if(target === drag.src) target = null;                                      // hovering over itself = open grass
-    if(!target && over && over.closest("#pitch") && (drag.pid || drag.fromSlot !== null)){   // snap zone: near another player = swap
+    const boardEl = over && over.closest(".pitch[data-board]");
+    if(!target && boardEl && (!drag.board || boardEl === drag.board) && (drag.pid || drag.fromSlot !== null)){   // snap zone: near another player = swap
       let best = null, bestD = 34;
-      qsa("#pitch .pitch-slot").forEach(el=>{ if(el === drag.src) return; const r = el.querySelector(".dot").getBoundingClientRect();
+      qsa(".pitch-slot", boardEl).forEach(el=>{ if(el === drag.src) return; const r = el.querySelector(".dot").getBoundingClientRect();
         const dd = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); if(dd < bestD){ bestD = dd; best = el; } });
       if(best && (drag.pid || best.dataset.pid)) target = best;
     }
-    if(target && target.id === "benchList" && !drag.pid) target = null;        // empty slot can't go to the bench
+    if(target && (target.id === "benchList" || target.id === "benchRest") && !drag.pid) target = null;        // empty slot can't go to the bench
     if(target && target.classList.contains("pitch-slot") && !drag.pid && drag.fromSlot === null) target = null;
     // Free positioning: a pitch position dragged onto open grass follows the pointer.
-    const pitchEl = over && over.closest("#pitch");
+    const pitchEl = boardEl && (!drag.board || boardEl === drag.board) ? boardEl : null;
     drag.freePos = null;
     if(drag.fromSlot !== null && !target && pitchEl){
       {
@@ -414,7 +521,7 @@ function initDragDrop(){
         drag.src.style.left = drag.freePos.x+"%"; drag.src.style.top = drag.freePos.y+"%";
         const catEl = drag.src.querySelector(".cat");
         const def = formationDefs(state.formationName)[drag.fromSlot];
-        if(catEl && def.cat !== "TW" && state.phase === "in"){
+        if(catEl && def.cat !== "TW" && drag.phase === "in"){
           const zone = catFromCoords(drag.freePos.x, drag.freePos.y);
           catEl.textContent = zone !== catFromCoords(def.x, def.y) ? zone : def.cat;
         }
@@ -438,7 +545,7 @@ function initDragDrop(){
     if(d.over) d.over.classList.remove("drop-hover");
     if(d.freePos){
       selectedSlot = d.fromSlot;
-      if(state.phase === "in") moveSlotTo(d.fromSlot, d.freePos.x, d.freePos.y);
+      if(d.phase === "in") moveSlotTo(d.fromSlot, d.freePos.x, d.freePos.y);
       else setOopPos(d.fromSlot, d.freePos.x, d.freePos.y);
       return;
     }
@@ -448,12 +555,17 @@ function initDragDrop(){
       return;
     }
     if(target.id === "benchList"){
+      if(benchLimit()){ if(benchAdd(d.pid) && d.fromSlot !== null) unassign(d.fromSlot); saveState(); renderTactics(); return; }
       if(d.fromSlot !== null){ unassign(d.fromSlot); saveState(); renderTactics(); }
       return;
     }
+    if(target.id === "benchRest"){          // 12.7: out of the matchday squad
+      if(d.fromSlot !== null) unassign(d.fromSlot);
+      benchRemove(d.pid); saveState(); renderTactics(); return;
+    }
     const to = num(target.dataset.slot);
     if(to === d.fromSlot) return;
-    if(state.phase === "out" && oopInfo() && d.fromSlot !== null){   // own formation without the ball: swap only who stands where
+    if(d.phase === "out" && oopInfo() && d.fromSlot !== null){   // own formation without the ball: swap only who stands where
       swapOop(d.fromSlot, to); selectedSlot = to; saveState(); renderTactics(); return;
     }
     assignToSlot(d.pid, to, d.fromSlot);
@@ -472,23 +584,24 @@ function initDragDrop(){
   document.addEventListener("keydown", e=>{
     const arrows = {ArrowLeft:[-2,0], ArrowRight:[2,0], ArrowUp:[0,-2], ArrowDown:[0,2]};
     if(!arrows[e.key]) return;
-    const slotEl = e.target.closest && e.target.closest("#pitch .pitch-slot");
+    const slotEl = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot");
     if(!slotEl) return;
     e.preventDefault();
     const idx = num(slotEl.dataset.slot), def = formationDefs(state.formationName)[idx];
     const step = e.shiftKey ? 5 : 1;                 // 2 % per press, Shift = 10 %
     selectedSlot = idx;
-    if(state.phase === "in") moveSlotTo(idx, def.x + arrows[e.key][0]*step, def.y + arrows[e.key][1]*step);
+    const kPhase = slotEl.closest(".pitch[data-board]").dataset.phase, boardId = slotEl.closest(".pitch[data-board]").id;
+    if(kPhase === "in") moveSlotTo(idx, def.x + arrows[e.key][0]*step, def.y + arrows[e.key][1]*step);
     else {
       const cur = slotCoords(def, currentSlots()[idx], "out", oopDefAt(oopInfo(), idx));
       setOopPos(idx, cur.x + arrows[e.key][0]*step, cur.y + arrows[e.key][1]*step);
     }
-    const again = qs(`#pitch [data-slot="${idx}"]`); if(again) again.focus();
+    const again = qs(`#${boardId} [data-slot="${idx}"]`); if(again) again.focus();
   });
   // Keyboard: Enter/Space on a slot selects it; on a bench player assigns to the selected slot.
   document.addEventListener("keydown", e=>{
     if(e.key !== "Enter" && e.key !== " ") return;
-    const src = e.target.closest && e.target.closest("#pitch .pitch-slot, #benchList .bench-item");
+    const src = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot, #benchList .bench-item");
     if(!src) return;
     e.preventDefault();
     handleTacticsClick({src, pid:src.dataset.pid||null, fromSlot: src.dataset.slot!==undefined ? num(src.dataset.slot) : null});
@@ -522,6 +635,11 @@ function initTactics(){
   }));
   qs("#toggleLinks").addEventListener("change", e=>{ state.ui.showLinks = e.target.checked; saveState(); renderTactics(); });
   qs("#benchFilter").addEventListener("change", renderBench);
+  qs("#benchSize").addEventListener("change", e=>{ const v = e.target.value; state.ui.benchSize = v === "all" ? "all" : num(v);
+    if(state.ui.benchSize && !state.bench.length) benchFill(); saveState(); renderBench(); });
+  qs("#btnBenchFill").addEventListener("click", ()=>{ benchFill(); saveState(); renderBench(); toast("Bank aufgefüllt – beste verfügbare Spieler, mindestens ein Torwart"); });
+  qs("#btnBenchClear").addEventListener("click", ()=>{ const before = state.bench.slice(); state.bench = []; saveState(); renderBench();
+    toast("Bank geleert", {onUndo:()=>{ state.bench = before; saveState(); renderBench(); }}); });
   qs("#btnBestXI").addEventListener("click", runBestXI);
   qs("#planBar").addEventListener("click", e=>{
     const b = e.target.closest("button"); if(!b) return;

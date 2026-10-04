@@ -69,7 +69,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   d.querySelector('.phase-btn[data-phase="out"]').click();
   const midOut = Y(6), spanOut = Y(2)-Y(8);
   ok(midOut>midIn && spanOut<spanIn, `Gegen den Ball: Mittelfeld fällt zurück (${midIn}→${midOut}), Block kompakter (${spanIn}→${spanOut.toFixed(1)})`);
-  ok(d.querySelector('#pitch [data-slot="9"] .p-role').textContent.replace(/\u00AD/g,"")===HB, "Karte zeigt Rolle der aktiven Phase");
+  { const c9 = d.querySelector('#pitch [data-slot="9"]'); ok(c9.querySelector(".pc-r2").textContent===w.eval(`roleAbbr(${JSON.stringify(HB)})`) && !c9.querySelector(".pc-r2").classList.contains("dim") && c9.querySelector(".pc-r1").classList.contains("dim") && JSON.parse(c9.dataset.tip).ro===HB, "Karte zeigt beide Rollen-Kürzel, die aktive Phase hervorgehoben (v12.7)"); }
   const fs2 = d.querySelector("#formationSelect"); fs2.value="3-5-2"; fs2.dispatchEvent(new w.Event("change"));
   ok(Object.values(slots()).filter(s=>s.playerId).length===11 && d.querySelector("#formationChip").textContent==="Plan A · 3-5-2", "Neue Formation: automatisch beste Elf vorgeschlagen");
   d.querySelector("#btnClearXI").click();
@@ -3575,7 +3575,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const gk_12 = defsIn_12.findIndex(x=>x.cat==="TW");
   ok(defsOut_12[T12().oopMap[gk_12]].cat==="TW", "Torwart bleibt Torwart");
   const cats_12 = [...d.querySelectorAll("#pitch .pitch-slot .cat")].map(e=>e.textContent).sort().join(",");
-  ok(cats_12===defsOut_12.map(x=>x.cat).sort().join(","), "Spielfeld zeigt die Positionen der 4-3-3 ("+cats_12+")");
+  ok(cats_12===w.eval("boardPositions(FORMATIONS['4-3-3'].map(d=>({cat:d.cat, x:d.x, y:d.y})))").sort().join(","), "Spielfeld zeigt die Positionen der 4-3-3 ("+cats_12+")");
   ok(Object.entries(T12().slots).every(([i,sl])=>w.eval(`ROLES_OOP[${JSON.stringify(defsOut_12[T12().oopMap[i]].cat)}]`).includes(sl.roleOut)), "Rollen gegen den Ball passen zur neuen Position");
   const om_12 = defsIn_12.findIndex(x=>x.cat==="OM");
   w.eval(`selectedSlot = ${om_12}; renderTactics()`);
@@ -3591,7 +3591,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval(`swapOop(${a12}, ${b12}); saveState(); renderTactics()`);
   ok(T12().oopMap[a12]===mb_12 && T12().oopMap[b12]===ma_12 && JSON.stringify(Object.fromEntries(Object.entries(T12().slots).map(([i,sl])=>[i, sl.playerId])))===before12, "Tausch gegen den Ball: nur die Positionen getauscht, Aufstellung mit Ball unverändert");
   d.querySelector('.phase-btn[data-phase="in"]').click();
-  ok([...d.querySelectorAll("#pitch .pitch-slot .cat")].map(e=>e.textContent).sort().join(",")===defsIn_12.map(x=>x.cat).sort().join(","), "Mit Ball wieder 4-2-3-1");
+  ok([...d.querySelectorAll("#pitch .pitch-slot .cat")].map(e=>e.textContent).sort().join(",")===w.eval("boardPositions(formationDefs('4-2-3-1').map(d=>({cat:d.cat, x:d.x, y:d.y})))").sort().join(","), "Mit Ball wieder 4-2-3-1");
   // prompt
   w.eval("navigate('tactics')"); d.querySelector("#btnAiPrompt").click();
   const pr12 = d.querySelector("#aiPreview").value;
@@ -3601,8 +3601,78 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(!T12().oopForm && !T12().oopMap, "Zurück auf 'wie mit Ball (kompakt)'");
   // drag fix: the dragged dot must not hide its target
   ok(/drag\.src\.style\.pointerEvents = "none"/.test(js) && /snap zone/.test(js), "Spielertausch: gezogener Spieler verdeckt sein Ziel nicht mehr, Fangbereich um jeden Spieler");
-  ok(!require("fs").existsSync(DIR+"ANLEITUNG-App.md") && w.eval("APP_VERSION")==="12.6" && w.eval("CHANGELOG.slice(0,6).map(c=>c.v).join()")==="12.6,12.5,12.4,12.3,12.2,12.1" && w.eval("CHANGELOG[0].title").startsWith("Nexus v12.6 – "), "Versionen 12.1–12.6 im neuen Schema, Anleitung entfernt");
+  ok(!require("fs").existsSync(DIR+"ANLEITUNG-App.md") && w.eval("CHANGELOG.slice(1,7).map(c=>c.v).join()")==="12.6,12.5,12.4,12.3,12.2,12.1" && w.eval("CHANGELOG.every(c=>!/^12\\./.test(c.v) || c.title.startsWith(`Nexus v${c.v} – `))"), "Versionen 12.1–12.6 im neuen Schema, Anleitung entfernt");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
+
+  console.log("\n[79] Nexus v12.7: Taktikboard – Positionen, Spielerkarten, Kombiniert, Bank");
+  { const BP = f => w.eval(`boardPositions(FORMATIONS[${JSON.stringify(f)}].map(d=>({cat:d.cat, x:d.x, y:d.y})))`).join(" ");
+    ({w,d,errs,S} = await boot());
+    ok(BP("3-5-2")==="TW LIV IV RIV FV ZML DM ZMR FV ST ST", "3-5-2: Dreierkette LIV/IV/RIV, Flügelverteidiger FV, ZML/ZMR");
+    ok(BP("4-4-2")==="TW AV IV IV AV LM ZML ZMR RM ST ST", "4-4-2: Außenverteidiger AV, Flügel tief = LM/RM");
+    ok(BP("4-3-3")==="TW AV IV IV AV DM ZML ZMR LF ST RF", "4-3-3: Flügel hoch = LF/RF");
+    ok(BP("4-2-3-1").startsWith("TW AV IV IV AV DML DMR"), "4-2-3-1: Doppelsechs DML/DMR");
+    ok(w.eval("Object.keys(ROLE_ABBR).length")===68 && w.eval("new Set(Object.values(ROLE_ABBR)).size")===68 && w.eval("ROLE_DB.every(r=>ROLE_ABBR[r.de] && ROLE_ABBR[r.de].length<=4)"), "68 eindeutige Rollen-Kürzel (höchstens 4 Zeichen)");
+    ok(w.eval("roleAbbr('Klassischer Neuner')")==="KN", "Eigene Rollen bekommen Initialen");
+    w.eval("navigate('tactics'); renderTactics()");
+    const card = d.querySelector('#pitch .pitch-slot[data-pid]:not([data-pid=""])');
+    ok(card.querySelector(".tok .dot") && card.querySelector(".pcard .cat") && card.querySelector(".pc-name") && card.querySelector(".pc-r1") && card.querySelector(".pc-r2"), "Spielerkarte: Punkt, Position + Name, Rollen-Paar");
+    card.dispatchEvent(new w.MouseEvent("mouseover", {bubbles:true}));
+    const tip = d.querySelector("#pitchTip"), td = JSON.parse(card.dataset.tip);
+    ok(!tip.hidden && tip.textContent.includes(td.ri) && tip.textContent.includes(td.ro) && tip.textContent.includes(w.eval(`ROLE_INFO[${JSON.stringify(td.ri)}].desc`)), "Info-Fenster beim Überfahren: beide Rollen mit Kurzbeschreibung");
+    card.dispatchEvent(new w.MouseEvent("mouseout", {bubbles:true, relatedTarget:d.body})); ok(tip.hidden, "… und verschwindet wieder");
+    d.querySelector('.phase-btn[data-phase="both"]').click();
+    ok(S().phase==="both" && d.querySelector("#pitch.view-both") && d.querySelectorAll("#pitch .pitch-ghost").length>0 && d.querySelectorAll("#pitch line.run").length>0, "Kombiniert: Geisterpunkte und Laufweg-Pfeile");
+    ok(JSON.parse(JSON.stringify(w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state))))"))).phase==="both", "Ansicht 'Kombiniert' übersteht Speichern/Laden");
+    // bench
+    ok(d.querySelector("#benchSize").value==="all" && d.querySelector("#benchRestWrap").hidden, "Bank: Standard 'Alle zeigen' wie bisher");
+    const bs = d.querySelector("#benchSize"); bs.value = "9"; bs.dispatchEvent(new w.Event("change", {bubbles:true}));
+    const benchIds = () => [...d.querySelectorAll("#benchList .bench-item")].map(e=>e.dataset.pid);
+    const avail = w.eval("state.players.filter(p=>!Object.values(currentSlots()).some(s=>s.playerId===p.id) && !UNAVAILABLE.includes(p.status)).length");
+    ok(S().ui.benchSize===9 && benchIds().length===Math.min(9, avail) && d.querySelector("#benchTitle").textContent===`Bank ${Math.min(9, avail)}/9` && !d.querySelector("#benchRestWrap").hidden, `9 Bankplätze: automatisch mit den ${Math.min(9, avail)} verfügbaren Spielern aufgefüllt, Rest unter 'Nicht im Kader'`);
+    ok(benchIds().every(id=>!w.eval(`UNAVAILABLE.includes(playerById(${JSON.stringify(id)}).status)`)), "Auffüllen nimmt keine verletzten/gesperrten Spieler");
+    ok(benchIds().some(id=>w.eval(`playerById(${JSON.stringify(id)}).pos`)==="TW"), "Mindestens ein Torwart auf der Bank");
+    ok(d.querySelectorAll("#benchList .bench-free").length===9 - benchIds().length, "Freie Plätze werden angezeigt");
+    while(benchIds().length < 9 && d.querySelector("#benchRest .bench-item")){ const id = d.querySelector("#benchRest .bench-item").dataset.pid; w.eval(`benchAdd(${JSON.stringify(id)}); saveState(); renderBench()`); }
+    ok(d.querySelector("#benchTitle").textContent==="Bank 9/9", "Von Hand aus 'Nicht im Kader' dazugenommen (auch Verletzte möglich) → 9/9");
+    const extra = d.querySelector("#benchRest .bench-item") && d.querySelector("#benchRest .bench-item").dataset.pid;
+    const extraId = extra || w.eval("state.players.find(p=>Object.values(currentSlots()).some(s=>s.playerId===p.id)).id");
+    ok(!w.eval(`benchAdd(${JSON.stringify(extraId)})`) && d.querySelector("#toastMsg").textContent.includes("Bank voll"), "Bank voll → Hinweis");
+    w.eval("benchRemove(state.bench[0]); saveState(); renderBench()");
+    ok(d.querySelector("#benchTitle").textContent==="Bank 8/9" && d.querySelectorAll("#benchList .bench-free").length===1, "Spieler nach 'Nicht im Kader' → ein Platz frei");
+    bs.value = "0"; bs.dispatchEvent(new w.Event("change", {bubbles:true}));
+    ok(d.querySelector("#benchTitle").textContent==="Bank aus" && d.querySelector("#benchList").textContent.includes("Keine Bankplätze"), "Bank aus");
+    bs.value = "all"; bs.dispatchEvent(new w.Event("change", {bubbles:true}));
+    ok(d.querySelector("#benchTitle").textContent==="Nicht aufgestellt" && w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state)))).bench.length")===8, "Zurück auf 'Alle zeigen' – die Bank bleibt gemerkt");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[80] Nexus v12.7: Ansicht 'Beide', Rollenvorschläge, Umschalter-Fix");
+  { ({w,d,errs,S} = await boot());
+    ok(w.eval("suggestRoleIn('DMR','FV')")==="Inverser Flügelverteidiger" && w.eval("suggestRoleIn('RIV','AV')")==="Inverser Außenverteidiger" && w.eval("suggestRoleIn('LIV','DML')")==="Abkippender Sechser"
+       && w.eval("suggestRoleIn('RM','AV')")==="Vorgeschobener Flügelverteidiger" && w.eval("suggestRoleIn('FV','RIV')")==="Hinterlaufender Halbraumverteidiger" && w.eval("suggestRoleIn('DM','IV')")==="Aufrückender Innenverteidiger" && w.eval("suggestRoleIn('ST','ST')")==="", "Regeln: Bewegung zwischen den Phasen → passende FM26-Rolle");
+    w.eval("navigate('tactics'); state.formationName = '3-5-2'; state.tactics['3-5-2'] = state.tactics['3-5-2'] || {slots:{}}; formationDefs('3-5-2').forEach((d,i)=>{ const sl = ensureSlot(i); sl.playerId = state.players[i].id; sl.roleIn = ROLES_IP[d.cat][0]; }); saveState(); renderTactics()");
+    w.eval("setOopForm('4-4-2')");
+    const sl13 = () => S().tactics["3-5-2"].slots, ivIdx = w.eval("formationDefs('3-5-2').map((d,i)=>d.cat==='IV'?i:-1).filter(i=>i>=0)");
+    const iav = ivIdx.filter(i=>sl13()[i].roleIn==="Inverser Außenverteidiger");
+    ok(iav.length===2 && d.querySelector("#toastMsg").textContent.includes("passend zur Bewegung"), "3-5-2 → gegen den Ball 4-4-2: beide Halbraumverteidiger werden zu 'Inverser Außenverteidiger' (Standardrolle automatisch angepasst)");
+    const k13 = iav[0];
+    w.eval(`state.tactics['3-5-2'].slots[${k13}].roleIn = 'Ballspielender Innenverteidiger'; saveState(); state.phase = 'in'; renderTactics()`);
+    ok(w.eval(`roleHint(${k13})`)==="Inverser Außenverteidiger" && d.querySelector(`#pitch [data-slot="${k13}"]`).classList.contains("hinted") && JSON.parse(d.querySelector(`#pitch [data-slot="${k13}"]`).dataset.tip).h==="Inverser Außenverteidiger", "Eigene Wahl wird nicht überschrieben – stattdessen 💡-Hinweis an der Karte");
+    w.eval(`selectedSlot = ${k13}; renderTactics()`);
+    ok(d.querySelector(".hint-box") && d.querySelector(".hint-box").textContent.includes("Inverser Außenverteidiger"), "Seitenleiste: 'Passt besser zur Bewegung … Übernehmen'");
+    ok([...d.querySelectorAll("#se-in option")].some(o=>o.value==="Inverser Außenverteidiger"), "Rollen-Menü mit Ball bietet auch die Rollen der Position gegen den Ball an");
+    d.querySelector("#btnHintApply").click();
+    ok(sl13()[k13].roleIn==="Inverser Außenverteidiger" && !d.querySelector(".hint-box"), "Übernehmen setzt die Rolle");
+    d.querySelector("#toastUndoBtn").click(); ok(sl13()[k13].roleIn==="Ballspielender Innenverteidiger", "… rückgängig machbar");
+    w.eval(`state.tactics['3-5-2'].slots[${k13}].roleIn = 'Inverser Außenverteidiger'; saveState()`);
+    ok(JSON.parse(JSON.stringify(w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state))))"))).tactics["3-5-2"].slots[k13].roleIn==="Inverser Außenverteidiger", "Übersteht Speichern/Laden (Rolle der Position gegen den Ball ist erlaubt)");
+    // split view
+    d.querySelector('.phase-btn[data-phase="split"]').click();
+    ok(S().phase==="split" && d.querySelector("#pitch[data-phase='in']") && d.querySelector("#pitchOut[data-phase='out']") && d.querySelectorAll(".pitch-split figcaption")[1].textContent.includes("4-4-2") && d.querySelector(".pitch-col.split"), "Ansicht 'Beide': zwei Spielfelder (mit Ball 3-5-2 | gegen den Ball 4-4-2)");
+    const outCard = d.querySelector('#pitchOut .pitch-slot[data-pid]:not([data-pid=""])'); outCard.dispatchEvent(new w.MouseEvent("mouseover", {bubbles:true}));
+    ok(!d.querySelector("#pitchOut .pitch-tip").hidden && d.querySelector("#pitch .pitch-tip").hidden, "Info-Fenster erscheint auf dem richtigen Spielfeld");
+    ok(new Set([...d.querySelectorAll("[id]")].map(e=>e.id)).size===d.querySelectorAll("[id]").length, "Keine doppelten IDs mit zwei Spielfeldern");
+    ok(/\.link-switch\[hidden\]\{display:none !important;\}/.test(require("fs").readFileSync(DIR+"style.css","utf8")), "Umschalter Verein ⇄ Nationalteam bleibt ohne Verknüpfung versteckt (Fehler seit 11.7.1)");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border
   // is covered by the next header cell and cannot be clicked. The grip must stay inside its own cell.

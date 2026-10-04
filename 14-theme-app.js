@@ -113,10 +113,17 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.6";
+const APP_VERSION = "12.7";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.7", beta:true, title:"Nexus v12.7 – Taktik-Overhaul", items:[
+    ["neu","Neue Spielerkarten: Punkt in Vereinsfarbe mit Status-Ring (orange = Fremdposition, rot = nicht verfügbar), darunter Position, Name und das Rollen-Paar (links mit Ball, rechts gegen den Ball) als Kürzel. Beim Überfahren ein Info-Fenster mit beiden Rollen und Kurzbeschreibung."],
+    ["neu","Das Board erkennt Positionen wie in FM: LIV/IV/RIV bei der Dreierkette, AV/FV, DML/DMR, ZML/ZMR, LM/RM statt LF/RF, wenn der Flügel tiefer steht – in beiden Phasen."],
+    ["neu","Vier Ansichten: Mit Ball · Gegen den Ball · Kombiniert (Laufweg-Pfeile zur Position gegen den Ball) · Beide (zwei Spielfelder nebeneinander, beide bearbeitbar)."],
+    ["neu","Rollenvorschläge aus beiden Phasen: z. B. gegen den Ball RV, mit Ball auf der 6 → Inverser Flügelverteidiger. Standardrollen passen sich automatisch an, eigene Wahl bekommt nur einen 💡-Hinweis mit „Übernehmen“."],
+    ["neu","Bankplätze: Alle zeigen, aus, 5, 7, 9, 12, 15 oder 23 – mit „Auffüllen“ (verfügbare Spieler, mindestens ein Torwart) und „Nicht im Kader“. Die rechte Spalte ist schmaler, das Spielfeld größer."],
+    ["fix","Der Umschalter Verein ⇄ Nationalteam erschien ohne Verknüpfung als leerer Knopf (seit 11.7.1)."]]},
   {v:"12.6", beta:true, title:"Nexus v12.6 – Gegen-Ball-Formation", items:[
     ["neu","Taktik: eigene Formation gegen den Ball – z. B. mit Ball 4-2-3-1, gegen den Ball 4-3-3. Die Spieler werden automatisch der nächstgelegenen Position zugeordnet (der Torwart bleibt Torwart); Positionskürzel und Rollen gegen den Ball folgen der neuen Position. „wie mit Ball (kompakt)“ bleibt als Option."],
     ["neu","In der Ansicht „Gegen den Ball“ tauscht Ziehen nur, wer gegen den Ball wo steht – die Aufstellung mit Ball bleibt unverändert."],

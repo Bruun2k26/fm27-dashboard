@@ -2222,3 +2222,63 @@ td.num .cr-cell{text-align:right;}
 .oop-form{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);white-space:nowrap;}
 .oop-form select{background:var(--bg-800);border:1px solid var(--border);border-radius:var(--radius-m);padding:5px 8px;color:var(--text-primary);font:inherit;font-size:12.5px;}
 .oop-form select:focus{outline:none;border-color:var(--accent);}
+
+/* ---------- Nexus v12.7: tactics board overhaul – player cards, combined view, info window ---------- */
+.pitch-col{width:min(720px, calc((100vh - 190px) * .68));}
+.pitch-side{flex:0 1 400px;max-width:420px;}
+#pitch .pitch-slot{width:auto;gap:2px;}
+#pitch .pitch-slot .tok{width:40px;height:40px;border-radius:50%;padding:2px;border:2px solid transparent;display:flex;transition:border-color .12s;}
+#pitch .pitch-slot .dot{flex:1;width:auto;height:auto;border-radius:50%;background:var(--accent-fill);color:var(--on-accent);font-size:12px;font-weight:800;
+  border:1.5px solid rgba(255,255,255,.55);box-shadow:none;outline:none;transform:none;}
+#pitch .pitch-slot.offpos .tok{border-color:var(--warning);}
+#pitch .pitch-slot.unavail .tok{border-color:var(--danger);}
+#pitch .pitch-slot:hover .tok, #pitch .pitch-slot:focus-visible .tok, #pitch .pitch-slot.selected .tok{border-color:#fff;}
+#pitch .pitch-slot:focus-visible{outline:none;}
+#pitch .pitch-slot.empty .dot{background:rgba(0,0,0,.28);color:rgba(255,255,255,.7);border-style:dashed;border-color:rgba(255,255,255,.45);}
+#pitch .pitch-slot.drop-hover .tok{border-color:#fff;border-style:dashed;}
+#pitch .pitch-slot.drop-hover .dot{transform:scale(1.1);}
+.pcard{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 5px;border-radius:5px;background:rgba(10,13,20,.86);max-width:118px;}
+.pcard.empty{padding:1px 6px;}
+.pc-top{display:flex;gap:4px;align-items:baseline;white-space:nowrap;max-width:108px;overflow:hidden;}
+#pitch .pcard .cat{position:static;font-size:11px;font-weight:800;color:#8fb8ff;background:none;padding:0;border:none;}
+.pc-name{font-size:11px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;}
+.pc-roles{display:flex;border-radius:3px;overflow:hidden;}
+.pc-roles span{font-size:11px;font-weight:800;padding:0 5px;line-height:16px;}
+.pc-roles span.dim{opacity:.55;}
+.l-t .pc-r1, .pt-c.r1.l-t{background:#D3D1C7;color:#2C2C2A;} .l-t .pc-r2, .pt-c.r2.l-t{background:#B4B2A9;color:#2C2C2A;}
+.l-d .pc-r1, .pt-c.r1.l-d{background:#9FE1CB;color:#04342C;} .l-d .pc-r2, .pt-c.r2.l-d{background:#5DCAA5;color:#04342C;}
+.l-m .pc-r1, .pt-c.r1.l-m{background:#B5D4F4;color:#042C53;} .l-m .pc-r2, .pt-c.r2.l-m{background:#85B7EB;color:#042C53;}
+.l-a .pc-r1, .pt-c.r1.l-a{background:#CECBF6;color:#26215C;} .l-a .pc-r2, .pt-c.r2.l-a{background:#AFA9EC;color:#26215C;}
+.pitch-tip{position:absolute;z-index:20;width:236px;padding:7px 9px;border-radius:8px;background:rgba(10,13,20,.74);border:1px solid rgba(255,255,255,.16);color:#fff;pointer-events:none;}
+.pitch-tip[hidden]{display:none;}
+.pt-h{font-size:12px;font-weight:700;margin-bottom:3px;} .pt-h em{font-style:normal;font-weight:600;color:#9fbde6;margin-left:5px;}
+.pt-r{display:grid;grid-template-columns:auto 1fr;column-gap:6px;align-items:baseline;margin-top:4px;}
+.pt-c{font-size:11px;font-weight:800;padding:0 4px;border-radius:3px;line-height:15px;}
+.pt-r b{font-size:12px;font-weight:700;} .pt-r small{grid-column:2;font-size:11px;color:#cdd5e2;line-height:1.35;}
+.pitch-ghost{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.6);background:rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:1;}
+.pitch-ghost span{position:absolute;top:100%;margin-top:2px;font-size:10px;font-weight:800;color:rgba(255,255,255,.85);background:rgba(10,13,20,.6);padding:0 4px;border-radius:3px;white-space:nowrap;}
+.pitch-links line.run{stroke:rgba(255,255,255,.7);stroke-width:.45;stroke-dasharray:1.4 1;vector-effect:non-scaling-stroke;}
+@media (prefers-reduced-motion: reduce){ #pitch .pitch-slot .tok{transition:none;} }
+.bench-tools{display:flex;gap:6px;margin-bottom:6px;}
+.bench-tools[hidden], .bench-rest[hidden]{display:none;}
+.bench-free{padding:6px 9px;border-radius:var(--radius-m);border:1px dashed var(--border);color:var(--text-dim);font-size:12px;}
+.bench-rest{margin-top:10px;} .bench-rest summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-secondary);padding:4px 0;}
+.bench-rest .bench-list{max-height:320px;margin-top:6px;}
+#benchSize{max-width:120px;}
+.link-switch[hidden]{display:none !important;}   /* 12.7: the switch showed up empty without a linked save (since 11.7.1) */
+/* ---------- 12.7: split view, role hints ---------- */
+.pitch-col.split{width:min(1240px, calc((100vh - 190px) * .68 * 2 + 14px));}
+.pitch-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.pitch-split figure{margin:0;min-width:0;} .pitch-split figcaption{font-size:12px;font-weight:700;color:var(--text-secondary);margin:0 0 6px 2px;}
+@media (max-width:900px){ .pitch-split{grid-template-columns:1fr;} }
+#pitch .pitch-slot .tok, #pitchOut .pitch-slot .tok{position:relative;}
+.hint-mark{position:absolute;top:-6px;right:-10px;font-size:13px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));}
+.pt-hint{margin-top:6px;padding-top:5px;border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;color:#ffe08a;} .pt-hint b{color:#fff;}
+.hint-box{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0 8px;padding:7px 9px;border-radius:8px;border:1px solid color-mix(in srgb, var(--warning) 45%, var(--border));background:color-mix(in srgb, var(--warning) 9%, var(--bg-800));font-size:12.5px;}
+#pitchOut .pitch-slot .tok{width:40px;height:40px;border-radius:50%;padding:2px;border:2px solid transparent;display:flex;}
+#pitchOut .pitch-slot .dot{flex:1;width:auto;height:auto;border-radius:50%;background:var(--accent-fill);color:var(--on-accent);font-size:12px;font-weight:800;border:1.5px solid rgba(255,255,255,.55);}
+#pitchOut .pitch-slot.offpos .tok{border-color:var(--warning);} #pitchOut .pitch-slot.unavail .tok{border-color:var(--danger);}
+#pitchOut .pitch-slot:hover .tok, #pitchOut .pitch-slot.selected .tok{border-color:#fff;}
+#pitchOut .pcard .cat{position:static;font-size:11px;font-weight:800;color:#8fb8ff;background:none;padding:0;border:none;}
+#pitchOut .pitch-slot{width:auto;gap:2px;}

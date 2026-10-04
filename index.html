@@ -283,6 +283,8 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
               <div class="phase-toggle" role="group" aria-label="Spielphase">
                 <button class="phase-btn active" data-phase="in">Mit Ball</button>
                 <button class="phase-btn" data-phase="out">Gegen den Ball</button>
+                <button class="phase-btn" data-phase="both" title="Beide Phasen: Position mit Ball, Pfeil zur Position gegen den Ball">Kombiniert</button>
+                <button class="phase-btn" data-phase="split" title="Zwei Spielfelder nebeneinander: mit Ball | gegen den Ball">Beide</button>
               </div>
               <label class="oop-form" title="Formation gegen den Ball – z. B. mit Ball 4-2-3-1, gegen den Ball 4-3-3">gegen den Ball <select id="oopFormSelect" aria-label="Formation gegen den Ball"></select></label>
             </div>
@@ -306,10 +308,15 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
               </div>
               <div class="side-block" data-panel="bench">
                 <div class="side-head">
-                  <h3>Nicht aufgestellt</h3>
-                  <select autocomplete="off" id="benchFilter" aria-label="Bank nach Position filtern"><option value="">Alle</option></select>
+                  <h3 id="benchTitle">Nicht aufgestellt</h3>
+                  <select autocomplete="off" id="benchSize" aria-label="Bankplätze" title="Bankplätze – z. B. 9 in der Liga, 12 im Pokal, 15 in der Vorbereitung">
+                    <option value="all">Alle zeigen</option><option value="0">Bank aus</option><option value="5">5 Plätze</option><option value="7">7 Plätze</option><option value="9">9 Plätze</option><option value="12">12 Plätze</option><option value="15">15 Plätze</option><option value="23">23 Plätze</option>
+                  </select>
+                  <select autocomplete="off" id="benchFilter" aria-label="Nach Position filtern"><option value="">Alle</option></select>
                 </div>
+                <div class="bench-tools" id="benchTools" hidden><button class="btn btn-sm" id="btnBenchFill">Auffüllen</button><button class="btn btn-sm" id="btnBenchClear">Leeren</button></div>
                 <div class="bench-list" id="benchList" data-bench-drop></div>
+                <details class="bench-rest" id="benchRestWrap" hidden><summary id="benchRestTitle">Nicht im Kader</summary><div class="bench-list" id="benchRest" data-bench-drop></div></details>
               </div>
             </div>
           </div>
@@ -624,7 +631,7 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
 
 <div id="printArea" aria-hidden="true"></div>
 
-<script id="appParts" type="application/json">{"build": "12.6", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-ai-prompt.js", "24-career.js", "24-diary.js", "24-media.js", "25-init.js"]}</script>
+<script id="appParts" type="application/json">{"build": "12.7", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-ai-prompt.js", "24-career.js", "24-diary.js", "24-media.js", "25-init.js"]}</script>
 <script id="appLoader">
 /* Loads the program parts. 11.4.1: the parts may lie in js/ AND/OR (uploaded without folders) in the main folder –
    possibly from different versions. The loader takes the copy whose build stamp matches this index.html.

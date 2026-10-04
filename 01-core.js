@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "12.6";
+window.FM27_BUILD = "12.7";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -263,6 +263,59 @@ function validOopMap(m, n){
   const vals = []; for(let i = 0; i < n; i++){ const j = m[i]; if(!Number.isInteger(j) || j < 0 || j >= n) return false; vals.push(j); }
   return new Set(vals).size === n;
 }
+/* ---------- 12.7: board positions & role abbreviations ---------- */
+/** Short codes for the 68 FM26 roles (sixes end in 6, eights in 8) – the full name is in the info window */
+const ROLE_ABBR = {"Torwart":"TW","Linientorhüter":"LTH","Libero-Torhüter":"LBT","Kompromissloser Torhüter":"KTH","Ballspielender Torhüter":"BTH",
+  "Innenverteidiger":"IV","Stoppender Innenverteidiger":"SIV","Absichernder Innenverteidiger":"AIV","Ballspielender Innenverteidiger":"BIV","Kompromissloser Innenverteidiger":"KIV",
+  "Aufrückender Innenverteidiger":"LIB","Halbraumverteidiger":"HRV","Stoppender Halbraumverteidiger":"SHV","Absichernder Halbraumverteidiger":"AHV","Hinterlaufender Halbraumverteidiger":"HHV",
+  "Außenverteidiger":"AV","Flügelverteidiger":"FV","Abwartender Außenverteidiger":"AAV","Pressender Außenverteidiger":"PAV","Inverser Außenverteidiger":"IAV",
+  "Abwartender Flügelverteidiger":"AFV","Pressender Flügelverteidiger":"PFV","Inverser Flügelverteidiger":"IFV","Spielmachender Flügelverteidiger":"SFV","Vorgeschobener Flügelverteidiger":"VFV",
+  "Defensiver Mittelfeldspieler":"DM","Halbverteidiger":"HV","Abschirmender Sechser":"A6","Pressender Sechser":"P6","Flügelsichernder Sechser":"F6","Tiefer Spielmacher":"TSM",
+  "Abkippender Sechser":"K6","Box-to-Box-Spieler":"B2B","Box-to-Box-Spielmacher":"B2S","Zentraler Mittelfeldspieler":"ZM","Abschirmender Achter":"A8","Pressender Achter":"P8",
+  "Flügelsichernder Achter":"F8","Spielmacher":"SM","Weiter Achter":"W8","Vorgeschobener Spielmacher":"VSM","Offensiver Mittelfeldspieler":"OM","Mitarbeitender Zehner":"MZ",
+  "Zentraler Umschaltzehner":"ZUZ","Ausweichender Umschaltzehner":"AUZ","Freigeist/Freirolle":"FR","Halbraumspieler":"HRS","Zweiter Stürmer":"ZS",
+  "Äußerer Mittelfeldspieler":"ÄM","Flügelspieler":"FL","Mitarbeitender Außenspieler":"MAS","Mitarbeitender Flügelspieler":"MFS","Äußerer Umschaltspieler":"ÄUS",
+  "Umschaltflügelspieler":"UFS","Inverser Umschaltflügelspieler":"IUF","Halbraumflügel":"HRF","Äußerer Spielmacher":"ÄSM","Inverser Außenstürmer":"IAS","Außenstürmer":"AST",
+  "Mittelstürmer":"MS","Mitarbeitender Mittelstürmer":"MMS","Zentraler Umschaltstürmer":"ZUS","Ausweichender Umschaltstürmer":"AUS","Hängende Spitze":"HS","Falsche Neun":"F9",
+  "Zielspieler":"ZSP","Knipser":"KN","Halbraumstürmer":"HST"};
+/** own roles (Admin → Listen) get initials, e.g. "Klassischer Neuner" → "KN" */
+function roleAbbr(name){
+  if(ROLE_ABBR[name]) return ROLE_ABBR[name];
+  const w = String(name || "").split(/[\s\-\/]+/).filter(Boolean);
+  return (w.length > 1 ? w.slice(0,3).map(x=>x[0]).join("") : String(name || "?").slice(0,3)).toUpperCase();
+}
+/** Board positions as in FM: LIV/IV/RIV, AV/FV, DML/DMR, ZML/ZMR, LM/RM, LF/RF … – derived from where the players stand.
+    items: [{cat, x, y}] of one phase (cat = position group of the slot). Returns one code per item. */
+function boardPositions(items){
+  const out = items.map(it=>it.cat);
+  const group = (cats, names) => {
+    const idx = items.map((it,i)=>i).filter(i=>cats.includes(items[i].cat)).sort((a,b)=>items[a].x - items[b].x);
+    const nm = names[Math.min(idx.length, names.length) - 1] || null;
+    idx.forEach((i,k)=>{ if(nm) out[i] = nm[k] !== undefined ? nm[k] : nm[nm.length - 1]; });
+    return idx.length;
+  };
+  const ivs = group(["IV"], [["IV"],["IV","IV"],["LIV","IV","RIV"],["LIV","IV","IV","RIV"]]);
+  group(["DM"], [["DM"],["DML","DMR"],["DML","DM","DMR"]]);
+  group(["ZM"], [["ZM"],["ZML","ZMR"],["ZML","ZM","ZMR"]]);
+  items.forEach((it,i)=>{
+    if(it.cat === "LV" || it.cat === "RV") out[i] = (it.y < 64 || ivs >= 3) ? "FV" : "AV";
+    else if(it.cat === "LF" || it.cat === "RF") out[i] = it.y >= 40 ? (it.cat === "LF" ? "LM" : "RM") : it.cat;
+  });
+  return out;
+}
+/** 12.7: FM26 role that fits the MOVE between the phases (board position without → with the ball), or "" */
+function suggestRoleIn(pin, pout){
+  const back = /^(IV|LIV|RIV)$/, mid = /^(DM|DML|DMR|ZM|ZML|ZMR)$/, wideDef = /^(AV|FV)$/, wideAtt = /^(LM|RM|LF|RF)$/;
+  if(wideDef.test(pout) && mid.test(pin)) return "Inverser Flügelverteidiger";
+  if(wideDef.test(pout) && back.test(pin)) return "Inverser Außenverteidiger";
+  if(pout === "AV" && wideAtt.test(pin)) return "Vorgeschobener Flügelverteidiger";
+  if(/^DM/.test(pout) && back.test(pin)) return "Abkippender Sechser";
+  if(/^(LIV|RIV)$/.test(pout) && (wideDef.test(pin) || wideAtt.test(pin))) return "Hinterlaufender Halbraumverteidiger";
+  if(pout === "IV" && mid.test(pin)) return "Aufrückender Innenverteidiger";
+  return "";
+}
+/** colour group of a board position: t = keeper, d = defence, m = midfield, a = attack */
+const lineOf = code => code === "TW" ? "t" : /^(IV|LIV|RIV|AV|FV)$/.test(code) ? "d" : /^(DM|ZM|LM|RM|OM)/.test(code) ? "m" : "a";
 /** an old role name → its FM26 counterpart in this position group (or "" if there is none in the list) */
 function mapOldRole(phase, cat, name, list){
   const to = name === "Hoch bleibend" ? ROLE_RENAME.high[cat] : ROLE_RENAME[phase === "out" ? "out" : "in"][name];
@@ -991,7 +1044,9 @@ function sanitizeState(s){
     winter: parseWindow(win.winter) ? str(win.winter) : DEFAULT_WINDOWS.winter
   };
 
-  s.phase = s.phase === "out" ? "out" : "in";
+  s.phase = ["out","both","split"].includes(s.phase) ? s.phase : "in";     // 12.7: "both" = combined, "split" = two pitches
+  // 12.7: matchday bench (per save) – only used when a bench size is set
+  s.bench = Array.isArray(s.bench) ? [...new Set(s.bench.filter(id=>typeof id === "string" && (s.players || []).some(p=>p.id === id)))] : [];
 
   s.customFields = sanitizeCustomFields(s.customFields);
   const cfd = s.customFields;
@@ -1162,6 +1217,7 @@ function sanitizeState(s){
   const ui = (s.ui && typeof s.ui === "object") ? s.ui : {};
   s.ui = {
     showLinks: ui.showLinks !== false,
+    benchSize: ui.benchSize === undefined || ui.benchSize === "all" ? "all" : Math.max(0, Math.min(23, Math.round(num(ui.benchSize)))),   // 12.7
     includeWatched: !!ui.includeWatched,
     tacticsTab: ui.tacticsTab === "setpieces" ? "setpieces" : "formation",
     devTab: ui.devTab === "loans" ? "loans" : "prospects",
@@ -1203,7 +1259,7 @@ function sanitizeTacticBlock(b, ids){
       if(!o || typeof o !== "object") return;
       slots[i] = {
         playerId: ids.has(o.playerId) ? o.playerId : null,
-        roleIn: ROLES_IP[def.cat].includes(o.roleIn) ? o.roleIn : (mapOldRole("in", def.cat, o.roleIn, ROLES_IP[def.cat]) || ROLES_IP[def.cat][0]),
+        roleIn: (ROLES_IP[def.cat].includes(o.roleIn) || (of && ROLES_IP[FORMATIONS[of][oopMap[i]].cat].includes(o.roleIn))) ? o.roleIn : (mapOldRole("in", def.cat, o.roleIn, ROLES_IP[def.cat]) || ROLES_IP[def.cat][0]),
         roleOut: (oc => ROLES_OOP[oc].includes(o.roleOut) ? o.roleOut : (mapOldRole("out", oc, o.roleOut, ROLES_OOP[oc]) || ROLES_OOP[oc][0]))(of ? FORMATIONS[of][oopMap[i]].cat : def.cat)
       };
       if(o.oopPos && typeof o.oopPos === "object"){
