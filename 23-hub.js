@@ -25,7 +25,7 @@ function sanitizeHub(raw){
   }));
   // 11.5: the game library is gone – own entries stay until the user saves or deletes them; sample games are dropped
   return {v:1, name: (S(r.name).trim() || "Mein Gaming-Hub").slice(0,40), startPanel: HUB_START[r.startPanel] ? r.startPanel : "hub",
-    games: games.filter(g=>!g.sample), introSeen: !!r.introSeen};
+    games: games.filter(g=>!g.sample), introSeen: !!r.introSeen, cmStyle: r.cmStyle === "classic" ? "classic" : "quick"};
 }
 function loadHub(){ hub = sanitizeHub(readJSON(HUB_KEY)); return hub; }
 function saveHub(){ try{ store.setItem(HUB_KEY, JSON.stringify(hub)); }catch(e){ toast("Hub konnte nicht gespeichert werden – Speicher voll?"); } hubStartHint(); scheduleFolderBackup(); }
@@ -269,8 +269,9 @@ function hubSettingsModal(){
   openModal({title:"Hub-Einstellungen", body:`
     <div class="field"><label>Name des Hubs</label><input data-f="name" maxlength="40" value="${esc(hub.name)}"></div>
     <div class="field"><label>Beim Start öffnen</label><select data-f="startPanel">${options(HUB_START, hub.startPanel)}</select></div>
+    <div class="field"><label>Kontextmenü (Rechtsklick)</label><select data-f="cmStyle">${options({quick:"Schnellleiste – Symbolknöpfe und Chips", classic:"Klassisch – Untermenüs"}, hub.cmStyle)}</select></div>
     <p class="hint">Der Hub ist für alle Spielstände gleich und in „Alles exportieren (Umzug)“ enthalten.</p>`,
-    saveLabel:"Speichern", onSave: get=>{ hubUndo("Hub-Einstellungen gespeichert", ()=>{ hub.name = get("name"); hub.startPanel = get("startPanel"); }); }});
+    saveLabel:"Speichern", onSave: get=>{ hubUndo("Hub-Einstellungen gespeichert", ()=>{ hub.name = get("name"); hub.startPanel = get("startPanel"); hub.cmStyle = get("cmStyle") === "classic" ? "classic" : "quick"; }); }});
 }
 function hubClick(e){
   const t = e.target;

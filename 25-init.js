@@ -33,7 +33,7 @@ function init(){
   state = loadSlot(slotIndex.active);
   loadLayout();
   enhancePanels();
-  initNav(); initHome(); initSquad(); initTactics(); initRecruitment();
+  initNav(); initHome(); initSquad(); initTactics(); initRecruitment(); initContextMenu();
   initDevelopment(); initFixtures(); initFinance(); initAdmin(); initLists(); initBulkAndImport(); initColumnTools(); initSampleBanner(); initPhase10(); initFolderBackupUI(); initSideMenu(); initAdminNotes(); initAdminFields(); initMaintenance(); initTransferPlan(); initDeadline(); initLabs(); initTransferCenter(); initJourney(); initNotes(); initDataTools(); initCmd(); initShortcuts();
   qs("#btnSettings").addEventListener("click", openSettingsModal);
   qs("#btnLayout").addEventListener("click", openLayoutModal);

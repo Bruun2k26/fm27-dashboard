@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "12.9";
+window.FM27_BUILD = "13.0";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -1066,6 +1066,8 @@ function sanitizeState(s){
     squadRole: SQUAD_ROLES[p.squadRole] ? p.squadRole : "rotation",
     rating: clamp(Math.round(num(p.rating, 3)), 1, 5),
     potential: clamp(Math.round(num(p.potential, 0)), 0, 5),          // 12.9: overall potential (0 = not set yet)
+    noteLog: (Array.isArray(p.noteLog) ? p.noteLog : []).filter(e=>e && typeof e.t === "string" && e.t.trim()).map(e=>({id:typeof e.id === "string" ? e.id : uid(),
+      d:/^\d{4}-\d{2}-\d{2}$/.test(e.d) ? e.d : "", t:e.t.slice(0,4000), at:num(e.at) || 0})).slice(0,200),   // 13.0: dated notes
     status: STATUS[p.status] !== undefined ? p.status : "",
     note: str(p.note),
     nation: str(p.nation).trim().slice(0,40),                        // Land / Nationalität (aus FM-Import oder von Hand)
@@ -1220,6 +1222,7 @@ function sanitizeState(s){
   const ui = (s.ui && typeof s.ui === "object") ? s.ui : {};
   s.ui = {
     showLinks: ui.showLinks !== false,
+    tcDismissed: Object.fromEntries(Object.entries(ui.tcDismissed && typeof ui.tcDismissed === "object" ? ui.tcDismissed : {}).filter(([k,v])=>/^(summer|winter)-\d{4}$/.test(k) && Array.isArray(v)).map(([k,v])=>[k, v.filter(x=>typeof x === "string").slice(0,200)]).slice(-6)),   // 13.0
     benchSize: ui.benchSize === undefined || ui.benchSize === "all" ? "all" : Math.max(0, Math.min(23, Math.round(num(ui.benchSize)))),   // 12.7
     includeWatched: !!ui.includeWatched,
     tacticsTab: ui.tacticsTab === "setpieces" ? "setpieces" : "formation",

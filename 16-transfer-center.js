@@ -29,12 +29,16 @@ function returningLoans(){
   return state.loans.filter(l=>{ const end = yearFrom(l.until); return end !== null && end <= Y && listBase("loanClauses", l.clause) !== "obligation"; });
 }
 const activeLoan = l => { const e = loanEndISO(l.until); return !e || e >= state.club.ingameDate; };
+/** 13.0: hints can be hidden – per transfer window (summer 2028, winter 2029 …) */
+const tcWinId = win => `${win.key}-${win.start.getFullYear()}`;
+const tcDismissed = win => new Set(((state.ui.tcDismissed || {})[tcWinId(win)]) || []);
+function tcSetDismissed(win, list){ state.ui.tcDismissed = Object.assign({}, state.ui.tcDismissed || {}); state.ui.tcDismissed[tcWinId(win)] = [...new Set(list)]; }
 function hubTasks(win){
   const tasks = [], Y = win.start.getFullYear();
   const bosYear = win.key === "winter" ? Y : Y + 1;          // winter Jan Y: contracts ending 30.06.Y · summer Y: next year's
   state.players.filter(p=>p.contractUntil === bosYear).forEach(p=>{
     const sell = listBase("squadRoles", p.squadRole) === "sell";
-    tasks.push({icon:"⚖", cls: win.key === "winter" ? "t-red" : "t-amber",
+    tasks.push({key:"contract:" + p.id, icon:"⚖", cls: win.key === "winter" ? "t-red" : "t-amber",
       text: win.key === "winter" ? `${p.name}: Bosman – Vertrag endet 30.06.${bosYear}${sell ? " · letzte Chance auf eine Ablöse" : ""}` : `${p.name}: letztes Vertragsjahr (bis 30.06.${bosYear}) – verlängern oder verkaufen, sonst im Winter Bosman`,
       actions: (p.extendPlanned ? [] : [["Verlängerung planen", `extend:${p.id}`]]).concat(state.sales.some(x=>x.playerId === p.id) ? [] : [["Verkauf planen", `sell:${p.id}`]]),
       done: p.extendPlanned ? "Verlängerung geplant" : ""});
@@ -42,15 +46,15 @@ function hubTasks(win){
   // recall only makes sense if the loan is still running during the window (otherwise: returnee decision)
   const winStartISO = `${win.start.getFullYear()}-${String(win.start.getMonth()+1).padStart(2,"0")}-${String(win.start.getDate()).padStart(2,"0")}`;
   const runsInWindow = l => { const e = loanEndISO(l.until); return !e || e >= winStartISO; };
-  state.loans.filter(l=>listBase("playtime", l.playtime) === "bad" && activeLoan(l) && runsInWindow(l)).forEach(l=>tasks.push({icon:"↩", cls:"t-red",
+  state.loans.filter(l=>listBase("playtime", l.playtime) === "bad" && activeLoan(l) && runsInWindow(l)).forEach(l=>tasks.push({key:"recall:" + l.id, icon:"↩", cls:"t-red",
     text:`${l.name}: Spielzeit schlecht bei ${l.club || "der Leihe"} – zurückholen oder Leihe abbrechen`, actions:[["Zurückholen", `recall:${l.id}`]]}));
-  state.players.filter(p=>listBase("squadRoles", p.squadRole) === "sell" && !state.sales.some(x=>x.playerId === p.id)).forEach(p=>tasks.push({icon:"€", cls:"t-amber",
+  state.players.filter(p=>listBase("squadRoles", p.squadRole) === "sell" && !state.sales.some(x=>x.playerId === p.id)).forEach(p=>tasks.push({key:"abgabe:" + p.id, icon:"€", cls:"t-amber",
     text:`${p.name}: Kaderrolle „Abgabe“, aber nicht auf der Verkaufsliste`, actions:[["Verkauf planen", `sell:${p.id}`]]}));
-  state.sales.filter(x=>listBase("saleStatus", x.status) !== "agreed").forEach(x=>{ const p = playerById(x.playerId); if(p) tasks.push({icon:"€", cls:"",
+  state.sales.filter(x=>listBase("saleStatus", x.status) !== "agreed").forEach(x=>{ const p = playerById(x.playerId); if(p) tasks.push({key:"sale:" + x.id, icon:"€", cls:"",
     text:`${p.name}: auf der Verkaufsliste (${SALE_STATUS[x.status]}${x.price ? ", " + fmtEUR(x.price) : ""})`, actions:[["Verkäufe", "tab:sell"]]}); });
-  state.scouting.filter(t=>listBase("scoutStatus", t.status) === "fixed").forEach(t=>tasks.push({icon:"✍", cls:"t-green",
+  state.scouting.filter(t=>listBase("scoutStatus", t.status) === "fixed").forEach(t=>tasks.push({key:"fixed:" + t.id, icon:"✍", cls:"t-green",
     text:`${t.name}: Transfer fixiert – in den Kader übernehmen, sobald er in FM durch ist`, actions:[["Verpflichten", `sign:${t.id}`]]}));
-  if(win.key === "summer") returningLoans().filter(l=>!l.returnPlan).forEach(l=>tasks.push({icon:"↺", cls:"t-amber",
+  if(win.key === "summer") returningLoans().filter(l=>!l.returnPlan).forEach(l=>tasks.push({key:"return:" + l.id, icon:"↺", cls:"t-amber",
     text:`${l.name} kehrt von der Leihe zurück – einplanen, erneut verleihen oder verkaufen?`, actions:[["Entscheiden", "scroll:hubLoans"]]}));
   return tasks;
 }
@@ -412,8 +416,10 @@ function _renderTransferCenter(){
   const step = (key, label, sub) => { const order = ["prep","open","deadline"], cur = order.indexOf(phase === "none" ? "prep" : phase), me = order.indexOf(key);
     return `<div class="tc-step ${me < cur ? "done" : me === cur ? "now" : ""}"><span class="tc-dot"></span><div><strong>${label}</strong><em>${sub}</em></div></div>`; };
   const big = phase === "prep" ? `<strong>${win.days}</strong><span>Tage bis zum Start</span>` : win.days === 0 ? `<strong>HEUTE</strong><span>Deadline ${esc(state.ui.deadlineTime)} Uhr</span>` : `<strong>${win.days}</strong><span>Tag${win.days === 1 ? "" : "e"} bis zur Deadline</span>`;
-  const tasks = hubTasks(win);
+  const allTasks = hubTasks(win), hiddenSet = tcDismissed(win);
+  const tasks = allTasks.filter(t=>!hiddenSet.has(t.key)), hiddenN = allTasks.length - tasks.length;
   const shownTasks = tcAllTasks ? tasks : tasks.slice(0, 5);
+  const taskBar = tasks.length || hiddenN ? `<div class="tc-tasks-bar">${tasks.length > 1 ? '<button class="btn btn-sm btn-ghost" data-tc="dismissAll:">Alle ausblenden</button>' : ""}${hiddenN ? `<button class="btn btn-sm btn-ghost" data-tc="undismiss:">${hiddenN} ausgeblendet · wieder zeigen</button>` : ""}</div>` : "";
   const items = phase === "deadline" ? tickerItems().map(t=>`<span>${esc(t)}</span>`).join('<span class="dd-sep">◆</span>') : "";
   // pipeline
   const posFilter = x => !tcPos || x.pos === tcPos;
@@ -445,7 +451,7 @@ function _renderTransferCenter(){
   }
   if(win.key === "summer"){
     const loans = returningLoans();
-    side += `<div class="card tc-side"><div class="card-head"><h2>Kaderplanung ${esc(futureSquadEntries().label)}</h2></div>
+    side += `<div class="card tc-side"><div class="card-head"><h2>Kaderplanung ${esc(futureSquadEntries().label)}</h2><button class="btn btn-sm" data-tc="plan:">Planen ⤢</button></div>
       <div class="tc-strip">${rows.map(r=>`<button class="tc-chip ${r.sure < r.need ? "gap" : "ok"} ${tcPos === r.pos ? "sel" : ""}" data-tc="pos:${r.pos}" title="${esc(POS_NAME[r.pos] || r.pos)}: ${r.sure} von ${r.need}"><strong>${r.pos}</strong><span>${r.sure}/${r.need}</span></button>`).join("")}</div>
       <p class="hint" style="margin:6px 0 0">Klick auf eine Position filtert die Pipeline. Rot = weniger als das Soll.</p>
       ${loans.length ? `<div class="tc-sub-head">Leih-Rückkehrer</div>${loans.map(l=>`<div class="tc-row ${listBase("playtime", l.playtime) === "bad" ? "bad" : ""}"><div class="grow"><strong>${esc(l.name)}</strong> <span class="muted small">${l.pos}${l.playtime ? " · " + esc(PLAYTIME[l.playtime]) : ""}</span></div>
@@ -455,6 +461,7 @@ function _renderTransferCenter(){
     const bos = state.players.filter(p=>p.contractUntil === Y && !p.loanIn);
     const gaps = POS_LIST.map(pos=>{ const all = state.players.filter(p=>p.pos === pos), out = all.filter(p=>UNAVAILABLE.includes(p.status)); return {pos, avail: all.length - out.length, need: POS_NEED(pos), out}; }).filter(g=>g.avail < g.need);
     const toJune = Math.max(0, Math.round((new Date(Y, 5, 30) - today) / DAY));
+    side += `<div class="card tc-side tc-plan-mini"><div class="card-head"><h2>Kaderplanung ${esc(futureSquadEntries().label)}</h2><button class="btn btn-sm" data-tc="plan:">Planen ⤢</button></div></div>`;
     side += `<div class="card tc-side"><div class="card-head"><h2>⚖ Bosman-Radar</h2><span class="muted small">30.06.${Y} · noch ${toJune} Tage</span></div>
       ${bos.length ? bos.map(p=>`<div class="tc-row"><div class="grow"><strong>${plink(p.id, p.name)}</strong> <span class="muted small">${p.pos} · ${esc(SQUAD_ROLES[p.squadRole])}</span></div>
         <label class="check-label small"><input type="checkbox" data-tc-extend="${p.id}" ${p.extendPlanned ? "checked" : ""}> verl.</label>
@@ -519,7 +526,7 @@ function _renderTransferCenter(){
 `;
   box.innerHTML = `
   ${phase === "deadline" ? ddHeroHTML : normalHeroHTML}
-  ${tasks.length ? `<div class="tc-tasks">${shownTasks.map(t=>`<div class="tc-task ${t.cls}"><span aria-hidden="true">${t.icon}</span><span class="grow">${esc(t.text)}</span>${t.actions.map(([l,a])=>`<button class="btn btn-sm" data-tc="task:${esc(a)}">${esc(l)}</button>`).join("")}</div>`).join("")}
+  ${taskBar}${tasks.length ? `<div class="tc-tasks">${shownTasks.map(t=>`<div class="tc-task ${t.cls}"><button type="button" class="tc-task-x" data-tc="dismiss:${esc(t.key)}" aria-label="Hinweis ausblenden" title="Für dieses Transferfenster ausblenden">✕</button><span aria-hidden="true">${t.icon}</span><span class="grow">${esc(t.text)}</span>${t.actions.map(([l,a])=>`<button class="btn btn-sm" data-tc="task:${esc(a)}">${esc(l)}</button>`).join("")}</div>`).join("")}
     ${tasks.length > 5 ? `<button class="btn btn-sm btn-ghost" data-tc="tasks:toggle">${tcAllTasks ? "Weniger anzeigen" : `+ ${tasks.length - 5} weitere Aufgaben`}</button>` : ""}</div>` : ""}
   ${phase === "deadline" ? (()=>{ const sortB = list => list.slice().sort((x,y)=>(POS_NEED(y.pos)-hubStockCount(y.pos).sure) - (POS_NEED(x.pos)-hubStockCount(x.pos).sure) || (x.shortlist||9)-(y.shortlist||9) || y.priority-x.priority);
       const buys = sortB(state.scouting.filter(t=>t.kind !== "loan")), lns = sortB(state.scouting.filter(t=>t.kind === "loan"));
@@ -568,6 +575,46 @@ function _renderTransferCenter(){
   </div>`;
   updateTcClock();
 }
+/* ---------- 13.0: squad planning board (pop-up, connected to the squad) ---------- */
+const SP_GROUPS = [["Tor", ["TW"]], ["Abwehr", ["IV","LV","RV"]], ["Mittelfeld", ["DM","ZM","OM"]], ["Angriff", ["LF","RF","ST"]]];
+function spBoardHTML(){
+  const fse = computeFutureSquadEntries(), E = fse.entries;
+  const cls = k => FUTURE_KIND[k] ? (FUTURE_KIND[k].leaving ? "out" : FUTURE_KIND[k].uncertain ? "maybe" : "in") : "in";
+  const chip = e => `<div class="sp-chip ${cls(e.kind)}" ${e.ref === "player" ? `data-plan-pid="${e.id}" role="button" tabindex="0"` : ""} title="${esc(FUTURE_KIND[e.kind] ? FUTURE_KIND[e.kind].label : "")}">
+      <span class="sp-name">${esc(e.name)}</span><span class="sp-meta">${e.age ? e.age + " J." : ""}${e.kind !== "stay" && FUTURE_KIND[e.kind] ? ` · ${esc(FUTURE_KIND[e.kind].label)}` : ""}</span></div>`;
+  const col = pos => { const list = E.filter(e=>e.pos === pos), sure = list.filter(e=>cls(e.kind) === "in").length, need = POS_NEED(pos), gap = need - sure;
+    const order = {in:0, maybe:1, out:2};
+    return `<section class="sp-col ${gap > 0 ? "gap" : ""}" data-sp-pos="${pos}">
+      <header><strong>${pos}</strong><span class="sp-count">${sure}/${need}</span>
+        <span class="sp-need"><button type="button" class="btn-icon-sm" data-sp="need:-:${pos}" aria-label="Soll ${pos} verringern">−</button><button type="button" class="btn-icon-sm" data-sp="need:+:${pos}" aria-label="Soll ${pos} erhöhen">+</button></span></header>
+      <div class="sp-list">${list.sort((a,b)=>order[cls(a.kind)] - order[cls(b.kind)] || (b.age || 0) - (a.age || 0)).map(chip).join("") || '<p class="muted small">niemand</p>'}</div>
+      ${gap > 0 ? `<button type="button" class="btn btn-sm sp-add" data-sp="target:${pos}">+ Ziel für ${pos} (${gap} fehlt)</button>` : ""}
+    </section>`; };
+  const counted = E.filter(e=>cls(e.kind) === "in"), ages = counted.map(e=>e.age).filter(Boolean);
+  const wage = counted.reduce((sum,e)=>sum + (e.wage || 0), 0), needAll = POS_LIST.reduce((sum,pos)=>sum + POS_NEED(pos), 0);
+  return `<div class="sp-sum"><div><span>Kader nach Plan</span><strong>${counted.length} / ${needAll} Soll</strong></div>
+      <div><span>Ø Alter</span><strong>${ages.length ? (ages.reduce((a,b)=>a + b, 0) / ages.length).toFixed(1) : "–"}</strong></div>
+      <div><span>Gehälter nach Plan</span><strong>${fmtWage(wage)}</strong></div>
+      <div><span>Lücken</span><strong>${POS_LIST.filter(pos=>POS_NEED(pos) > counted.filter(e=>e.pos === pos).length).join(", ") || "keine"}</strong></div></div>
+    <div class="plan-board">${SP_GROUPS.map(([g, list])=>`<div class="sp-group"><h4>${g}</h4><div class="sp-cols">${list.map(col).join("")}</div></div>`).join("")}</div>
+    <p class="hint">Durchgestrichen = Abgang · gestrichelt = unsicher (Kaufoption, Verhandlung) · Rechtsklick auf einen Spieler für Verlängern, Abgabe, Verleihen … · Soll mit − / +</p>`;
+}
+function spRefresh(){ const b = qs("#spBoardHost"); if(b) b.innerHTML = spBoardHTML(); }
+function openSquadPlanModal(){
+  openModal({title:`Kaderplanung ${computeFutureSquadEntries().label}`, wide:true, body:`<div id="spBoardHost">${spBoardHTML()}</div>`, saveLabel:"Fertig",
+    onOpen: m=>{ m.classList.add("sp-wide");
+      m.addEventListener("click", e=>{
+        const b = e.target.closest("[data-sp]");
+        if(b){ const [k, a, pos] = b.dataset.sp.split(":");
+          if(k === "need"){ state.transferPlan = state.transferPlan || {}; state.transferPlan.targets = Object.assign({}, state.transferPlan.targets);
+            state.transferPlan.targets[pos] = clamp(POS_NEED(pos) + (a === "+" ? 1 : -1), 0, 8); saveState(); spRefresh(); }
+          else if(k === "target"){ closeModal(); openTargetModal({pos:a}); }
+          return; }
+        const c = e.target.closest("[data-plan-pid]"); if(c){ const p = playerById(c.dataset.planPid); if(p){ closeModal(); openPlayerModal(p); } }
+      }); },
+    onClose: ()=>{ renderTransferCenter(); if(typeof renderFutureSquad === "function") renderFutureSquad(); },
+    onSave: ()=>{}});
+}
 function tcCalcText(a){
   const ok = a.transfer >= 0 && a.wage >= 0;
   return `<span>danach <strong class="${a.transfer < 0 ? "neg" : "pos"}">${fmtEUR(a.transfer)}</strong> · <strong class="${a.wage < 0 ? "neg" : "pos"}">${fmtWage(a.wage)}</strong></span><span class="tc-verdict ${ok ? "yes" : "no"}">${ok ? "machbar" : "zu teuer"}</span>`;
@@ -614,6 +661,16 @@ function initTransferCenter(){
     else if(kind === "addLoan") openTargetModal({kind:"loan"});
     else if(kind === "addSale") openSaleModal();
     else if(kind === "tasks"){ tcAllTasks = !tcAllTasks; renderTransferCenter(); }
+    else if(kind === "plan") openSquadPlanModal();
+    else if(kind === "dismiss" || kind === "dismissAll" || kind === "undismiss"){
+      const win = hubWindow(); if(!win) return;
+      const before = [...tcDismissed(win)], cur = new Set(before);
+      if(kind === "dismiss") cur.add(id);
+      else if(kind === "dismissAll") hubTasks(win).forEach(t=>cur.add(t.key));
+      else cur.clear();
+      tcSetDismissed(win, [...cur]); saveState(); renderTransferCenter();
+      if(kind !== "undismiss") toast(kind === "dismiss" ? "Hinweis für dieses Transferfenster ausgeblendet" : "Alle Hinweise für dieses Transferfenster ausgeblendet", {onUndo:()=>{ tcSetDismissed(win, before); saveState(); renderTransferCenter(); }});
+    }
     else if(kind === "calcSave"){
       const name = ddCalc.name.trim() || (ddCalc.kind === "loan" ? "Leihziel" : "Panikkauf");
       state.scouting.push({id:uid(), name, pos:"ZM", age:24, grade:"B", status:"negotiating", priority:3, fee:ddCalc.fee, bonus:ddCalc.kind === "loan" ? 0 : ddCalc.bonus, wage:ddCalc.wage, note:"Schnell-Rechner", kind:ddCalc.kind, wageShare:ddCalc.share});

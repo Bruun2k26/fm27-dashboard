@@ -304,7 +304,8 @@ function applyColOrder(tableId){
   // heads are really moved in the page → without a saved order go back to the original one
   const order = (colPrefs.order[tableId] && colPrefs.order[tableId].length) ? colPrefs.order[tableId] : colDefaultOrder[tableId];
   if(!table || !order || !order.length){ markColDraggable(tableId); return; }
-  const rank = k => { const i = order.indexOf(k); return i < 0 ? order.length + 1 : i; };
+  // 13.0: unknown columns (custom fields) go to the end – but if the note is the last column, they go right before it
+  const rank = k => { const i = order.indexOf(k); if(i >= 0) return i; return order[order.length - 1] === "note" ? order.length - 1.5 : order.length + 1; };
   const sortCells = (cells, keyOf) => {
     const movable = cells.filter(c=>!COL_FIXED.has(keyOf(c)));
     const orig = new Map(movable.map((c,i)=>[c, i]));

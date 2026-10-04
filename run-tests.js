@@ -14,6 +14,15 @@ const injectApp = w => JS_PARTS.forEach(code=>{ const s = w.document.createEleme
 let failures = 0; let renderIt;
 const ok = (cond, label) => { console.log((cond?"  ✓ ":"  ✗ ")+label); if(!cond) failures++; };
 
+/** 13.0: open the context menu on an element and click an entry (by its visible text) */
+function cmPick(w, d, el, label){
+  if(!el) throw new Error("Element für Kontextmenü fehlt: " + label);
+  el.dispatchEvent(new w.MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:20, clientY:20}));
+  const m = d.querySelector(".cm"); if(!m) throw new Error("Kontextmenü nicht geöffnet");
+  const it = [...m.querySelectorAll(".cm-it, .cm-bar button")].find(x=>x.textContent.replace(/\s+/g," ").includes(label));
+  if(!it) throw new Error("Eintrag fehlt im Kontextmenü: " + label);
+  it.click();
+}
 let lastDom = null;   // 12.0: close the previous test window – 300+ open windows (with timers) ate the memory
 async function boot(seed){
   if(lastDom){ try{ lastDom.window.close(); }catch(e){} }
@@ -94,7 +103,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   tr.querySelector('[data-star="1"]').click();
   ok(S().players.find(p=>p.id===tr.dataset.id).rating===1, "Einschätzung per Stern gesetzt");
   const pid = d.querySelector('#squadTbody tr[data-id]').dataset.id;
-  d.querySelector(`#squadTbody tr[data-id="${pid}"] [data-edit]`).click();
+  d.querySelector(`#squadTbody tr[data-id="${pid}"] .player-link`).click();
   d.querySelector('#modal [data-f="altPos"]').value = "dm, xx, om"; d.querySelector("[data-modal-save]").click();
   ok(JSON.stringify(S().players.find(p=>p.id===pid).altPos)==='["DM","OM"]', "Nebenpositionen (✎-Dialog) geparst, ungültige verworfen");
   const land = d.querySelector(`#squadTbody tr[data-id="${pid}"] [data-field="nation"]`);
@@ -106,13 +115,13 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   ok(n>0 && n<20, `Filter 'Vertrag ≤ 12 Monate': ${n} Spieler`);
   sf.value=""; sf.dispatchEvent(new w.Event("change"));
   const loanP = S().players[3];
-  d.querySelector(`#squadTbody tr[data-id="${loanP.id}"] [data-loan]`).click();
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-id="${loanP.id}"]`), "Verleihen");
   d.querySelector('[data-f="club"]').value = "Testclub";
   d.querySelector("[data-modal-save]").click();
   ok(!S().players.some(p=>p.id===loanP.id) && S().loans.some(l=>l.name===loanP.name && l.club==="Testclub"), "Spieler verliehen → in Leih-Übersicht");
 
   const er = d.querySelector("#squadTbody tr[data-id]"), eid = er.dataset.id;
-  er.querySelector("[data-edit]").click();
+  er.querySelector(".player-link").click();
   ok(d.querySelector("#modal h3").textContent.includes("Spielerprofil") && d.querySelector('[data-f="name"]').value===S().players.find(p=>p.id===eid).name, "✎ öffnet das Spielerprofil mit vorhandenen Daten (v12.9)");
   d.querySelector('[data-f="note"]').value = "Langfristig Kapitän"; d.querySelector('[data-f="salary"]').value = "70000";
   const cnt0 = S().players.length;
@@ -124,7 +133,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   ok(S().players.find(p=>p.id===eid).name==="Neuer Name", "Inline-Bearbeitung des Namens funktioniert");
 
   const ep2 = S().players[0];
-  d.querySelector(`#squadTbody tr[data-id="${ep2.id}"] [data-edit]`).click();
+  d.querySelector(`#squadTbody tr[data-id="${ep2.id}"] .player-link`).click();
   ok(d.querySelector('[data-f="age"]').disabled, "Alter im Dialog gesperrt, wenn Geburtsdatum vorhanden");
   d.querySelector('[data-f="note"]').value = "Kapitän"; d.querySelector('[data-f="birthDate"]').value = "1990-01-01";
   d.querySelector("[data-modal-save]").click();
@@ -694,7 +703,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   w.eval("openPlayerModal()"); d.querySelector('#modal [data-f="name"]').value="Neu Mann"; d.querySelector("[data-modal-save]").click();
   ok(L().slice(-1)[0].action==="add" && L().slice(-1)[0].entity==="Neu Mann", "Neuer Spieler protokolliert");
   const neu = S().players.find(p=>p.name==="Neu Mann");
-  d.querySelector(`#squadTbody tr[data-id="${neu.id}"] [data-del]`).click();
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-id="${neu.id}"]`), "Löschen");
   const delE = L().slice(-1)[0];
   ok(delE.action==="remove" && delE.before.name==="Neu Mann", "Löschen protokolliert (inkl. Daten zum Wiederherstellen)");
   ok(w.eval(`revertLogEntry("${delE.id}")`) && S().players.some(p=>p.id===neu.id), "Gelöschten Spieler aus dem Protokoll zurückgeholt");
@@ -1229,11 +1238,11 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval(`saveState()`);
   ok(S().history[fayeP10.id].length===3, "Ohne Änderung kein neuer Punkt");
   d.querySelector('.nav-btn[data-view="squad"]').click();
-  d.querySelector(`#squadTbody tr[data-id="${coutoP10.id}"] [data-edit]`).click();
+  d.querySelector(`#squadTbody tr[data-id="${coutoP10.id}"] .player-link`).click();
   const hbP10 = d.querySelector("#modal .hist-box");
   ok(hbP10 && hbP10.querySelectorAll(".spark").length===2 && hbP10.textContent.includes("★★★★ → ★★★★★") && hbP10.querySelectorAll(".hist-table tbody tr").length===3, "✎-Dialog: Verlauf mit Kurven (Einschätzung, Gehalt) und Tabelle");
   w.eval("closeModal()");
-  d.querySelector(`#squadTbody tr[data-id="${S().players.find(p=>p.name==="Jonas Lindqvist").id}"] [data-edit]`).click();
+  d.querySelector(`#squadTbody tr[data-id="${S().players.find(p=>p.name==="Jonas Lindqvist").id}"] .player-link`).click();
   ok(d.querySelector("#modal .hist-box").textContent.includes("entsteht mit der Zeit"), "Spieler ohne Verlauf: Erklärung statt leerer Kurve");
   w.eval("closeModal()");
   // FM imports feed the history
@@ -1574,7 +1583,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const headsC = [...d.querySelectorAll("#squadTable thead th.cf-head")].map(th=>th.textContent.trim());
   ok(headsC.join("|")==="Homegrown|Strafen|Scouting-Priorität", "Kadertabelle: 3 neue Spalten vor den Aktionen ("+headsC.join(", ")+")");
   const lastHeadC = [...d.querySelectorAll("#squadTable thead th")].pop();
-  ok(!lastHeadC.classList.contains("cf-head") && d.querySelectorAll("#squadTbody tr[data-id]")[0].querySelectorAll("td.cf-cell").length===3, "Jede Zeile hat 3 Feld-Zellen, Aktionen bleiben ganz rechts");
+  ok(!lastHeadC.classList.contains("cf-head") && d.querySelectorAll("#squadTbody tr[data-id]")[0].querySelectorAll("td.cf-cell").length===3, "Jede Zeile hat 3 Feld-Zellen, die Notiz bleibt ganz rechts (v13.0)");
   const pid0C = S().players[0].id, pid1C = S().players[1].id;
   const cellC = (pid, fid) => d.querySelector(`#squadTbody tr[data-id="${pid}"] [data-cf="${fid}"]`);
   const hgC = cellC(pid0C, FC[0].id); hgC.checked = true; hgC.dispatchEvent(new w.Event("change",{bubbles:true}));
@@ -1652,7 +1661,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   d.querySelector("[data-modal-save]").click();
   ok(!S().players[0].custom[FC[0].id] && S().players[0].custom[FC[1].id]===3 && S().players[2].custom[FC[0].id]===true, "Übernommen: Homegrown Nein/Ja, Strafen 3");
   // dialog ✎
-  d.querySelector(`#squadTbody tr[data-id="${S().players[2].id}"] [data-edit]`).click();
+  d.querySelector(`#squadTbody tr[data-id="${S().players[2].id}"] .player-link`).click();
   ok(d.querySelector("#modal .cf-modal") && d.querySelector(`#modal [data-cfm="${FC[0].id}"]`).checked, "✎-Dialog zeigt die eigenen Felder");
   d.querySelector(`#modal [data-cfm="${FC[1].id}"]`).value = "4,5"; d.querySelector("[data-modal-save]").click();
   ok(S().players[2].custom[FC[1].id]===4.5 && S().players[2].custom[FC[0].id]===true, "Im Dialog gespeichert (4,5 → 4.5), andere Werte bleiben");
@@ -1847,7 +1856,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const fayeBeforeD = JSON.parse(JSON.stringify(S().players.find(x=>x.name==="Aurelien Faye")));
   const histLenD = (S().history[fayeBeforeD.id] || []).length;
   d.querySelector('.nav-btn[data-view="squad"]').click();
-  d.querySelector(`#squadTbody tr[data-id="${fayeBeforeD.id}"] [data-loan]`).click();
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-id="${fayeBeforeD.id}"]`), "Verleihen");
   d.querySelector('#modal [data-f="club"]').value = "FC Leihstadt"; d.querySelector('#modal [data-f="until"]').value = "06/2028";
   d.querySelector("[data-modal-save]").click();
   const loanFD = S().loans.find(l=>l.name==="Aurelien Faye");
@@ -2124,7 +2133,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   w.eval(`(()=>{ const p = state.players.find(x=>x.name==="Aurelien Faye"); p.valueMin = 12000000; p.valueMax = 15000000; p.nation = "Frankreich"; saveState(); })()`);
   const fid9 = S().players.find(x=>x.name==="Aurelien Faye").id;
   d.querySelector('.nav-btn[data-view="squad"]').click();
-  d.querySelector(`#squadTbody tr[data-id="${fid9}"] [data-loan]`).click(); d.querySelector('#modal [data-f="club"]').value = "FC Leih"; d.querySelector("[data-modal-save]").click();
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-id="${fid9}"]`), "Verleihen"); d.querySelector('#modal [data-f="club"]').value = "FC Leih"; d.querySelector("[data-modal-save]").click();
   w.eval(`returnLoan(state.loans.find(l=>l.name==="Aurelien Faye"))`);
   ok(S().players.find(x=>x.name==="Aurelien Faye").valueMax===15000000, "Leihrückkehr: Transferwert zurück");
   for(const cell of ["", "-", "Unverkäuflich", "N/A"]){
@@ -2145,7 +2154,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ({w,d,errs,S} = await boot());
   w.eval(`(()=>{ const p = state.players.find(x=>x.name==="Aurelien Faye"); p.valueMin = 12000000; p.valueMax = 15000000; p.nation = "Frankreich"; saveState(); navigate("squad"); })()`);
   const fid9b = S().players.find(x=>x.name==="Aurelien Faye").id;
-  d.querySelector(`#squadTbody tr[data-id="${fid9b}"] [data-loan]`).click(); d.querySelector('#modal [data-f="club"]').value = "FC Leih"; d.querySelector('#modal [data-f="until"]').value = "06/2028"; d.querySelector("[data-modal-save]").click();
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-id="${fid9b}"]`), "Verleihen"); d.querySelector('#modal [data-f="club"]').value = "FC Leih"; d.querySelector('#modal [data-f="until"]').value = "06/2028"; d.querySelector("[data-modal-save]").click();
   const lr9 = [...d.querySelectorAll("#squadTbody tr.loaned-row")];
   ok(lr9.length===3 && lr9.map(r=>r.textContent).join().includes("Aurelien Faye"), "Verliehene Spieler stehen weiter im Kader (3 inkl. Beispiel-Leihen)");
   const fr9 = lr9.find(r=>r.textContent.includes("Aurelien Faye"));
@@ -2163,8 +2172,8 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(!d.querySelector("#squadTbody tr.loaned-row") && S().ui.showLoaned===false, "'Verliehene zeigen' ausschalten blendet sie aus (gespeichert)");
   const sw9b = d.querySelector("#squadShowLoaned"); sw9b.checked = true; sw9b.dispatchEvent(new w.Event("change",{bubbles:true}));
   const lid9 = S().loans.find(l=>l.name==="Aurelien Faye").id;
-  d.querySelector(`#squadTbody [data-return-loan="${lid9}"]`).click();
-  ok(S().players.some(p=>p.name==="Aurelien Faye" && p.valueMax===15000000) && !d.querySelector(`#squadTbody [data-return-loan="${lid9}"]`), "'↙ Zurückholen' direkt aus dem Kader");
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-loan-id="${lid9}"]`), "Zurück in den Kader holen");
+  ok(S().players.some(p=>p.name==="Aurelien Faye" && p.valueMax===15000000) && !d.querySelector(`#squadTbody tr[data-loan-id="${lid9}"]`), "'Zurück in den Kader holen' per Kontextmenü direkt aus dem Kader");
   // 8.7 – only the visible view is redrawn
   w.eval("navigate('home')");
   d.querySelector("#squadTbody").setAttribute("data-marker", "alt");
@@ -2370,10 +2379,10 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const dragQ = (type, el, x) => { const ev = new w.Event(type, {bubbles:true, cancelable:true});
     Object.defineProperty(ev, "dataTransfer", {value:{setData(){}, getData(){ return ""; }, effectAllowed:"", dropEffect:""}}); Object.defineProperty(ev, "clientX", {value:x || 0}); el.dispatchEvent(ev); return ev; };
   const thQ = k => d.querySelector(`#squadTable thead th[data-col="${k}"]`);
-  ok(thQ("note").draggable && thQ("pos").draggable && !thQ("sel").draggable && !thQ("actions").draggable, "Spaltenköpfe ziehbar – Auswahl und Aktionen bleiben fest");
+  ok(thQ("note").draggable && thQ("pos").draggable && !thQ("sel").draggable && !thQ("actions"), "Spaltenköpfe ziehbar – Auswahl bleibt fest, keine Aktionsspalte mehr (v13.0)");
   dragQ("dragstart", thQ("note")); dragQ("dragover", thQ("pos"), -1); dragQ("drop", thQ("pos"), -1); dragQ("dragend", thQ("note"));
   let hkQ = headKeysQ().filter(k=>k!=="valueMax");
-  ok(hkQ.indexOf("note") === hkQ.indexOf("pos") - 1 && hkQ[0]==="sel" && hkQ[hkQ.length-1]==="actions", "Notiz vor 'Pos.' gezogen: "+hkQ.slice(0,5).join(", ")+" …");
+  ok(hkQ.indexOf("note") === hkQ.indexOf("pos") - 1 && hkQ[0]==="sel" && !hkQ.includes("actions"), "Notiz vor 'Pos.' gezogen: "+hkQ.slice(0,5).join(", ")+" …");
   ok(JSON.stringify(rowKeysQ())===JSON.stringify(headKeysQ().filter(k=>k!=="valueMax")), "Zellen jeder Zeile folgen den Köpfen");
   ok(JSON.parse(w.localStorage.getItem("fm27_columns")).order.squadTable.indexOf("note") < JSON.parse(w.localStorage.getItem("fm27_columns")).order.squadTable.indexOf("pos"), "Reihenfolge gespeichert");
   w.eval("state.players[0].note = 'neu'; saveState(); renderSquad()");
@@ -2401,7 +2410,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(w.eval("colPrefs.order.squadTable") && headKeysQ()[2]!=="pos" && JSON.stringify(rowKeysQ())===JSON.stringify(headKeysQ().filter(k=>k!=="valueMax")), "Rückgängig stellt die eigene Reihenfolge wieder her, ebenfalls deckungsgleich");
   ({w,d,errs,S} = await boot(ls=>ls.setItem("fm27_columns", JSON.stringify({order:{squadTable:["note","name","sel","actions"]}}))));
   w.eval("navigate('squad')");
-  ok(headKeysQ()[0]==="sel" && headKeysQ()[1]==="note" && headKeysQ()[2]==="name" && headKeysQ().slice(-1)[0]==="actions", "Beim Start angewandt; 'sel'/'actions' im Speicher werden ignoriert");
+  ok(headKeysQ()[0]==="sel" && headKeysQ()[1]==="note" && headKeysQ()[2]==="name" && !headKeysQ().includes("actions"), "Beim Start angewandt; 'sel'/'actions' im Speicher werden ignoriert");
   // --- player links → squad, row marked ---
   ({w,d,errs,S} = await boot());
   const bosQ = S().players.find(p=>p.name==="Mats Böhringer");
@@ -2439,7 +2448,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ({w,d,errs,S} = await boot());
   w.eval("navigate('squad')");
   const kesQ = S().players.find(p=>p.name==="Dario Kessel"); w.eval(`state.players.find(p=>p.name==="Dario Kessel").note = "Eigene Spielernotiz"; saveState(); renderSquad()`);
-  d.querySelector(`#squadTbody tr[data-id="${kesQ.id}"] [data-loan]`).click();
+  cmPick(w, d, d.querySelector(`#squadTbody tr[data-id="${kesQ.id}"]`), "Verleihen");
   ok(d.querySelector('#modal [data-f="loanNote"]'), "Verleih-Dialog: Feld 'Notiz zur Leihe'");
   d.querySelector('#modal [data-f="club"]').value = "FC Leih"; d.querySelector('#modal [data-f="loanNote"]').value = "25 Einsätze versprochen"; d.querySelector("[data-modal-save]").click();
   const lkQ = S().loans.find(l=>l.name==="Dario Kessel");
@@ -3741,6 +3750,136 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     ok(w.eval("currentView")==="tactics", "Profil → 'In der Taktik'"); w.eval("navigate('squad')");
     d.querySelector(`#squadTbody tr[data-id="${id2}"] .player-link`).click(); d.querySelector('#modal [data-pp="del"]').click();
     ok(!S().players.some(p=>p.id===id2), "Profil → Löschen"); d.querySelector("#toastUndoBtn").click(); ok(S().players.some(p=>p.id===id2), "… rückgängig");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[84] Nexus v13.0: Kontextmenü, Notiz-Verlauf, Live-Profil");
+  { ({w,d,errs,S} = await boot());
+    const ctx = (el, extra) => el.dispatchEvent(new w.MouseEvent("contextmenu", Object.assign({bubbles:true, cancelable:true, clientX:30, clientY:30}, extra || {})));
+    const cm = () => d.querySelector(".cm"), wait = ms => new Promise(r=>setTimeout(r, ms));
+    w.eval("navigate('tactics'); state.phase = 'in'; renderTactics()");
+    const slEl = d.querySelector('#pitch .pitch-slot[data-pid]:not([data-pid=""])'), pid = slEl.dataset.pid, P = () => S().players.find(p=>p.id===pid);
+    ctx(slEl);
+    ok(cm() && cm().querySelector(".cm-hd").textContent.includes(P().name) && cm().querySelectorAll(".cm-bar button").length===5, "Rechtsklick auf Spieler: Menü mit Kopf und Schnellleiste (5 Knöpfe)");
+    ok([...cm().querySelectorAll(".cm-bar button")].map(b=>b.getAttribute("aria-label")).join()==="Profil,Tauschen,Bank,Notiz,Löschen", "Schnellleiste: Profil, Tauschen, Bank, Notiz, Löschen");
+    cm().querySelector('.cm-chips.status, .chs.status') ; cm().querySelector('.chs.status [data-k="injured"]').click();
+    ok(P().status==="injured" && !cm(), "Status-Chip 'Verletzt' setzt den Status und schließt das Menü");
+    d.querySelector("#toastUndoBtn").click(); ok(P().status==="", "… rückgängig");
+    const alt = w.eval("POS_LIST").find(x=>x!==P().pos && !P().altPos.includes(x));
+    ctx(d.querySelector(`#pitch .pitch-slot[data-pid="${pid}"]`)); cm().querySelector(`.chs.pos [data-k="${alt}"]`).click(); await wait(300);
+    ok(P().altPos.includes(alt), "Klick auf Positions-Chip: Nebenposition "+alt+" hinzugefügt");
+    const oldMain = P().pos;
+    ctx(d.querySelector(`#pitch .pitch-slot[data-pid="${pid}"]`)); cm().querySelector(`.chs.pos [data-k="${alt}"]`).dispatchEvent(new w.MouseEvent("dblclick", {bubbles:true}));
+    ok(P().pos===alt && P().altPos.includes(oldMain) && !P().altPos.includes(alt), "Doppelklick: "+alt+" wird Hauptposition, die alte ("+oldMain+") Nebenposition");
+    ctx(d.querySelector(`#pitch .pitch-slot[data-pid="${pid}"]`)); cm().querySelectorAll(".cm-stars")[1].querySelector('[data-s="5"]').click();
+    ok(P().potential===5, "Potenzial-Sterne im Menü");
+    ctx(d.querySelector(`#pitch .pitch-slot[data-pid="${pid}"]`));
+    const sub = [...cm().querySelectorAll(".cm-it")].find(x=>x.textContent.includes("Rolle mit Ball")); sub.click();
+    const roleIt = d.querySelectorAll(".cm")[1].querySelectorAll(".cm-it")[1], roleName = roleIt.querySelector(".lb").textContent.replace("💡 passt","").trim();
+    ok(roleIt.querySelector(".pc-r1") && roleIt.querySelector(".ds"), "Untermenü Rollen: Kürzel-Chip und Kurzbeschreibung");
+    roleIt.click();
+    const slIdx = w.eval(`Object.keys(currentSlots()).find(k=>currentSlots()[k].playerId===${JSON.stringify(pid)})`);
+    ok(S().tactics[S().formationName].slots[slIdx].roleIn===roleName, "Rolle mit Ball gesetzt: "+roleName);
+    // note
+    ctx(d.querySelector(`#pitch .pitch-slot[data-pid="${pid}"]`)); cm().querySelector('.cm-bar button[aria-label="Notiz"]').click();
+    const ta = cm().querySelector("textarea"); ta.value = "**Wichtig:** Vertrag\n- verlängern\n- Gehalt prüfen";
+    ta.dispatchEvent(new w.KeyboardEvent("keydown", {key:"Enter", ctrlKey:true, bubbles:true}));
+    ok(P().noteLog.length===1 && P().noteLog[0].d===w.eval("toISO(ingameDate())") && !cm(), "Notiz per Strg+Enter: datierter Eintrag (Spieldatum)");
+    ok(JSON.parse(JSON.stringify(w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state))))"))).players.find(p=>p.id===pid).noteLog.length===1, "Notiz-Verlauf übersteht Speichern/Laden");
+    // empty slot + pitch
+    w.eval(`unassign(${slIdx}); saveState(); renderTactics()`);
+    ctx(d.querySelector(`#pitch .pitch-slot[data-slot="${slIdx}"]`));
+    ok(cm().querySelector(".cm-hd").textContent.includes("Freie Position"), "Freie Position: eigenes Menü");
+    [...cm().querySelectorAll(".cm-it")].find(x=>x.textContent.includes("Beste Wahl")).click();
+    ok(!!S().tactics[S().formationName].slots[slIdx].playerId, "'Beste Wahl' besetzt die Position");
+    ctx(d.querySelector("#pitch .pitch-mark.pm-circle"));
+    ok(cm().querySelector(".cm-hd").textContent.includes("Spielfeld"), "Rechtsklick aufs Spielfeld: Spielfeld-Menü");
+    [...cm().querySelectorAll(".cm-it")].find(x=>x.textContent.includes("Ansicht")).click();
+    [...d.querySelectorAll(".cm")[1].querySelectorAll(".cm-it")].find(x=>x.textContent.includes("Kombiniert")).click();
+    ok(S().phase==="both", "Ansicht über das Menü gewechselt (Kombiniert)");
+    // no own menu: shift, inputs; Esc closes
+    ctx(d.querySelector("#pitch .pitch-slot[data-pid]"), {shiftKey:true}); ok(!cm(), "Shift + Rechtsklick: Browser-Menü (kein eigenes)");
+    w.eval("navigate('squad')"); ctx(d.querySelector('#squadTbody tr[data-id] input[data-field="note"]')); ok(!cm(), "In Textfeldern bleibt das Browser-Menü");
+    ctx(d.querySelector("#squadTbody tr[data-id] .player-link")); ok(cm() && [...cm().querySelectorAll(".cm-it")].some(x=>x.textContent.includes("Auf die Verkaufsliste")), "Kader-Zeile: Menü mit Planung (Verkaufsliste …)");
+    cm().dispatchEvent(new w.KeyboardEvent("keydown", {key:"Escape", bubbles:true})); ok(!cm(), "Esc schließt");
+    // classic style
+    w.eval("hub.cmStyle = 'classic'");
+    ctx(d.querySelector("#squadTbody tr[data-id] .player-link"));
+    ok(cm() && !cm().querySelector(".cm-bar") && [...cm().querySelectorAll(".cm-it")].some(x=>x.textContent.includes("Profil öffnen")) && [...cm().querySelectorAll(".cm-it")].some(x=>x.textContent.includes("Status")), "Stil 'Klassisch': ohne Schnellleiste, mit Untermenüs");
+    w.eval("cmClose(); hub.cmStyle = 'quick'");
+    ok(w.eval("sanitizeHub({cmStyle:'classic'}).cmStyle")==="classic" && w.eval("sanitizeHub({}).cmStyle")==="quick", "Einstellung gespeichert (Standard: Schnellleiste)");
+    ok(!d.querySelector('#squadTable th[data-col="actions"]') && [...d.querySelectorAll("#squadTable thead th")].pop().dataset.col==="note", "Kader: keine Aktionsspalte, Notiz ganz rechts");
+    // profile live + note log
+    const prow = d.querySelector("#squadTbody tr[data-id]"), ppid = prow.dataset.id; prow.querySelector(".player-link").click();
+    const st = d.querySelector('#modal [data-f="status"]'); st.value = "injured"; st.dispatchEvent(new w.Event("change", {bubbles:true}));
+    ok(d.querySelector("#modal .pp-head .badge").textContent.includes(w.eval("STATUS.injured")) && S().players.find(p=>p.id===ppid).status!=="injured", "Profil live: Status-Abzeichen ändert sich sofort (gespeichert erst mit Speichern)");
+    const nm = d.querySelector('#modal [data-f="name"]'); nm.value = "Neuer Name"; nm.dispatchEvent(new w.Event("input", {bubbles:true}));
+    ok(d.querySelector("#modal .pp-head strong").textContent==="Neuer Name", "Profil live: Name im Kopf");
+    d.querySelector("#ppLogNew").value = "Eintrag aus dem Profil"; d.querySelector("#ppLogAdd").click();
+    ok(S().players.find(p=>p.id===ppid).noteLog[0].t==="Eintrag aus dem Profil" && d.querySelectorAll("#ppLog .pp-log-it").length>=1, "Profil: datierter Eintrag direkt hinzufügen");
+    w.eval("closeModal()");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[85] Nexus v13.0: Entwicklung – FM-Import und CSV für Talente");
+  { ({w,d,errs,S} = await boot());
+    w.URL.createObjectURL = ()=>"blob:x"; w.URL.revokeObjectURL = ()=>{};
+    w.eval("navigate('development')");
+    ok(d.querySelector("#btnDevImport") && d.querySelector("#btnDevCsv"), "Entwicklung: Knöpfe 'Import aus FM' und 'CSV'");
+    const exP = JSON.parse(JSON.stringify(S().prospects[0])), sqP = S().players[0], nP0 = S().prospects.length;   // a real copy – the import changes the live object
+    const fm = `Name;Position;Alter;Einschätzung;Potenzial\nNeues Talent;ZM;16;2;5\n${exP.name};OM;${exP.age + 1};3;4\n${sqP.name};${sqP.pos};${sqP.age};3;3`;
+    d.querySelector("#btnDevImport").click();
+    ok(d.querySelector("#modal h3").textContent.startsWith("Talente importieren"), "Import-Assistent heißt 'Talente importieren'");
+    d.querySelector("#impText").value = fm; d.querySelector("[data-modal-save]").click(); await new Promise(r=>setTimeout(r,10));
+    ok(w.eval("importCtx.target")==="prospects" && [...d.querySelectorAll("#modal select")].some(sel=>sel.value==="potential"), "Zuordnung erkennt 'Potenzial' automatisch");
+    d.querySelector("[data-modal-save]").click(); await new Promise(r=>setTimeout(r,10));
+    const rowsI = [...d.querySelectorAll("#modal .imp-row")];
+    ok(d.querySelector("#modal h3").textContent.includes("3/3 Prüfen") && rowsI.length===3 && rowsI[0].textContent.includes("neu") && rowsI[1].textContent.includes("aktualisiert") && rowsI[2].textContent.includes("im Kader") && !rowsI[2].querySelector("input").checked, "Prüfen: neu / wird aktualisiert / steht im Kader (abgewählt)");
+    d.querySelector("[data-modal-save]").click();
+    const nt = S().prospects.find(p=>p.name==="Neues Talent"), up = S().prospects.find(p=>p.id===exP.id);
+    ok(S().prospects.length===nP0 + 1 && nt && nt.potential===5 && nt.current===2 && nt.age===16 && nt.pos==="ZM", "Neues Talent angelegt (Stärke 2, Potenzial 5)");
+    ok(up.pos==="OM" && up.potential===4 && up.current===3 && up.note===exP.note && up.pathway===exP.pathway, "Vorhandenes Talent aktualisiert – Weg und Notiz bleiben");
+    ok(!S().prospects.some(p=>p.name===sqP.name) && S().players.length===w.eval("state.players.length"), "Kaderspieler nicht übernommen, Kader unverändert");
+    d.querySelector("#toastUndoBtn").click(); ok(w.eval("state.prospects.length")===nP0 && w.eval(`state.prospects.find(p=>p.id===${JSON.stringify(exP.id)}).pos`)===exP.pos, "… rückgängig");
+    const csvT = w.eval("exportProspectsCSV()");
+    ok(csvT.split("\r\n")[0].includes("Potenzial") && csvT.split("\r\n").length===nP0 + 1, "CSV-Export der Talente (Kopfzeile + "+nP0+" Zeilen)");
+    w.eval("openImportWizard('prospects')"); d.querySelector("#impText").value = csvT; d.querySelector("[data-modal-save]").click(); await new Promise(r=>setTimeout(r,10));
+    d.querySelector("[data-modal-save]").click(); await new Promise(r=>setTimeout(r,10));
+    ok([...d.querySelectorAll("#modal .imp-row")].every(r=>r.textContent.includes("aktualisiert")), "CSV-Rundlauf: alle als 'wird aktualisiert' erkannt – keine Doppelten");
+    w.eval("closeModal()");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[86] Nexus v13.0: Transfers – Hinweise ausblenden, Kaderplanung, Pipeline-Menü");
+  { ({w,d,errs,S} = await boot());
+    w.eval("state.ui.transferTab = 'center'; state.ui.hubWindow = 'summer'; navigate('recruitment'); renderTransferCenter()");
+    const tasksN = () => d.querySelectorAll("#tr-center .tc-task").length, win = w.eval("tcWinId(hubWindow())");
+    const n0 = w.eval("hubTasks(hubWindow()).length");
+    ok(n0 > 0 && d.querySelector("#tr-center .tc-task .tc-task-x") && w.eval("hubTasks(hubWindow()).every(t=>t.key)"), "Hinweise haben ein ✕ und eine feste Kennung ("+n0+" Hinweise, Fenster "+win+")");
+    const k1 = d.querySelector("#tr-center .tc-task .tc-task-x").dataset.tc; d.querySelector("#tr-center .tc-task .tc-task-x").click();
+    ok(w.eval("hubTasks(hubWindow()).filter(t=>!tcDismissed(hubWindow()).has(t.key)).length")===n0 - 1 && d.querySelector("#tr-center .tc-tasks-bar").textContent.includes("1 ausgeblendet"), "✕ blendet einen Hinweis aus, '1 ausgeblendet · wieder zeigen'");
+    d.querySelector("#toastUndoBtn").click(); ok(!d.querySelector('#tr-center [data-tc="undismiss:"]'), "… rückgängig");
+    if(n0 > 1){ d.querySelector('#tr-center [data-tc="dismissAll:"]').click(); ok(tasksN()===0 && d.querySelector('#tr-center [data-tc="undismiss:"]').textContent.includes(n0 + " ausgeblendet"), "'Alle ausblenden'"); }
+    ok(JSON.parse(JSON.stringify(w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state))))"))).ui.tcDismissed[win].length>=1, "Ausgeblendet bleibt gespeichert (pro Fenster)");
+    w.eval("state.ui.hubWindow = 'winter'; renderTransferCenter()");
+    ok(!w.eval("tcDismissed(hubWindow()).size") && w.eval("tcWinId(hubWindow())")!==win, "Im nächsten Fenster (Winter) zählen eigene Hinweise – nichts ausgeblendet");
+    w.eval("state.ui.hubWindow = 'summer'; renderTransferCenter()");
+    d.querySelector('#tr-center [data-tc="undismiss:"]').click(); ok(tasksN() > 0, "'wieder zeigen' holt alle zurück");
+    // squad planning board
+    d.querySelector('#tr-center [data-tc="plan:"]').click();
+    ok(d.querySelector("#modal h3").textContent.startsWith("Kaderplanung") && d.querySelectorAll("#modal .sp-col").length===10 && d.querySelector("#modal .sp-sum"), "Pop-up Kaderplanung: 10 Positionen + Bilanz");
+    const need0 = w.eval("POS_NEED('ST')"); d.querySelector('#modal [data-sp="need:+:ST"]').click();
+    ok(w.eval("POS_NEED('ST')")===need0 + 1 && d.querySelector('#modal [data-sp-pos="ST"] .sp-count').textContent.endsWith("/" + (need0 + 1)), "Soll mit + erhöht (ST "+need0+" → "+(need0+1)+"), sofort sichtbar");
+    w.eval("state.transferPlan.targets.ST = 9"); w.eval("spRefresh()");
+    ok(d.querySelector('#modal [data-sp-pos="ST"].gap [data-sp="target:ST"]'), "Lücke → '+ Ziel für ST'");
+    const chip = d.querySelector("#modal [data-plan-pid]");
+    chip.dispatchEvent(new w.MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:20, clientY:20}));
+    ok(d.querySelector(".cm") && d.querySelector(".cm .cm-hd").textContent.includes(w.eval(`playerById(${JSON.stringify(chip.dataset.planPid)}).name`)), "Rechtsklick auf einen Spieler im Plan: Kontextmenü"); w.eval("cmClose()");
+    d.querySelector('#modal [data-sp="target:ST"]').click();
+    ok(d.querySelector("#modal h3").textContent.length && d.querySelector('#modal [data-f="pos"]') && d.querySelector('#modal [data-f="pos"]').value==="ST", "'+ Ziel' öffnet das Ziel-Formular mit Position ST"); w.eval("closeModal()");
+    // pipeline card menu
+    w.eval("state.scouting.push({id:'tz1', name:'Testziel', pos:'IV', age:22, grade:'B', status:'watch', priority:3, fee:1000000, bonus:0, wage:100000, note:''}); state = sanitizeState(state); saveState(); renderTransferCenter()");
+    const card = [...d.querySelectorAll("#tr-center .tc-deal")].find(c=>c.textContent.includes("Testziel"));
+    card.dispatchEvent(new w.MouseEvent("contextmenu", {bubbles:true, cancelable:true, clientX:20, clientY:20}));
+    ok(d.querySelector(".cm") && d.querySelectorAll(".cm .cm-it").length===card.querySelectorAll("[data-tc]").length, "Pipeline-Karte: Kontextmenü mit genau den Knöpfen der Karte ("+card.querySelectorAll("[data-tc]").length+")");
+    w.eval("cmClose()");
     ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

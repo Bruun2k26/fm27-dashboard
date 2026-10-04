@@ -7,7 +7,7 @@
 Dein persönliches Command Center für **Football Manager** – und für deine anderen Karrieren und Spielsessions.
 Läuft komplett im Browser, funktioniert offline, braucht kein Konto und keinen Server. **Alle Daten bleiben auf deinem Gerät.**
 
-![Version](https://img.shields.io/badge/Version-12.9-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.324_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
+![Version](https://img.shields.io/badge/Version-13.0-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.443_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
 
 > **Beta-Hinweis:** Gaming-Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt sind noch als **Beta** gekennzeichnet. Das FM27 Dashboard selbst ist stabil.
 
@@ -52,9 +52,9 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 - **Taktik** mit Plan A/B, Standards und vier Ansichten (**mit Ball, gegen den Ball, kombiniert, beide nebeneinander**) – eigene Formation gegen den Ball, alle 68 FM26-Rollen, ein Board, das Positionen wie in FM erkennt (LIV/RIV, AV/FV, LM/RM …) und passende Rollen aus der Bewegung vorschlägt, sowie Bankplätze für Liga, Pokal und Vorbereitung – die Spieler laufen beim Umschalten sichtbar auf ihre Positionen
 - **🤖 KI-Prompt (Beta)**: stellt aus Kader, Taktik, Ergebnissen und nächstem Gegner eine fertige Anfrage zusammen – kopieren und bei Claude oder einer anderen KI einfügen. Es wird nichts automatisch gesendet.
 - **Spieltag**, Ergebnisse und Gegner-Datenbank
-- **Transfers** mit Transfer-Center, Leihen und Verkaufsliste
+- **Transfers** mit Transfer-Center, Kaderplanung als Planungsbrett, ausblendbaren Hinweisen, Leihen und Verkaufsliste
 - **Finanzen**, Gehälter, Verträge und Bosman-Warnungen
-- **Entwicklung** und Talente
+- **Entwicklung** und Talente – mit FM-Import und CSV-Export
 - **Journey**: deine Manager-Karriere mit Stationen, Tagebuch, Zielen und eigenen Regeln
 - **Nationalteam-Modus** mit Spielerpool, Nominierung, Lehrgängen und Verknüpfung zum Vereinsspielstand (⇄)
 - **Mehrere Spielstände** mit Schnellwechsler (Taste **S**)
@@ -79,6 +79,7 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 - Geschützt per **PIN** mit automatischer Sperre
 
 ### ⌨ Bedienung
+- **Kontextmenü für die ganze App** per Rechtsklick (lange drücken, Menü-Taste): Status, Positionen, Sterne, Rollen, Notizen, Tauschen, Verkaufsliste … – als Schnellleiste oder klassisch
 - **Befehlspalette** mit **Strg + K**
 - **Tastenkürzel** frei anpassbar, Übersicht mit **?**
 - **Hell- und Dunkel-Design**, beide auf gute Lesbarkeit geprüft
@@ -165,10 +166,8 @@ Die Testreihe läuft mit [jsdom](https://github.com/jsdom/jsdom) und [fake-index
 
 ## Roadmap
 
-- **Nexus v12.10 – Transfer-Overhaul:** die Transfer-Seite im neuen Stil
-- **Nexus v12.11 – Rechtsklick-Menü & Performance:** eigenes Kontextmenü (u. a. Nebenpositionen), schnellerer Start
-- **Nexus v12.12 – Feinschliff & Raus aus Beta:** alle Beta-Bereiche werden stabil
-- **Nexus v13.0 – Deutsch & English:** Englisch als zweite Sprache
+- **Nexus v13.1 – Performance & Raus aus Beta:** schnellerer Start, flüssigere Listen; alle Beta-Bereiche werden stabil
+- **Nexus v13.2 – Deutsch & English:** Englisch als zweite Sprache
 - **Sobald FM27 erscheint:** Import an das neue Exportformat anpassen
 
 Den vollständigen Verlauf findest du im Dashboard unter **Hub → Neuigkeiten**.

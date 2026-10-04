@@ -113,10 +113,19 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.9";
+const APP_VERSION = "13.0";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"13.0", beta:true, title:"Nexus v13.0 – Kontextmenü & Transfers", items:[
+    ["neu","Kontextmenü für die ganze App – Rechtsklick (oder lange drücken, Menü-Taste, Shift+F10) auf Spieler im Spielfeld, auf der Bank, im Kader, in der Startelf, auf freie Positionen, aufs Spielfeld und auf Transfer-Karten. Status und Positionen als Chips (Klick = Nebenposition, Doppelklick = Hauptposition), Stärke und Potenzial als Sterne, Rollen mit Kurzbeschreibung, Tauschen, Bank, Verkaufsliste, Verleihen, Löschen – alles rückgängig machbar."],
+    ["neu","Hub → Einstellungen: Stil des Kontextmenüs – „Schnellleiste“ (Symbolknöpfe + Chips) oder „Klassisch“ (Untermenüs). Shift + Rechtsklick und Textfelder behalten das Browser-Menü."],
+    ["neu","Notizen per Kontextmenü als datierte Einträge (Spieldatum) – im Spielerprofil als formatierter Notiz-Verlauf (**fett**, - Aufzählung), dort auch direkt neue Einträge."],
+    ["neu","Spielerprofil aktualisiert Kopf und Kennzahlen live beim Bearbeiten (Status, Positionen, Sterne, Gehalt, Vertrag …)."],
+    ["neu","Entwicklung → Talente: „Import aus FM“ (gleicher Assistent wie im Kader, erkennt neu / aktualisieren / schon im Kader) und „CSV ⇩“. Der Import kennt jetzt auch das Feld „Potenzial“."],
+    ["neu","Transfers: Kaderplanung als großes Pop-up – Spalten je Position mit Abgängen, unsicheren und festen Zugängen, Soll mit − / +, Lücken mit „+ Ziel“, Bilanz (Kader, Ø Alter, Gehälter); Rechtsklick auf Spieler für Verlängern, Abgabe …"],
+    ["neu","Transfers: Hinweise unter dem Fenster-Kopf mit ✕ ausblenden – gilt für dieses Transferfenster, mit „Alle ausblenden“ und „wieder zeigen“."],
+    ["besser","Kader-Tabelle endet bei der Notiz – die Aktionsspalte (✎ ↗ ✕) ist ins Kontextmenü gewandert; eigene Felder stehen davor."]]},
   {v:"12.9", beta:true, title:"Nexus v12.9 – Kader-Overhaul", items:[
     ["neu","Neue Spalte „Potenzial“ (Gesamtpotenzial) neben „Stärke“ (bisher „Einschätzung“) – beide per Klick auf die Sterne, sortierbar, unter „Spalten“ ein-/ausblendbar. Nochmals derselbe Stern beim Potenzial = offen."],
     ["neu","Klick auf einen Spieler öffnet sein Profil: Kopf mit Position, Nebenpositionen, Alter, Land, Rolle und Status, Kennzahlen (Stärke, Potenzial, Transferwert, Gehalt, Vertrag), alle Daten zum Bearbeiten, großes Notizfeld und Aktionen (In der Taktik, Verleihen, Löschen)."],

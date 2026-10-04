@@ -229,13 +229,9 @@ function renderSquad(){
       ${showValue ? `<td data-col="valueMax" data-label="Transferwert" class="value-cell" title="${p.valueMax ? "Transferwert laut FM · ✎ zum Bearbeiten" : "Kein Transferwert"}">${fmtValue(p)}</td>` : ""}
       ${nat ? "" : `<td data-col="contractUntil" data-label="Vertrag"><div class="contract-cell" title="${lv.text}${bosmanMarked(p) ? " · Bosman: letzte 6 Vertragsmonate" : ""}"><span class="c-dot ${lv.cls}"></span><input type="number" value="${p.contractUntil}" data-field="contractUntil" aria-label="Vertrag bis Jahr">${bosmanMarked(p) ? '<span class="bosman-tag" aria-label="Bosman">B</span>' : ""}</div></td>`}
       <td data-col="status" data-label="Status"><select class="w-sel st-${listBase("status", p.status)||"ok"}" data-field="status" aria-label="Status">${options(STATUS, p.status)}</select></td>
-      <td data-col="note" data-label="Notiz"><input type="text" value="${esc(p.note)}" data-field="note" placeholder="Notiz…" aria-label="Notiz"></td>
       ${cfDefs("squad").map(d=>cfCellHTML(d, p)).join("")}
-      <td data-col="actions" data-label=""><span class="row-actions">
-        <button class="btn-icon-sm" data-edit title="Alle Daten bearbeiten" aria-label="${esc(p.name)} bearbeiten">✎</button>
-        <button class="btn-icon-sm" data-loan title="Verleihen" aria-label="${esc(p.name)} verleihen">↗</button>
-        <button class="btn-icon-sm del" data-del title="Löschen" aria-label="${esc(p.name)} löschen">✕</button>
-      </span></td>
+      <td data-col="note" data-label="Notiz"><input type="text" value="${esc(p.note)}" data-field="note" placeholder="Notiz…" aria-label="Notiz"></td>
+
     </tr>`;
   };
   const emptyRowHTML = `<tr class="empty-row"><td colspan="${qsa("#squadTable thead th").filter(th=>!th.hidden).length}">${state.players.length ? `Keine Spieler passen zu den Filtern: <strong>${esc(activeFilters.join(" · "))}</strong>. Alle ${state.players.length} Spieler sind weiterhin da. <button class="btn btn-sm" data-reset-filters>Filter zurücksetzen</button>` : "Der Kader ist leer. Lege mit „+ Spieler“ los."}</td></tr>`;
@@ -261,9 +257,10 @@ function renderSquad(){
       ${showValue ? `<td data-col="valueMax" data-label="Transferwert" class="value-cell">${pl.valueMax ? fmtValue(pl) : "—"}</td>` : ""}
       <td data-col="contractUntil" data-label="Vertrag">${pl.contractUntil || ""}</td>
       <td data-col="status" data-label="Status"><span class="loaned-status">Verliehen${l.playtime ? " · " + esc(PLAYTIME[l.playtime]) : ""}</span></td>
-      <td data-col="note" data-label="Notiz" class="small" title="${esc(l.note || pl.note || "")}">${l.note ? "📝 " + esc(l.note.slice(0,40)) : esc((pl.note || "").slice(0,40))}</td>
       ${cfDefs("squad").map(d=>`<td data-col="cf_${d.id}" class="cf-cell">${cfTxt(d)}</td>`).join("")}
-      <td data-col="actions" data-label=""><span class="row-actions"><button class="btn-icon-sm" data-return-loan="${l.id}" title="Zurück in den Kader holen" aria-label="${esc(l.name)} zurück in den Kader holen">↙</button></span></td>
+      <td data-col="note" data-label="Notiz" class="small" title="${esc(l.note || pl.note || "")}">${l.note ? "📝 " + esc(l.note.slice(0,40)) : esc((pl.note || "").slice(0,40))}</td>
+
+
     </tr>`; };
   const lp = lr.map(l=>Object.assign({name:"", pos:"", altPos:[], age:0, salary:0, valueMin:0, valueMax:0, contractUntil:0, rating:0, status:"", note:"", squadRole:"", nation:"", custom:{}},
     l.player || {}, {name:l.name, pos:l.pos, age: l.player && l.player.birthDate ? clamp(ageOn(l.player.birthDate, ingameDate()), 14, 45) : l.age, __loan:l}));
@@ -498,14 +495,13 @@ function renderContractsView(){
     </div>`;
 }
 
-function openPlayerModal(player){
-  const p = player || {name:"", pos:"ZM", altPos:[], age:22, squadRole:"rotation", rating:3, salary:20000,
-                       contractUntil: ingameDate().getFullYear()+3, status:"", note:""};
-  const ml = player ? contractMonthsLeft(p) : 0, lvl = player ? contractLevel(ml) : null;
-  const head = player ? `<div class="pp-head">
-      <span class="pp-avatar">${esc(initials(p.name))}</span>
-      <div class="pp-id"><strong>${esc(p.name)}</strong>
-        <span class="pp-meta"><span class="pp-pos">${esc(p.pos)}</span>${p.altPos.map(x=>`<span class="pp-pos alt">${esc(x)}</span>`).join("")}
+/** 13.0: profile head + key figures – rendered from (live) values, so they follow the form while editing */
+function ppHeadHTML(p){
+  const ml = contractMonthsLeft(p), lvl = contractLevel(ml);
+  return `<div class="pp-live"><div class="pp-head">
+      <span class="pp-avatar">${esc(initials(p.name || "?"))}</span>
+      <div class="pp-id"><strong>${esc(p.name || "Unbenannt")}</strong>
+        <span class="pp-meta"><span class="pp-pos">${esc(p.pos)}</span>${(p.altPos || []).map(x=>`<span class="pp-pos alt">${esc(x)}</span>`).join("")}
           <span>${p.age} Jahre</span>${p.nation ? `<span>${esc(p.nation)}</span>` : ""}<span>${esc(SQUAD_ROLES[p.squadRole] || "")}</span></span></div>
       ${p.status ? `<span class="badge ${listBase("status", p.status)}">${esc(STATUS[p.status])}</span>` : `<span class="badge ok">Verfügbar</span>`}
     </div>
@@ -515,7 +511,17 @@ function openPlayerModal(player){
       <div><span>Transferwert</span><strong>${p.valueMax ? fmtValue(p) : "—"}</strong></div>
       <div><span>Gehalt${wageSuffix()}</span><strong>${p.salary ? fmtNum(wageToUnit(p.salary)) + " €" : "—"}</strong></div>
       <div><span>Vertrag</span><strong><span class="c-dot ${lvl.cls}"></span> ${p.contractUntil}</strong><small class="muted">${esc(lvl.text)}</small></div>
-    </div>` : "";
+    </div></div>`;
+}
+function ppNoteLogHTML(p){
+  const log = p.noteLog || [];
+  return log.length ? log.map(e=>`<article class="pp-log-it"><div class="pp-log-hd"><span>${e.d ? esc(fmtDate(e.d)) : "ohne Datum"}</span><button type="button" class="btn-icon-sm" data-pp-logdel="${e.id}" aria-label="Eintrag löschen" title="Eintrag löschen">✕</button></div>${fmtNoteHTML(e.t)}</article>`).join("")
+    : '<p class="muted small" style="margin:0">Noch keine Einträge. Schreib unten einen – oder per Rechtsklick → Notiz, wo immer der Spieler auftaucht.</p>';
+}
+function openPlayerModal(player){
+  const p = player || {name:"", pos:"ZM", altPos:[], age:22, squadRole:"rotation", rating:3, salary:20000,
+                       contractUntil: ingameDate().getFullYear()+3, status:"", note:""};
+  const head = player ? ppHeadHTML(p) : "";
   openModal({
     title: player ? "Spielerprofil" : "Neuer Spieler", wide: !!player,
     leftButtons: player ? `<button class="btn btn-sm" type="button" data-pp="tactics">In der Taktik</button><button class="btn btn-sm" type="button" data-pp="loan">↗ Verleihen</button><button class="btn btn-sm btn-danger-outline" type="button" data-pp="del">Löschen</button>` : "",
@@ -548,7 +554,9 @@ function openPlayerModal(player){
         <div class="field"><label>Status</label><select data-f="status">${options(STATUS, p.status)}</select></div>
       </div></section>
       <section class="pp-sec"><h4>Notizen</h4>
-      <div class="field"><textarea data-f="note" rows="${player ? 7 : 3}" aria-label="Notiz" placeholder="Pläne, Beobachtungen, Gesprächsnotizen…">${esc(p.note)}</textarea></div></section></div>
+      <div class="field"><textarea data-f="note" rows="${player ? 4 : 3}" aria-label="Notiz" placeholder="Feste Notiz – Pläne, Beobachtungen …">${esc(p.note)}</textarea></div>
+      ${player ? `<h4 style="margin-top:12px">Notiz-Verlauf</h4><div class="pp-log" id="ppLog">${ppNoteLogHTML(p)}</div>
+        <div class="pp-log-add"><textarea id="ppLogNew" rows="2" aria-label="Neuer datierter Eintrag" placeholder="Neuer Eintrag mit Spieldatum … (**fett**, - Aufzählung)"></textarea><button type="button" class="btn btn-sm" id="ppLogAdd">+ Eintrag</button></div>` : ""}</section></div>
       ${cfDefs("squad").length ? `<div class="cf-modal"><div class="hist-head">Eigene Felder</div><div class="cf-modal-grid">${cfDefs("squad").map(d=>{
         const v = ((player || {}).custom || {})[d.id];
         const ctl = d.type === "bool" ? `<label class="check-label"><input type="checkbox" data-cfm="${d.id}" ${v ? "checked" : ""}> ${esc(d.name)}</label>`
@@ -559,6 +567,27 @@ function openPlayerModal(player){
       ${player ? historySectionHTML(player) : ""}`,
     onOpen: m=>{
       if(player) m.classList.add("pp-wide");                                  // the profile needs room for its five key figures
+      if(player){
+        // live: head + key figures follow the form before saving
+        const g = f => { const el = qs(`[data-f="${f}"]`, m); return el ? readInput(el) : undefined; };
+        const refresh = ()=>{ const pos = g("pos"), bd = g("birthDate");
+          const tmp = Object.assign({}, p, {name:String(g("name") || "").trim(), pos, nation:String(g("nation") || "").trim(), squadRole:g("squadRole"), status:g("status"),
+            altPos:String(g("altPos") || "").toUpperCase().split(/[\s,;/]+/).filter(x=>POS_LIST.includes(x) && x !== pos),
+            age: parseISO(bd) ? clamp(ageOn(bd, ingameDate()), 14, 45) : clamp(num(g("age")), 14, 45),
+            rating:clamp(num(g("rating"), 3), 1, 5), potential:clamp(num(g("potential"), 0), 0, 5), salary:Math.max(0, num(g("salary"))),
+            valueMin:num(g("valueMin")), valueMax:Math.max(num(g("valueMin")), num(g("valueMax"))), contractUntil:clamp(Math.round(num(g("contractUntil"))), 2000, 2100)});
+          const live = qs(".pp-live", m); if(live) live.outerHTML = ppHeadHTML(tmp); };
+        m.addEventListener("input", e=>{ if(e.target.closest("[data-f]") && e.target.id !== "ppLogNew") refresh(); });
+        m.addEventListener("change", e=>{ if(e.target.closest("[data-f]")) refresh(); });
+        // note log: add / delete right away (they are entries of their own, independent of "Speichern")
+        const repaint = ()=>{ qs("#ppLog", m).innerHTML = ppNoteLogHTML(player); };
+        qs("#ppLogAdd", m).onclick = ()=>{ const ta = qs("#ppLogNew", m); if(addPlayerNote(player, ta.value)){ ta.value = ""; saveState(); repaint(); renderSquad(); toast("Eintrag gespeichert"); } };
+        qs("#ppLogNew", m).addEventListener("keydown", e=>{ if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); qs("#ppLogAdd", m).click(); } });
+        qs("#ppLog", m).addEventListener("click", e=>{ const d = e.target.closest("[data-pp-logdel]"); if(!d) return;
+          const idx = player.noteLog.findIndex(x=>x.id === d.dataset.ppLogdel), gone = player.noteLog[idx]; if(idx < 0) return;
+          player.noteLog.splice(idx, 1); saveState(); repaint();
+          toast("Eintrag gelöscht", {onUndo:()=>{ player.noteLog.splice(idx, 0, gone); saveState(); repaint(); }}); });
+      }
       qsa("[data-pp]", m).forEach(b=>b.addEventListener("click", ()=>{ const k = b.dataset.pp; closeModal();
         if(k === "loan") loanOutPlayer(player);
         else if(k === "del") removeWithUndo("players", player.id, `„${player.name}“`, ()=>{ renderSquad(); renderTactics(); renderHome(); });

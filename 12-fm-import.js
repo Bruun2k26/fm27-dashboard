@@ -33,9 +33,10 @@ function splitCSVLine(line, d){
 }
 
 const IMPORT_TARGETS = {"":"— ignorieren —", name:"Name", pos:"Position(en)", altPos:"Nebenpositionen", age:"Alter", birthDate:"Geburtsdatum",
-  salary:"Gehalt", value:"Transferwert", nation:"Land / Nationalität", contractUntil:"Vertrag bis", squadRole:"Kaderrolle / Kaderstatus", rating:"Einschätzung (1–5)", status:"Status", note:"Notiz",
+  salary:"Gehalt", value:"Transferwert", nation:"Land / Nationalität", contractUntil:"Vertrag bis", squadRole:"Kaderrolle / Kaderstatus", rating:"Stärke / Einschätzung (1–5)", potential:"Potenzial (1–5)", status:"Status", note:"Notiz",
   homeClub:"Stammverein", caps:"Länderspiele", intGoals:"Länderspieltore"};
 const COLUMN_SYNONYMS = {
+  potential:["potenzial","potential","pa","pot","potenzialsterne","potentialstars"],
   name:["name","spieler","player","spielername"], pos:["position","pos","positionen","positions","bestepos","bestpos","bestposition"],
   altPos:["nebenpositionen","nebenpos","altpos"], age:["alter","age"],
   birthDate:["geburtsdatum","geb","gebdatum","dob","dateofbirth","geboren","born","birthdate"],
@@ -192,6 +193,7 @@ function buildImportRecords(rows, mapping, wageUnit){
     if(ct !== undefined){ const d = parseDateCell(ct); if(d) rec.contractUntil = d.year; }
     const role = get("squadRole"); if(role !== undefined){ const r = parseRoleCell(role); if(r) rec.squadRole = r; }
     const rt = get("rating"); if(rt !== undefined && /\d/.test(rt)) rec.rating = clamp(parseInt(rt,10), 1, 5);
+    const pt = get("potential"); if(pt !== undefined && /\d/.test(pt)) rec.potential = clamp(parseInt(pt,10), 1, 5);   // 13.0
     const st = get("status"); if(st !== undefined){ const x = parseStatusCell(st); if(x !== null) rec.status = x; }
     const nt = get("note"); if(nt !== undefined) rec.note = nt;
     const hc = get("homeClub"); if(hc !== undefined && hc.trim()) rec.homeClub = hc.trim().slice(0,60);
@@ -258,10 +260,12 @@ function diffImport(recs){
 
 /* ---------- Import wizard (3 steps: source → columns → review) ---------- */
 let importCtx = null;
-function openImportWizard(){
-  importCtx = {text:"", fileName:""};
+/** 13.0: the same FM import for the squad or for the youth prospects (Entwicklung → Talente) */
+const impLabel = () => importCtx && importCtx.target === "prospects" ? "Talente importieren" : "Kader importieren";
+function openImportWizard(target){
+  importCtx = {text:"", fileName:"", target: target === "prospects" ? "prospects" : "squad"};
   openModal({
-    title:"Kader importieren · 1/3 Quelle",
+    title:impLabel() + " · 1/3 Quelle",
     wide:true,
     body:`
       <p class="lead">In FM die gewünschte Kaderansicht öffnen (mit den Spalten, die du übernehmen willst, z. B. Name, Position, Alter, Gehalt, Vertragsende), dann <strong>Drucken</strong> (Strg+P) und als <strong>Textdatei</strong> oder <strong>Webseite</strong> speichern. Die genauen Menünamen können je nach FM-Version leicht abweichen. Eine CSV aus diesem Dashboard oder aus Excel funktioniert genauso.</p>
@@ -299,7 +303,7 @@ function openImportWizard(){
 function openImportMapping(){
   const c = importCtx, preview = c.rows.slice(1, 5);
   openModal({
-    title:"Kader importieren · 2/3 Spalten",
+    title:impLabel() + " · 2/3 Spalten",
     wide:true,
     body:`
       <p class="lead">${fmtNum(c.rows.length-1)} Zeilen erkannt${c.fileName ? ` in „${esc(c.fileName)}“` : ""}. Prüfe, welche Spalte wohin gehört – nicht benötigte auf „ignorieren“ lassen.</p>
@@ -324,7 +328,9 @@ function openImportMapping(){
       c.wageUnit = get("wageUnit");
       const {recs, warnings} = buildImportRecords(c.rows.slice(1), c.mapping, c.wageUnit);
       if(!recs.length){ qs("#impMsg").textContent = "Keine Spieler mit Namen gefunden."; return false; }
-      c.recs = recs; c.warnings = warnings; c.diff = diffImport(recs);
+      c.recs = recs; c.warnings = warnings;
+      if(c.target === "prospects"){ setTimeout(openProspectImportReview, 0); return; }
+      c.diff = diffImport(recs);
       setTimeout(openImportReview, 0);
     }
   });
@@ -362,7 +368,7 @@ function openImportReview(){
   const recLine = r => [r.pos, r.nation || "", r.age !== undefined ? r.age + " J." : "", r.salary !== undefined ? fmtWage(r.salary) : "",
     r.valueMax ? "Wert " + fmtValue(r) : "", r.contractUntil ? "bis " + r.contractUntil : ""].filter(Boolean).join(" · ");
   openModal({
-    title:"Kader importieren · 3/3 Abgleich",
+    title:impLabel() + " · 3/3 Abgleich",
     wide:true,
     body:`
       <div class="imp-summary">
@@ -441,6 +447,46 @@ function applyImport(added, changed, removed, stripSample){
 }
 
 /* ---------- CSV export (Excel-friendly: UTF-8 BOM, semicolons) ---------- */
+/* ---------- 13.0: youth prospects – review, apply, CSV ---------- */
+function openProspectImportReview(){
+  const c = importCtx, byName = new Map(state.prospects.map(p=>[normName(p.name), p])), inSquad = new Set(state.players.map(p=>normName(p.name)));
+  const rows = c.recs.map((r,i)=>{ const k = normName(r.name), ex = byName.get(k), sq = inSquad.has(k);
+    return {i, r, kind: ex ? "update" : sq ? "squad" : "new", ex}; });
+  const label = {new:"neu", update:"wird aktualisiert", squad:"steht schon im Kader"};
+  const line = x => [x.r.pos, x.r.age !== undefined ? x.r.age + " J." : "", x.r.rating ? "Stärke " + "★".repeat(x.r.rating) : "", x.r.potential ? "Potenzial " + "★".repeat(x.r.potential) : ""].filter(Boolean).join(" · ");
+  openModal({title:"Talente importieren · 3/3 Prüfen", wide:true, body:`
+    <p class="lead" style="margin-top:0">${rows.filter(x=>x.kind === "new").length} neu · ${rows.filter(x=>x.kind === "update").length} aktualisieren · ${rows.filter(x=>x.kind === "squad").length} stehen schon im Kader</p>
+    ${c.warnings.length ? `<p class="hint">${c.warnings.map(esc).join("<br>")}</p>` : ""}
+    <div class="imp-list">${rows.map(x=>`<label class="imp-row k-${x.kind}"><input type="checkbox" data-pi="${x.i}" ${x.kind === "squad" ? "" : "checked"}>
+      <span class="grow"><strong>${esc(x.r.name)}</strong><span class="muted small"> ${esc(line(x))}</span></span><span class="badge ${x.kind === "squad" ? "warn" : x.kind === "update" ? "info" : "ok"}">${label[x.kind]}</span></label>`).join("")}</div>
+    <p class="hint">Bestehende Talente behalten Weg, Fokus und Notiz – aktualisiert werden Position, Alter, Stärke und Potenzial. Spieler aus dem Kader sind abgewählt; anhaken, wenn sie zusätzlich als Talent geführt werden sollen.</p>`,
+    saveLabel:"Übernehmen",
+    onSave: ()=>{ const pick = qsa("#modal [data-pi]").filter(cb=>cb.checked).map(cb=>rows[num(cb.dataset.pi)]); applyProspectImport(pick); }});
+}
+function applyProspectImport(pick){
+  if(!pick.length){ toast("Nichts ausgewählt – Talente unverändert."); return; }
+  createRestorePoint("Vor Talent-Import");
+  const before = JSON.stringify(state.prospects); let nNew = 0, nUpd = 0;
+  pick.forEach(({r, ex})=>{
+    const age = r.birthDate ? clamp(ageOn(r.birthDate, ingameDate()), 14, 45) : r.age;
+    if(ex){ if(r.pos) ex.pos = r.pos; if(age !== undefined) ex.age = age; if(r.rating) ex.current = r.rating; if(r.potential) ex.potential = r.potential; nUpd++; }
+    else { state.prospects.push({id:uid(), name:r.name, pos:r.pos || "ZM", age: age !== undefined ? age : 17, current:r.rating || 2, potential:r.potential || 3, pathway:"u19", focus:"", readyBy:"", note:r.note || ""}); nNew++; }
+  });
+  saveState(); if(typeof renderDevelopment === "function") renderDevelopment();
+  toast(`Talente: ${nNew} neu, ${nUpd} aktualisiert`, {onUndo:()=>{ state.prospects = JSON.parse(before); saveState(); renderDevelopment(); }});
+}
+function exportProspectsCSV(){
+  const cols = [["Name",p=>p.name],["Position",p=>p.pos],["Alter",p=>p.age],["Stärke",p=>p.current],["Potenzial",p=>p.potential],
+    ["Weg",p=>PATHWAYS[p.pathway] || p.pathway],["Fokus",p=>p.focus],["Bereit ab",p=>p.readyBy],["Notiz",p=>p.note]];
+  const cell = v => { const t = String(v === undefined || v === null ? "" : v); return /[;"\n]/.test(t) ? `"${t.replace(/"/g,'""')}"` : t; };
+  const list = state.prospects.slice().sort((a,b)=>POS_LIST.indexOf(a.pos) - POS_LIST.indexOf(b.pos) || a.name.localeCompare(b.name, "de"));
+  const csv = "\uFEFF" + [cols.map(c=>c[0]).join(";")].concat(list.map(p=>cols.map(c=>cell(c[1](p))).join(";"))).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"}), url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = `talente_${state.club.name.replace(/[^\wäöüÄÖÜß-]+/g,"_")}_${state.club.ingameDate}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast(`${list.length} Talente als CSV exportiert`);
+  return csv;
+}
 function exportSquadCSV(){
   const cols = [["Name",p=>p.name],["Position",p=>p.pos],["Nebenpositionen",p=>p.altPos.join(", ")],["Land",p=>p.nation],["Alter",p=>p.age],
     ["Geburtsdatum",p=>p.birthDate ? fmtDate(p.birthDate,{day:"2-digit",month:"2-digit",year:"numeric"}) : ""],
@@ -488,6 +534,8 @@ function applyBulk(fn, message){
   saveState(); renderAll(); undo();
 }
 function initBulkAndImport(){
+  { const bi = qs("#btnDevImport"), bc = qs("#btnDevCsv");                 // 13.0: Entwicklung → Talente
+    if(bi) bi.addEventListener("click", ()=>openImportWizard("prospects")); if(bc) bc.addEventListener("click", exportProspectsCSV); }
   qs("#btnImportFM").addEventListener("click", openImportWizard);
   qs("#btnExportCSV").addEventListener("click", exportSquadCSV);
   qs("#squadTbody").addEventListener("change", e=>{
