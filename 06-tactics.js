@@ -142,12 +142,17 @@ function pitchHTML({mini=false, phaseOverride=null, domId="pitch"}={}){
       return `<line class="${hi?"hi":""}" x1="${pos[a].x}" y1="${pos[a].y}" x2="${pos[b].x}" y2="${pos[b].y}"/>`;
     }).join("");
   }
-  if(view === "both") lines = defs.map((d,i)=>slots[i]?.playerId && (Math.abs(pos[i].x - posOut[i].x) + Math.abs(pos[i].y - posOut[i].y) > 1.5)
-    ? `<line class="run" x1="${pos[i].x}" y1="${pos[i].y}" x2="${posOut[i].x}" y2="${posOut[i].y}" marker-end="url(#runHead)"/>` : "").join("");
+  if(view === "both") lines = defs.map((d,i)=>{
+    if(!slots[i]?.playerId) return "";
+    const dx = (posOut[i].x - pos[i].x) * 0.68, dy = posOut[i].y - pos[i].y, len = Math.hypot(dx, dy);
+    if(len < 5) return "";                                                       // hardly moves → no run
+    const ux = dx / len / 0.68, uy = dy / len, a = 3.4, b = 2.6;                 // trim: start outside the token, end before the ghost
+    return `<line class="run${selectedSlot === i ? " on" : ""}" data-run="${i}" x1="${(pos[i].x + ux * a).toFixed(2)}" y1="${(pos[i].y + uy * a).toFixed(2)}" x2="${(posOut[i].x - ux * b).toFixed(2)}" y2="${(posOut[i].y - uy * b).toFixed(2)}" marker-end="url(#runHead)"/>`;
+  }).join("");
 
   const ghosts = view === "both" ? defs.map((d,i)=>{ const sl = slots[i], p = sl && playerById(sl.playerId); if(!p) return "";
       if(Math.hypot((pos[i].x - posOut[i].x) * 0.68, pos[i].y - posOut[i].y) < 5) return "";   // hardly moves → no ghost over its own card
-      return `<div class="pitch-ghost" style="left:${posOut[i].x}%;top:${posOut[i].y}%" aria-hidden="true"><span>${esc(bpOut[i])}</span></div>`; }).join("") : "";
+      return `<div class="pitch-ghost${selectedSlot === i ? " on" : ""}" data-ghost="${i}" style="left:${posOut[i].x}%;top:${posOut[i].y}%" aria-hidden="true"><b>${esc(initials(p.name))}</b><span>${esc(bpOut[i])}</span></div>`; }).join("") : "";
   const nodes = defs.map((dIn,i)=>{
     const d = oopDefAt(oop, i) || dIn;                 // without the ball: position of the own formation
     const sl = slots[i], p = sl && playerById(sl.playerId);
@@ -173,7 +178,7 @@ function pitchHTML({mini=false, phaseOverride=null, domId="pitch"}={}){
     </div>`;
   }).join("");
 
-  return `<div class="pitch ${mini?"mini":""} ${view === "both" ? "view-both" : ""}" ${mini?'style="width:300px;max-width:100%"':`id="${domId}" data-board data-phase="${view === "out" ? "out" : "in"}"`}>
+  return `<div class="pitch ${mini?"mini":""} ${view === "both" ? "view-both" : ""} ${view === "both" && selectedSlot !== null && selectedSlot !== undefined ? "run-focus" : ""}" ${mini?'style="width:300px;max-width:100%"':`id="${domId}" data-board data-phase="${view === "out" ? "out" : "in"}"`}>
     <div class="pitch-mark pm-outline"></div><div class="pitch-mark pm-half"></div><div class="pitch-mark pm-circle"></div>
     <div class="pitch-mark pm-box-top"></div><div class="pitch-mark pm-box-bot"></div>
     <div class="pitch-mark pm-six-top"></div><div class="pitch-mark pm-six-bot"></div>
@@ -461,8 +466,16 @@ function pitchPercent(pitchEl, clientX, clientY){
 }
 
 /* 12.7: info window on hover / keyboard focus */
-document.addEventListener("mouseover", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el && !document.body.classList.contains("dragging")) showPitchTip(el); });
-document.addEventListener("mouseout", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el && !el.contains(e.relatedTarget)) hidePitchTip(); });
+function focusRun(pitch, i){
+  if(!pitch || !pitch.classList.contains("view-both")) return;
+  const keep = i === null ? (selectedSlot === null || selectedSlot === undefined ? null : String(selectedSlot)) : String(i);
+  pitch.classList.toggle("run-focus", keep !== null);
+  qsa("line.run", pitch).forEach(l=>l.classList.toggle("on", l.dataset.run === keep));
+  qsa(".pitch-ghost", pitch).forEach(g=>g.classList.toggle("on", g.dataset.ghost === keep));
+  qsa(".pitch-slot[data-slot]", pitch).forEach(s=>s.classList.toggle("run-on", s.dataset.slot === keep));
+}
+document.addEventListener("mouseover", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el && !document.body.classList.contains("dragging")){ showPitchTip(el); focusRun(el.closest(".pitch"), el.dataset.slot); } });
+document.addEventListener("mouseout", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el && !el.contains(e.relatedTarget)){ hidePitchTip(); focusRun(el.closest(".pitch"), null); } });
 document.addEventListener("focusin", e=>{ const el = e.target.closest && e.target.closest(".pitch[data-board] .pitch-slot"); if(el) showPitchTip(el); else hidePitchTip(); });
 /* ---------- Drag & drop (pointer events: mouse, touch, pen) ---------- */
 let drag = null;

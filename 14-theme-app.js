@@ -113,10 +113,12 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.7";
+const APP_VERSION = "12.7.1";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.7.1", beta:true, title:"Nexus v12.7.1 – Kombiniert übersichtlicher", items:[
+    ["besser","Ansicht „Kombiniert“: Die Kreise gegen den Ball zeigen die Initialen des Spielers, Laufwege beginnen und enden am Rand der Punkte. Fahre über einen Spieler (oder wähle ihn aus) – sein Laufweg leuchtet auf, alle anderen treten zurück."]]},
   {v:"12.7", beta:true, title:"Nexus v12.7 – Taktik-Overhaul", items:[
     ["neu","Neue Spielerkarten: Punkt in Vereinsfarbe mit Status-Ring (orange = Fremdposition, rot = nicht verfügbar), darunter Position, Name und das Rollen-Paar (links mit Ball, rechts gegen den Ball) als Kürzel. Beim Überfahren ein Info-Fenster mit beiden Rollen und Kurzbeschreibung."],
     ["neu","Das Board erkennt Positionen wie in FM: LIV/IV/RIV bei der Dreierkette, AV/FV, DML/DMR, ZML/ZMR, LM/RM statt LF/RF, wenn der Flügel tiefer steht – in beiden Phasen."],

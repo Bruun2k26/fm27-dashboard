@@ -3601,7 +3601,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   ok(!T12().oopForm && !T12().oopMap, "Zurück auf 'wie mit Ball (kompakt)'");
   // drag fix: the dragged dot must not hide its target
   ok(/drag\.src\.style\.pointerEvents = "none"/.test(js) && /snap zone/.test(js), "Spielertausch: gezogener Spieler verdeckt sein Ziel nicht mehr, Fangbereich um jeden Spieler");
-  ok(!require("fs").existsSync(DIR+"ANLEITUNG-App.md") && w.eval("CHANGELOG.slice(1,7).map(c=>c.v).join()")==="12.6,12.5,12.4,12.3,12.2,12.1" && w.eval("CHANGELOG.every(c=>!/^12\\./.test(c.v) || c.title.startsWith(`Nexus v${c.v} – `))"), "Versionen 12.1–12.6 im neuen Schema, Anleitung entfernt");
+  ok(!require("fs").existsSync(DIR+"ANLEITUNG-App.md") && w.eval("CHANGELOG.map(c=>c.v).join()").includes("12.6,12.5,12.4,12.3,12.2,12.1") && w.eval("CHANGELOG.every(c=>!/^12\\./.test(c.v) || c.title.startsWith(`Nexus v${c.v} – `))"), "Versionen 12.1–12.6 im neuen Schema, Anleitung entfernt");
   ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; "));
 
   console.log("\n[79] Nexus v12.7: Taktikboard – Positionen, Spielerkarten, Kombiniert, Bank");
@@ -3672,6 +3672,20 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     ok(!d.querySelector("#pitchOut .pitch-tip").hidden && d.querySelector("#pitch .pitch-tip").hidden, "Info-Fenster erscheint auf dem richtigen Spielfeld");
     ok(new Set([...d.querySelectorAll("[id]")].map(e=>e.id)).size===d.querySelectorAll("[id]").length, "Keine doppelten IDs mit zwei Spielfeldern");
     ok(/\.link-switch\[hidden\]\{display:none !important;\}/.test(require("fs").readFileSync(DIR+"style.css","utf8")), "Umschalter Verein ⇄ Nationalteam bleibt ohne Verknüpfung versteckt (Fehler seit 11.7.1)");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[81] Nexus v12.7.1: Kombinierte Ansicht übersichtlicher");
+  { ({w,d,errs,S} = await boot());
+    w.eval("navigate('tactics'); state.formationName = '4-2-3-1'; state.tactics['4-2-3-1'] = state.tactics['4-2-3-1'] || {slots:{}}; formationDefs('4-2-3-1').forEach((d,i)=>{ ensureSlot(i).playerId = state.players[i].id; }); saveState(); setOopForm('4-1-4-1'); state.phase = 'both'; selectedSlot = null; renderTactics()");
+    const gh = d.querySelector("#pitch .pitch-ghost"), gi = gh.dataset.ghost, pl = w.eval(`playerById(state.tactics['4-2-3-1'].slots[${gi}].playerId).name`);
+    ok(gh.querySelector("b").textContent===w.eval(`initials(${JSON.stringify(pl)})`) && gh.querySelector("span").textContent.length>0, "Geisterpunkt zeigt Initialen + Position gegen den Ball");
+    ok(d.querySelectorAll("#pitch line.run").length===d.querySelectorAll("#pitch .pitch-ghost").length && !d.querySelector("#pitch.run-focus"), "Ein Laufweg pro Geisterpunkt, ohne Auswahl kein Fokus");
+    d.querySelector(`#pitch [data-slot="${gi}"]`).dispatchEvent(new w.MouseEvent("mouseover", {bubbles:true}));
+    ok(d.querySelector("#pitch.run-focus") && d.querySelector(`#pitch line.run.on[data-run="${gi}"]`) && d.querySelector(`#pitch .pitch-ghost.on[data-ghost="${gi}"]`) && d.querySelectorAll("#pitch line.run.on").length===1, "Überfahren hebt genau diesen Laufweg hervor");
+    d.querySelector(`#pitch [data-slot="${gi}"]`).dispatchEvent(new w.MouseEvent("mouseout", {bubbles:true, relatedTarget:d.body}));
+    ok(!d.querySelector("#pitch.run-focus") && !d.querySelector("#pitch line.run.on"), "… und Verlassen hebt ihn wieder auf");
+    w.eval(`selectedSlot = ${gi}; renderTactics()`);
+    ok(d.querySelector("#pitch.run-focus") && d.querySelector(`#pitch line.run.on[data-run="${gi}"]`), "Ausgewählter Spieler bleibt hervorgehoben");
     ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

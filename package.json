@@ -1,6 +1,6 @@
 {
   "name": "nexus-dashboard",
-  "version": "12.7.0",
+  "version": "12.7.1",
   "private": true,
   "description": "Nexus Dashboard – Command Center für Football Manager, Karrieren und Spielsessions. Läuft komplett im Browser.",
   "scripts": {
