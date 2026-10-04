@@ -233,7 +233,7 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
         </div>
         <div class="squad-depth" id="squadDepth"></div>
         <div class="bulk-bar" id="bulkBar" hidden></div>
-        <p class="hint" style="margin:-4px 2px 10px">Alle Felder direkt in der Tabelle bearbeitbar – Änderungen werden sofort gespeichert. ✎ öffnet alle Daten eines Spielers inkl. längerer Notiz.</p>
+        <p class="hint" style="margin:-4px 2px 10px">Klick auf einen Namen öffnet das Spielerprofil · Felder beim Überfahren direkt bearbeitbar – Änderungen werden sofort gespeichert.</p>
         <div class="table-wrap">
           <table class="data-table" id="squadTable">
             <thead>
@@ -246,7 +246,8 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
                 <th data-col="age" data-sort="age" tabindex="0">Alter</th>
                 <th data-col="homeClub" data-sort="homeClub" tabindex="0" hidden>Stammverein</th><th data-col="caps" data-sort="caps" tabindex="0" hidden>Länderspiele</th><th data-col="intGoals" data-sort="intGoals" tabindex="0" hidden>Länderspieltore</th>
                 <th data-col="squadRole" data-sort="squadRole" tabindex="0">Kaderrolle</th>
-                <th data-col="rating" data-sort="rating" tabindex="0">Einschätzung</th>
+                <th data-col="rating" data-sort="rating" tabindex="0" title="Aktuelle Gesamtstärke">Stärke</th>
+                <th data-col="potential" data-sort="potential" tabindex="0" title="Gesamtpotenzial">Potenzial</th>
                 <th data-col="salary" data-sort="salary" tabindex="0">Gehalt<span class="wu">/Jahr</span></th>
                 <th data-col="valueMax" data-sort="valueMax" tabindex="0" id="thValue" hidden>Transferwert</th>
                 <th data-col="contractUntil" data-sort="contractUntil" tabindex="0">Vertrag</th>
@@ -631,7 +632,7 @@ try{if(localStorage.getItem("fm27_start_hint")!=="fm"){document.documentElement.
 
 <div id="printArea" aria-hidden="true"></div>
 
-<script id="appParts" type="application/json">{"build": "12.8", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-ai-prompt.js", "24-career.js", "24-diary.js", "24-media.js", "25-init.js"]}</script>
+<script id="appParts" type="application/json">{"build": "12.9", "parts": ["01-core.js", "02-storage.js", "03-ui-base.js", "04-portal.js", "05-squad.js", "06-tactics.js", "07-transfers.js", "08-finance.js", "09-development.js", "10-matchday-notes.js", "11-settings-io.js", "12-fm-import.js", "13-analysis-backup.js", "14-theme-app.js", "15-admin-tools.js", "16-transfer-center.js", "17-storage-care.js", "18-journey.js", "19-national.js", "20-saves-hotkeys.js", "21-admin.js", "22-layout-columns.js", "23-hub.js", "24-ai-prompt.js", "24-career.js", "24-diary.js", "24-media.js", "25-init.js"]}</script>
 <script id="appLoader">
 /* Loads the program parts. 11.4.1: the parts may lie in js/ AND/OR (uploaded without folders) in the main folder –
    possibly from different versions. The loader takes the copy whose build stamp matches this index.html.

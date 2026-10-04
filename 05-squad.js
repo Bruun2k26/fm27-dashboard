@@ -95,7 +95,10 @@ function initSquad(){
     const tr = e.target.closest("tr[data-id]"); if(!tr) return;
     const p = playerById(tr.dataset.id);
     const star = e.target.closest("[data-star]");
-    if(star){ p.rating = num(star.dataset.star); saveState(); renderSquad(); return; }
+    if(star){ const f = (star.closest("[data-stars]") || {dataset:{}}).dataset.stars || "rating", n = num(star.dataset.star);
+      p[f] = f === "potential" && p.potential === n ? 0 : n;            // potential: click the same star again = not set
+      saveState(); renderSquad(); return; }
+    if(e.target.closest("[data-profile]")) return openPlayerModal(p);
     if(e.target.closest("[data-edit]")) return openPlayerModal(p);
     if(e.target.closest("[data-loan]")) return loanOutPlayer(p);
     if(e.target.closest("[data-del]")) removeWithUndo("players", p.id, `„${p.name}“`, ()=>{ renderSquad(); renderTactics(); renderHome(); });
@@ -211,7 +214,7 @@ function renderSquad(){
     const m = contractMonthsLeft(p), lv = contractLevel(m);
     return `<tr data-id="${p.id}" class="${selectedPlayers.has(p.id) ? "selected" : ""}">
       <td class="sel-col" data-col="sel" data-label="Auswahl"><input type="checkbox" data-sel="${p.id}" ${selectedPlayers.has(p.id) ? "checked" : ""} aria-label="${esc(p.name)} auswählen"></td>
-      <td data-col="name" data-label="Name"><div class="player-cell"><span class="avatar">${esc(initials(p.name))}</span><input type="text" class="w-name" value="${esc(p.name)}" data-field="name" aria-label="Name">${p.loanIn ? '<span class="loan-in-tag" title="Ausgeliehen – geht am Leihende zurück">Leihe</span>' : ""}</div></td>
+      <td data-col="name" data-label="Name"><div class="player-cell"><span class="avatar" data-profile aria-hidden="true">${esc(initials(p.name))}</span><button type="button" class="player-link" data-profile data-field="name" title="Profil öffnen" aria-label="Profil von ${esc(p.name)} öffnen">${esc(p.name)}</button>${p.loanIn ? '<span class="loan-in-tag" title="Ausgeliehen – geht am Leihende zurück">Leihe</span>' : ""}</div></td>
       ${nat ? `<td data-col="nominated" data-label="Nominiert" class="nat-nom-cell"><label class="nom-toggle"><input type="checkbox" data-field="nominated" ${p.nominated ? "checked" : ""} aria-label="${esc(p.name)} nominiert"><span>${p.nominated ? "Nominiert" : "—"}</span></label>${campCount(p.id) ? `<span class="nom-count" title="In ${campCount(p.id)} gespeicherten Lehrgängen">${campCount(p.id)}×</span>` : ""}</td>` : ""}
       <td data-col="pos" data-label="Pos."><select class="w-pos" data-field="pos" aria-label="Position">${options(POS_LIST, p.pos)}</select></td>
       <td data-col="nation" data-label="Land"><input type="text" class="w-s" value="${esc(p.nation)}" data-field="nation" placeholder="–" aria-label="Land" title="${p.altPos.length ? "Nebenpositionen: "+esc(p.altPos.join(", "))+" (✎)" : "Nebenpositionen über ✎"}"></td>
@@ -220,7 +223,8 @@ function renderSquad(){
       <td data-col="caps" data-label="Länderspiele"><input type="number" class="w-xs" min="0" value="${p.caps}" data-field="caps" aria-label="Länderspiele"></td>
       <td data-col="intGoals" data-label="Länderspieltore"><input type="number" class="w-xs" min="0" value="${p.intGoals}" data-field="intGoals" aria-label="Länderspieltore"></td>` : ""}
       <td data-col="squadRole" data-label="Kaderrolle"><select class="w-sel" data-field="squadRole" aria-label="Kaderrolle">${options(SQUAD_ROLES, p.squadRole)}</select></td>
-      <td data-col="rating" data-label="Einschätzung">${starsInput(p.rating, 'aria-label="Eigene Einschätzung"')}</td>
+      <td data-col="rating" data-label="Stärke">${starsInput(p.rating, 'aria-label="Stärke" data-stars="rating"')}</td>
+      <td data-col="potential" data-label="Potenzial">${starsInput(p.potential || 0, 'aria-label="Potenzial" data-stars="potential"')}</td>
       ${nat ? "" : `<td data-col="salary" data-label="Gehalt${wageSuffix()}">${moneyInput(p.salary, `class="money w-m" data-field="salary" aria-label="Gehalt ${WAGE_UNITS[wageUnit()].label}"`, true)}</td>`}
       ${showValue ? `<td data-col="valueMax" data-label="Transferwert" class="value-cell" title="${p.valueMax ? "Transferwert laut FM · ✎ zum Bearbeiten" : "Kein Transferwert"}">${fmtValue(p)}</td>` : ""}
       ${nat ? "" : `<td data-col="contractUntil" data-label="Vertrag"><div class="contract-cell" title="${lv.text}${bosmanMarked(p) ? " · Bosman: letzte 6 Vertragsmonate" : ""}"><span class="c-dot ${lv.cls}"></span><input type="number" value="${p.contractUntil}" data-field="contractUntil" aria-label="Vertrag bis Jahr">${bosmanMarked(p) ? '<span class="bosman-tag" aria-label="Bosman">B</span>' : ""}</div></td>`}
@@ -251,7 +255,8 @@ function renderSquad(){
       <td data-col="nation" data-label="Land">${esc(pl.nation || "")}</td>
       <td data-col="age" data-label="Alter">${pl.birthDate ? clamp(ageOn(pl.birthDate, ingameDate()), 14, 45) : l.age}</td>
       <td data-col="squadRole" data-label="Kaderrolle">${esc(SQUAD_ROLES[pl.squadRole] || "")}</td>
-      <td data-col="rating" data-label="Einschätzung">${pl.rating ? starsRO(pl.rating) : ""}</td>
+      <td data-col="rating" data-label="Stärke">${pl.rating ? starsRO(pl.rating) : ""}</td>
+      <td data-col="potential" data-label="Potenzial">${pl.potential ? starsRO(pl.potential) : ""}</td>
       <td data-col="salary" data-label="Gehalt" class="num">${pl.salary ? fmtNum(wageToUnit(pl.salary)) : ""}</td>
       ${showValue ? `<td data-col="valueMax" data-label="Transferwert" class="value-cell">${pl.valueMax ? fmtValue(pl) : "—"}</td>` : ""}
       <td data-col="contractUntil" data-label="Vertrag">${pl.contractUntil || ""}</td>
@@ -496,9 +501,26 @@ function renderContractsView(){
 function openPlayerModal(player){
   const p = player || {name:"", pos:"ZM", altPos:[], age:22, squadRole:"rotation", rating:3, salary:20000,
                        contractUntil: ingameDate().getFullYear()+3, status:"", note:""};
+  const ml = player ? contractMonthsLeft(p) : 0, lvl = player ? contractLevel(ml) : null;
+  const head = player ? `<div class="pp-head">
+      <span class="pp-avatar">${esc(initials(p.name))}</span>
+      <div class="pp-id"><strong>${esc(p.name)}</strong>
+        <span class="pp-meta"><span class="pp-pos">${esc(p.pos)}</span>${p.altPos.map(x=>`<span class="pp-pos alt">${esc(x)}</span>`).join("")}
+          <span>${p.age} Jahre</span>${p.nation ? `<span>${esc(p.nation)}</span>` : ""}<span>${esc(SQUAD_ROLES[p.squadRole] || "")}</span></span></div>
+      ${p.status ? `<span class="badge ${listBase("status", p.status)}">${esc(STATUS[p.status])}</span>` : `<span class="badge ok">Verfügbar</span>`}
+    </div>
+    <div class="pp-kpis">
+      <div><span>Stärke</span>${starsRO(p.rating)}</div>
+      <div><span>Potenzial</span>${p.potential ? starsRO(p.potential) : '<em class="muted">offen</em>'}</div>
+      <div><span>Transferwert</span><strong>${p.valueMax ? fmtValue(p) : "—"}</strong></div>
+      <div><span>Gehalt${wageSuffix()}</span><strong>${p.salary ? fmtNum(wageToUnit(p.salary)) + " €" : "—"}</strong></div>
+      <div><span>Vertrag</span><strong><span class="c-dot ${lvl.cls}"></span> ${p.contractUntil}</strong><small class="muted">${esc(lvl.text)}</small></div>
+    </div>` : "";
   openModal({
-    title: player ? `${p.name} bearbeiten` : "Neuer Spieler",
-    body:`
+    title: player ? "Spielerprofil" : "Neuer Spieler", wide: !!player,
+    leftButtons: player ? `<button class="btn btn-sm" type="button" data-pp="tactics">In der Taktik</button><button class="btn btn-sm" type="button" data-pp="loan">↗ Verleihen</button><button class="btn btn-sm btn-danger-outline" type="button" data-pp="del">Löschen</button>` : "",
+    body:`${head}
+      <div class="pp-grid"><section class="pp-sec"><h4>Profil &amp; Vertrag</h4>
       <div class="field"><label>Name</label><input data-f="name" value="${esc(p.name)}"></div>
       <div class="field-row">
         <div class="field"><label>Position</label><select data-f="pos">${options(POS_LIST, p.pos)}</select></div>
@@ -521,10 +543,12 @@ function openPlayerModal(player){
         <div class="field"><label>Vertrag bis (Jahr, endet 30.06.)</label><input data-f="contractUntil" type="number" value="${p.contractUntil}"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Eigene Einschätzung (1–5)</label><select data-f="rating">${options({1:"★",2:"★★",3:"★★★",4:"★★★★",5:"★★★★★"}, p.rating)}</select></div>
+        <div class="field"><label>Stärke (1–5)</label><select data-f="rating">${options({1:"★",2:"★★",3:"★★★",4:"★★★★",5:"★★★★★"}, p.rating)}</select></div>
+        <div class="field"><label>Potenzial</label><select data-f="potential">${options({0:"offen",1:"★",2:"★★",3:"★★★",4:"★★★★",5:"★★★★★"}, p.potential || 0)}</select></div>
         <div class="field"><label>Status</label><select data-f="status">${options(STATUS, p.status)}</select></div>
-      </div>
-      <div class="field"><label>Notiz</label><textarea data-f="note" rows="3" placeholder="Pläne, Beobachtungen, Gesprächsnotizen…">${esc(p.note)}</textarea></div>
+      </div></section>
+      <section class="pp-sec"><h4>Notizen</h4>
+      <div class="field"><textarea data-f="note" rows="${player ? 7 : 3}" aria-label="Notiz" placeholder="Pläne, Beobachtungen, Gesprächsnotizen…">${esc(p.note)}</textarea></div></section></div>
       ${cfDefs("squad").length ? `<div class="cf-modal"><div class="hist-head">Eigene Felder</div><div class="cf-modal-grid">${cfDefs("squad").map(d=>{
         const v = ((player || {}).custom || {})[d.id];
         const ctl = d.type === "bool" ? `<label class="check-label"><input type="checkbox" data-cfm="${d.id}" ${v ? "checked" : ""}> ${esc(d.name)}</label>`
@@ -534,6 +558,12 @@ function openPlayerModal(player){
       }).join("")}</div></div>` : ""}
       ${player ? historySectionHTML(player) : ""}`,
     onOpen: m=>{
+      if(player) m.classList.add("pp-wide");                                  // the profile needs room for its five key figures
+      qsa("[data-pp]", m).forEach(b=>b.addEventListener("click", ()=>{ const k = b.dataset.pp; closeModal();
+        if(k === "loan") loanOutPlayer(player);
+        else if(k === "del") removeWithUndo("players", player.id, `„${player.name}“`, ()=>{ renderSquad(); renderTactics(); renderHome(); });
+        else if(k === "tactics"){ const slots = currentSlots(), i = Object.keys(slots).find(k2=>slots[k2] && slots[k2].playerId === player.id);
+          selectedSlot = i !== undefined ? num(i) : null; navigate("tactics"); renderTactics(); if(i === undefined) toast(`${player.name} steht nicht in der Startelf – zieh ihn von der Bank aufs Feld.`); } }));
       const bd = qs('[data-f="birthDate"]', m), ag = qs('[data-f="age"]', m);
       bd.oninput = ()=>{ const ok = !!parseISO(bd.value); ag.disabled = ok; if(ok) ag.value = ageOn(bd.value, ingameDate()); };
     },
@@ -547,7 +577,7 @@ function openPlayerModal(player){
         age: parseISO(get("birthDate")) ? clamp(ageOn(get("birthDate"), ingameDate()), 14, 45) : clamp(get("age"),14,45),
         salary:Math.max(0,get("salary")),
         contractUntil:clamp(Math.round(get("contractUntil")),2000,2100),
-        squadRole:get("squadRole"), rating:clamp(num(get("rating"),3),1,5), status:get("status"), note:get("note"),
+        squadRole:get("squadRole"), rating:clamp(num(get("rating"),3),1,5), potential:clamp(num(get("potential"),0),0,5), status:get("status"), note:get("note"),
         nation:get("nation").trim(), valueMin:Math.min(get("valueMin"), get("valueMax") || get("valueMin")), valueMax:Math.max(get("valueMin"), get("valueMax"))
       };
       // custom fields from the dialog

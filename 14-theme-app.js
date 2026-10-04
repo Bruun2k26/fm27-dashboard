@@ -113,10 +113,14 @@ function initSideMenu(){
 /* ==========================================================================
    VERSION & CHANGELOG
    ========================================================================== */
-const APP_VERSION = "12.8";
+const APP_VERSION = "12.9";
 const SEEN_VERSION_KEY = "fm27_seen_version";
 // newest first · tag: neu | besser | fix
 const CHANGELOG = [
+  {v:"12.9", beta:true, title:"Nexus v12.9 – Kader-Overhaul", items:[
+    ["neu","Neue Spalte „Potenzial“ (Gesamtpotenzial) neben „Stärke“ (bisher „Einschätzung“) – beide per Klick auf die Sterne, sortierbar, unter „Spalten“ ein-/ausblendbar. Nochmals derselbe Stern beim Potenzial = offen."],
+    ["neu","Klick auf einen Spieler öffnet sein Profil: Kopf mit Position, Nebenpositionen, Alter, Land, Rolle und Status, Kennzahlen (Stärke, Potenzial, Transferwert, Gehalt, Vertrag), alle Daten zum Bearbeiten, großes Notizfeld und Aktionen (In der Taktik, Verleihen, Löschen)."],
+    ["besser","Ruhigere Tabelle: Felder sehen aus wie Text und zeigen ihren Rahmen erst beim Überfahren oder Bearbeiten – direktes Bearbeiten in der Tabelle bleibt möglich."]]},
   {v:"12.8", beta:true, title:"Nexus v12.8 – Portal-Overhaul", items:[
     ["neu","Portal-Panels funktionieren wie im Hub: ein Klick auf eine freie Stelle öffnet die passende Seite (Nächstes Spiel → Spieltag, Kaderplan & Vertragsfristen → Kader, Startelf → Taktik, Leihen → Entwicklung …). Knöpfe im Panel tun weiter nur ihre eigene Aufgabe."],
     ["neu","Startelf neu: ein aufgeräumtes kleines Spielfeld plus die Elf als Liste mit Position, Name und Rollen (mit | gegen den Ball) – ein Klick öffnet den Spieler direkt in der Taktik."],

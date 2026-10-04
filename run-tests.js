@@ -113,7 +113,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
 
   const er = d.querySelector("#squadTbody tr[data-id]"), eid = er.dataset.id;
   er.querySelector("[data-edit]").click();
-  ok(d.querySelector("#modal h3").textContent.includes("bearbeiten") && d.querySelector('[data-f="name"]').value===S().players.find(p=>p.id===eid).name, "✎ öffnet Bearbeiten-Dialog mit vorhandenen Daten");
+  ok(d.querySelector("#modal h3").textContent.includes("Spielerprofil") && d.querySelector('[data-f="name"]').value===S().players.find(p=>p.id===eid).name, "✎ öffnet das Spielerprofil mit vorhandenen Daten (v12.9)");
   d.querySelector('[data-f="note"]').value = "Langfristig Kapitän"; d.querySelector('[data-f="salary"]').value = "70000";
   const cnt0 = S().players.length;
   d.querySelector("[data-modal-save]").click();
@@ -176,7 +176,7 @@ const key = (w, k, opts={}) => w.document.dispatchEvent(new w.KeyboardEvent("key
   ok(d.querySelector("#cmdList li.active").textContent.includes("Hrubeš"), "Suche findet Spieler");
   ci.dispatchEvent(new w.KeyboardEvent("keydown",{key:"Enter",bubbles:true}));
   ok(d.querySelector("#view-squad").classList.contains("active") && d.querySelector("#squadSearch").value.includes("Hrubeš"), "Enter springt zum Spieler im Kader");
-  ok(d.querySelector("#modalOverlay").classList.contains("active") && d.querySelector("#modal h3").textContent.includes("bearbeiten"), "Palette öffnet Bearbeiten-Dialog des Spielers");
+  ok(d.querySelector("#modalOverlay").classList.contains("active") && d.querySelector("#modal h3").textContent.includes("Spielerprofil"), "Palette öffnet das Spielerprofil");
   key(w,"Escape"); d.body.focus(); key(w,"4");
   ok(d.querySelector("#view-recruitment").classList.contains("active"), "Taste 4 → Transfers");
   key(w,"?");
@@ -1058,7 +1058,7 @@ Neuer Stürmer;ST (Z);20;BRA;450Tsd. €/J.;Unverkäuflich;30.6.2029;Perspektivs
   ({w,d,errs,S} = await boot());
   d.querySelector('.nav-btn[data-view="squad"]').click();
   const rz9 = d.querySelectorAll("#squadTable thead .col-resizer");
-  ok([...rz9].filter(r=>{ const t = r.closest("th"); return !t.hidden || t.dataset.col==="valueMax"; }).length===11 && d.querySelectorAll("#scoutTable thead .col-resizer").length>=9 && d.querySelectorAll("#loanTable thead .col-resizer").length>=10, "Ziehgriffe im Kader (11) und in den anderen Tabellen");
+  ok([...rz9].filter(r=>{ const t = r.closest("th"); return !t.hidden || t.dataset.col==="valueMax"; }).length===12 && d.querySelectorAll("#scoutTable thead .col-resizer").length>=9 && d.querySelectorAll("#loanTable thead .col-resizer").length>=10, "Ziehgriffe im Kader (12, inkl. Potenzial) und in den anderen Tabellen");
   const noteTh9 = d.querySelector('#squadTable th[data-col="note"]'), noteRz9 = noteTh9.querySelector(".col-resizer");
   const sortBefore9 = w.eval("JSON.stringify(squadSort)");
   noteRz9.dispatchEvent(new w.MouseEvent("pointerdown",{bubbles:true, clientX:500, button:0}));
@@ -2984,7 +2984,7 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
   const sq6 = d.querySelector('#modal [data-ai-part="squad"]'); sq6.checked = false; sq6.dispatchEvent(new w.Event("change",{bubbles:true}));
   ok(!prev6().includes("## Kader (") && d.querySelector("#aiCount").textContent.includes("Zeichen"), "Bausteine abwählbar (Kader raus), Zeichenzähler");
   let copied6 = null; Object.defineProperty(w.navigator, "clipboard", {value:{writeText: async t=>{ copied6 = t; }}, configurable:true});
-  d.querySelector("#aiCopyBtn").click(); await new Promise(r=>setTimeout(r,20));
+  d.querySelector("#aiCopyBtn").click(); await new Promise(r=>setTimeout(r,80));   // clipboard is async – 20 ms was flaky under load
   ok(copied6 === prev6() && d.querySelector("#toastMsg").textContent.includes("Prompt kopiert") && d.querySelector("#aiCopyBtn").textContent.includes("Kopiert"), "📋 Prompt kopieren: Text in der Zwischenablage, Bestätigung");
   w.eval("closeModal()");
   ok(w.eval("HOTKEY_ACTIONS().some(a=>a[0]==='aiPrompt')") && w.eval("buildCommands ? true : true"), "Auch per Befehlspalette und eigenem Kürzel erreichbar");
@@ -3711,6 +3711,36 @@ Karim;LV;19;2Mio. €/J.;30.6.2031`;
     w.eval("state.loans = [{id:'ln1', name:'Leih Spieler', pos:'ZM', age:20, club:'Testclub', league:'', until:'', apps:3, minutes:200, clause:'recall', recallCheck:false, playtime:'', note:''}]; saveState(); renderHome()");
     d.querySelector('[data-loan="ln1"]').click(); await new Promise(r=>setTimeout(r,40));
     ok(w.eval("currentView")==="development" && S().ui.devTab==="loans" && d.querySelector('#loanTbody tr[data-id="ln1"]'), "Leihe angeklickt → Entwicklung → Leihen, Zeile vorhanden");
+    ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
+
+  console.log("\n[83] Nexus v12.9: Kader-Overhaul");
+  { ({w,d,errs,S} = await boot());
+    d.querySelector('.nav-btn[data-view="squad"]').click();
+    ok(d.querySelector('#squadTable th[data-col="rating"]').textContent.trim()==="Stärke" && d.querySelector('#squadTable th[data-col="potential"]').textContent.trim()==="Potenzial", "Spalten 'Stärke' und 'Potenzial'");
+    const r1 = d.querySelector("#squadTbody tr[data-id]"), id1 = r1.dataset.id;
+    r1.querySelector('[data-stars="potential"] [data-star="4"]').click();
+    ok(S().players.find(p=>p.id===id1).potential===4, "Potenzial per Sternklick (4)");
+    d.querySelector(`#squadTbody tr[data-id="${id1}"] [data-stars="potential"] [data-star="4"]`).click();
+    ok(S().players.find(p=>p.id===id1).potential===0, "Derselbe Stern nochmal = offen");
+    d.querySelector(`#squadTbody tr[data-id="${id1}"] [data-stars="rating"] [data-star="2"]`).click();
+    ok(S().players.find(p=>p.id===id1).rating===2 && S().players.find(p=>p.id===id1).potential===0, "Stärke-Sterne ändern nur die Stärke");
+    w.eval(`state.players.forEach((p,i)=>{ p.potential = i % 5; }); saveState(); renderSquad()`);
+    d.querySelector('#squadTable th[data-sort="potential"]').click();
+    const pots = [...d.querySelectorAll("#squadTbody tr[data-id]")].map(r=>S().players.find(p=>p.id===r.dataset.id).potential);
+    ok(pots.every((v,i)=>i===0 || (pots[0] <= pots[pots.length-1] ? pots[i-1] <= v : pots[i-1] >= v)), "Nach Potenzial sortierbar");
+    ok(w.eval("SQUAD_COL_NAMES.potential")==="Potenzial", "Unter 'Spalten' ein-/ausblendbar");
+    // profile
+    const r2 = d.querySelector("#squadTbody tr[data-id]"), id2 = r2.dataset.id, P2 = () => S().players.find(p=>p.id===id2);
+    r2.querySelector(".player-link").click();
+    ok(d.querySelector("#modal h3").textContent==="Spielerprofil" && d.querySelector("#modal .pp-head").textContent.includes(P2().name) && d.querySelectorAll("#modal .pp-kpis > div").length===5, "Klick auf den Namen öffnet das Profil (Kopf + 5 Kennzahlen)");
+    d.querySelector('#modal [data-f="potential"]').value = "5"; d.querySelector('#modal [data-f="note"]').value = "Profil-Notiz"; d.querySelector('#modal [data-f="altPos"]').value = "DM, OM";
+    d.querySelector("[data-modal-save]").click();
+    ok(P2().potential===5 && P2().note==="Profil-Notiz" && P2().altPos.length>=1, "Im Profil bearbeiten: Potenzial, Notiz, Nebenpositionen");
+    ok(JSON.parse(JSON.stringify(w.eval("sanitizeState(migrateState(JSON.parse(JSON.stringify(state))))"))).players.find(p=>p.id===id2).potential===5, "Potenzial übersteht Speichern/Laden");
+    d.querySelector(`#squadTbody tr[data-id="${id2}"] .player-link`).click(); d.querySelector('#modal [data-pp="tactics"]').click();
+    ok(w.eval("currentView")==="tactics", "Profil → 'In der Taktik'"); w.eval("navigate('squad')");
+    d.querySelector(`#squadTbody tr[data-id="${id2}"] .player-link`).click(); d.querySelector('#modal [data-pp="del"]').click();
+    ok(!S().players.some(p=>p.id===id2), "Profil → Löschen"); d.querySelector("#toastUndoBtn").click(); ok(S().players.some(p=>p.id===id2), "… rückgängig");
     ok(errs.length===0, "keine Laufzeitfehler "+errs.join("; ")); }
 
   // Regression (found in the real browser): header cells are sticky, so a grip reaching past the cell border

@@ -32,7 +32,7 @@ function sparkline(values, fmt, cls){
 function historySectionHTML(p){
   const h = (state.history && state.history[p.id]) || [];
   if(h.length < 2) return `<div class="hist-box"><div class="hist-head">Entwicklung</div>
-    <p class="hint" style="margin:0">Der Verlauf entsteht mit der Zeit: Jede Änderung von Einschätzung, Gehalt oder Transferwert wird mit dem Spieldatum festgehalten – am bequemsten über regelmäßige FM-Importe.</p></div>`;
+    <p class="hint" style="margin:0">Der Verlauf entsteht mit der Zeit: Jede Änderung von Stärke, Gehalt oder Transferwert wird mit dem Spieldatum festgehalten – am bequemsten über regelmäßige FM-Importe.</p></div>`;
   const vals = h.map(x=>x.vmax ? (x.vmin + x.vmax)/2 : 0);
   return `<div class="hist-box"><div class="hist-head">Entwicklung <span class="muted small">${h.length} Datenpunkte seit ${fmtDate(h[0].d,{month:"short",year:"numeric"})}</span></div>
     <div class="spark-grid">

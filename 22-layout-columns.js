@@ -209,7 +209,7 @@ document.addEventListener("focusout", reformatMoney);
    ========================================================================== */
 const COL_KEY = "fm27_columns";
 const RESIZABLE_TABLES = ["squadTable","scoutTable","salesTable","prospectTable","loanTable"];
-const SQUAD_COL_NAMES = {pos:"Position", nation:"Land", age:"Alter", squadRole:"Kaderrolle", rating:"Einschätzung", salary:"Gehalt",
+const SQUAD_COL_NAMES = {pos:"Position", nation:"Land", age:"Alter", squadRole:"Kaderrolle", rating:"Stärke", potential:"Potenzial", salary:"Gehalt",
   valueMax:"Transferwert", contractUntil:"Vertrag", status:"Status", note:"Notiz"};
 const COL_MIN = 44, COL_MAX = 700;
 let colPrefs = {widths:{}, hidden:{}, order:{}};

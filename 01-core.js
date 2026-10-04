@@ -1,5 +1,5 @@
 /* build stamp – the loader in index.html picks the copy of the program files that matches index.html */
-window.FM27_BUILD = "12.8";
+window.FM27_BUILD = "12.9";
 /* ==========================================================================
    FM27 MANAGER DASHBOARD — app.js  (Schema v3)
    Externes Begleit-Tool zu Football Manager 27. Reines Vanilla JS,
@@ -1065,6 +1065,7 @@ function sanitizeState(s){
     contractUntil: clamp(Math.round(num(p.contractUntil, 2027)), 2000, 2100),
     squadRole: SQUAD_ROLES[p.squadRole] ? p.squadRole : "rotation",
     rating: clamp(Math.round(num(p.rating, 3)), 1, 5),
+    potential: clamp(Math.round(num(p.potential, 0)), 0, 5),          // 12.9: overall potential (0 = not set yet)
     status: STATUS[p.status] !== undefined ? p.status : "",
     note: str(p.note),
     nation: str(p.nation).trim().slice(0,40),                        // Land / Nationalität (aus FM-Import oder von Hand)

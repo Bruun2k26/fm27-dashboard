@@ -7,7 +7,7 @@
 Dein persönliches Command Center für **Football Manager** – und für deine anderen Karrieren und Spielsessions.
 Läuft komplett im Browser, funktioniert offline, braucht kein Konto und keinen Server. **Alle Daten bleiben auf deinem Gerät.**
 
-![Version](https://img.shields.io/badge/Version-12.8-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.324_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
+![Version](https://img.shields.io/badge/Version-12.9-2f6fde) ![Tests](https://img.shields.io/badge/Tests-1.324_bestanden-2ea043) ![Offline](https://img.shields.io/badge/offline-fähig-555) ![Sprache](https://img.shields.io/badge/Sprache-Deutsch-555)
 
 > **Beta-Hinweis:** Gaming-Hub, Admin-Zentrale, Spiel-Tagebuch, Karriere-Begleiter und KI-Prompt sind noch als **Beta** gekennzeichnet. Das FM27 Dashboard selbst ist stabil.
 
@@ -48,7 +48,7 @@ Dieses Dashboard ist der Begleiter **neben** dem Spiel. Es startet im **Gaming-H
 
 ### ⚽ FM27 Dashboard
 - **Portal** mit frei anordenbaren Widgets: nächstes Spiel, Form & Bilanz (mit Schnell-Form per Klick), Kaderplan, Startelf, Ziele, offene Aufgaben – ein Klick aufs Panel öffnet die passende Seite
-- **Kader** als Tabelle mit verschiebbaren Spalten, eigenen Feldern, Filtern und Import aus FM
+- **Kader** als ruhige Tabelle mit Stärke und Potenzial, verschiebbaren Spalten, eigenen Feldern, Filtern und Import aus FM – ein Klick auf einen Namen öffnet das Spielerprofil
 - **Taktik** mit Plan A/B, Standards und vier Ansichten (**mit Ball, gegen den Ball, kombiniert, beide nebeneinander**) – eigene Formation gegen den Ball, alle 68 FM26-Rollen, ein Board, das Positionen wie in FM erkennt (LIV/RIV, AV/FV, LM/RM …) und passende Rollen aus der Bewegung vorschlägt, sowie Bankplätze für Liga, Pokal und Vorbereitung – die Spieler laufen beim Umschalten sichtbar auf ihre Positionen
 - **🤖 KI-Prompt (Beta)**: stellt aus Kader, Taktik, Ergebnissen und nächstem Gegner eine fertige Anfrage zusammen – kopieren und bei Claude oder einer anderen KI einfügen. Es wird nichts automatisch gesendet.
 - **Spieltag**, Ergebnisse und Gegner-Datenbank
@@ -165,8 +165,9 @@ Die Testreihe läuft mit [jsdom](https://github.com/jsdom/jsdom) und [fake-index
 
 ## Roadmap
 
-- **Nexus v12.9 – Rechtsklick-Menü & Performance:** eigenes Kontextmenü (u. a. Nebenpositionen), schnellerer Start
-- **Nexus v12.10 – Feinschliff & Raus aus Beta:** alle Beta-Bereiche werden stabil
+- **Nexus v12.10 – Transfer-Overhaul:** die Transfer-Seite im neuen Stil
+- **Nexus v12.11 – Rechtsklick-Menü & Performance:** eigenes Kontextmenü (u. a. Nebenpositionen), schnellerer Start
+- **Nexus v12.12 – Feinschliff & Raus aus Beta:** alle Beta-Bereiche werden stabil
 - **Nexus v13.0 – Deutsch & English:** Englisch als zweite Sprache
 - **Sobald FM27 erscheint:** Import an das neue Exportformat anpassen
 
